@@ -1,0 +1,4 @@
+LSGetItemValue.js = GetItemValue
+LSReplaceItemValue.js = ReplaceItemValue
+LSFunctionsItemToConst.js = FunctionsItem -> Const
+LSConst.js = Items -> Const
