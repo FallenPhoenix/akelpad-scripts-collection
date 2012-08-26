@@ -1,27 +1,23 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=5464#5464
-// Version v1.0
+// Version v1.1
 //
 //
 //// One line - one file. Open all selected lines.
 
 var WshShell=new ActiveXObject("WScript.shell");
 
-var hMainWnd=AkelPad.GetMainWnd();
 var pSelText;
 var nIndex;
 
-if (hMainWnd)
+if (pSelText=AkelPad.GetSelText())
 {
-  if (pSelText=AkelPad.GetSelText())
+  if (pLinesArray=pSelText.split("\r"))
   {
-    if (pLinesArray=pSelText.split("\r"))
+    for (nIndex=0; nIndex < pLinesArray.length; ++nIndex)
     {
-      for (nIndex=0; nIndex < pLinesArray.length; ++nIndex)
+      if (pLinesArray[nIndex])
       {
-        if (pLinesArray[nIndex])
-        {
-          WshShell.Run(pLinesArray[nIndex], 1, false);
-        }
+        WshShell.Run(pLinesArray[nIndex], 1, false);
       }
     }
   }
