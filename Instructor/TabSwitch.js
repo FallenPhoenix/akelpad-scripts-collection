@@ -1,5 +1,5 @@
 // Switch between tabs.
-// Version v2.7
+// Version v2.8
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=4368#4368
 //
 // Arguments:
@@ -29,6 +29,7 @@ var hInstanceDLL=AkelPad.GetInstanceDll();
 var pClassName="AkelPad::Scripts::" + WScript.ScriptName + "::" + hInstanceDLL;
 var hWndContainer=0;
 var hWndListBox=0;
+var hSubClass;
 var hDC;
 var hBrushHollow;
 var hFontEdit;
@@ -141,7 +142,7 @@ if (hMainWnd)
           oSys.Call("user32::ShowWindow", hWndContainer, 5 /*SW_SHOW*/);
           oSys.Call("user32::UpdateWindow", hMainWnd);
 
-          if (AkelPad.WindowSubClass(hWndListBox, ListBoxCallback, 0x87 /*WM_GETDLGCODE*/, 0x100 /*WM_KEYDOWN*/, 0x101 /*WM_KEYUP*/, 0x203 /*WM_LBUTTONDBLCLK*/, 0x8 /*WM_KILLFOCUS*/))
+          if (hSubClass=AkelPad.WindowSubClass(hWndListBox, ListBoxCallback, 0x87 /*WM_GETDLGCODE*/, 0x100 /*WM_KEYDOWN*/, 0x101 /*WM_KEYUP*/, 0x203 /*WM_LBUTTONDBLCLK*/, 0x8 /*WM_KILLFOCUS*/))
           {
             //Message loop
             AkelPad.WindowGetMessage();
@@ -216,6 +217,7 @@ function ListBoxCallback(hWnd, uMsg, wParam, lParam)
 {
   if (uMsg == 0x87) //WM_GETDLGCODE
   {
+    AkelPad.WindowNoNextProc(hSubClass);
     return 0x4 /*DLGC_WANTALLKEYS*/;
   }
   else if (uMsg == 0x100) //WM_KEYDOWN
