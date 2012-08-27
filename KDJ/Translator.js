@@ -1,4 +1,4 @@
-// Translator.js - ver. 2012-08-04
+// Translator.js - ver. 2012-08-27
 //
 // On line translator via Google, MS Bing and Yandex.
 //
@@ -218,22 +218,23 @@ if (oWndPos.W < oWndMin.W)
   oWndPos.W = oWndMin.W;
 
 //Main window
-var aWnd         = [];
-var IDUSE        = 1000;
-var IDAPICB      = 1001;
-var IDDETECTLANG = 1002;
-var IDFROMLANG   = 1003;
-var IDFROMLANGCB = 1004;
-var IDTOLANG     = 1005;
-var IDTOLANGCB   = 1006;
-var IDSWITCHLANG = 1007;
-var IDSWITCHALL  = 1008;
-var IDOPAQMINUS  = 1009;
-var IDOPAQPLUS   = 1010;
-var IDTRANSLATE  = 1011;
-var IDOPTIONS    = 1012;
-var IDTXTSOURCE  = 1013;
-var IDTXTTARGET  = 1014;
+var aSubClassHand = [];
+var aWnd          = [];
+var IDUSE         = 1000;
+var IDAPICB       = 1001;
+var IDDETECTLANG  = 1002;
+var IDFROMLANG    = 1003;
+var IDFROMLANGCB  = 1004;
+var IDTOLANG      = 1005;
+var IDTOLANGCB    = 1006;
+var IDSWITCHLANG  = 1007;
+var IDSWITCHALL   = 1008;
+var IDOPAQMINUS   = 1009;
+var IDOPAQPLUS    = 1010;
+var IDTRANSLATE   = 1011;
+var IDOPTIONS     = 1012;
+var IDTXTSOURCE   = 1013;
+var IDTXTTARGET   = 1014;
 
 //Settings window
 var aWndSet       = [];
@@ -409,17 +410,18 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
     SetEditFont();
     SetEditWordWrap();
-    AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 1093 /*EM_SETEVENTMASK*/, 0, 0x00080001 /*ENM_CHANGE|ENM_SELCHANGE*/);
-    AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 1093 /*EM_SETEVENTMASK*/, 0, 0x00080001 /*ENM_CHANGE|ENM_SELCHANGE*/);
+
+    for (i = IDTXTSOURCE; i <= IDTXTTARGET; ++i)
+    {
+      AkelPad.SendMessage(aWnd[i][WND], 1093 /*EM_SETEVENTMASK*/, 0, 0x00080001 /*ENM_CHANGE|ENM_SELCHANGE*/);
+      aSubClassHand[i] = AkelPad.WindowSubClass(aWnd[i][WND], EditCallback, 256 /*WM_KEYDOWN*/, 258 /*WM_CHAR*/);
+    }
 
     AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 197 /*EM_SETLIMITTEXT*/, aAPIs[oSelect.API].TextLen, 0);
     AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 197 /*EM_SETLIMITTEXT*/, nBufSize - 1, 0);
 
     AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x00B1 /*EM_SETSEL*/, oSelect.Source1, oSelect.Source2);
     AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x00B1 /*EM_SETSEL*/, oSelect.Target1, oSelect.Target2);
-
-    AkelPad.WindowSubClass(aWnd[IDTXTSOURCE][WND], EditCallback);
-    AkelPad.WindowSubClass(aWnd[IDTXTTARGET][WND], EditCallback);
 
     //Fill combobox APIs
     for (i = 0; i < aAPIs.length; ++i)
@@ -744,16 +746,21 @@ function EditCallback(hWnd, uMsg, wParam, lParam)
 {
   if (uMsg == 256) //WM_KEYDOWN
   {
-    if ((wParam == 13 /*VK_RETURN*/) && (Ctrl() || Shift()))
+    if ((wParam == 0x56 /*V key*/) && Ctrl() && Shift())
+    {
+      AkelPad.WindowNoNextProc(aSubClassHand[oSys.Call("User32::GetDlgCtrlID", hWnd)]);
       return 1;
-    else if ((wParam == 0x56 /*V key*/) && Ctrl() && Shift())
-      return 1;
+    }
   }
-  else if (uMsg == 260) //WM_SYSKEYDOWN
+  else if (uMsg == 258) //WM_CHAR 
   {
-    if (wParam == 0x56 /*V key*/)
+    if ((wParam == 13 /*VK_RETURN*/) && (Ctrl() || Shift()))
+    {
+      AkelPad.WindowNoNextProc(aSubClassHand[oSys.Call("User32::GetDlgCtrlID", hWnd)]);
       return 1;
+    }
   }
+
   return 0;
 }
 
