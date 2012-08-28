@@ -2,8 +2,8 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.0 - 2012-08-11
-// Based on scripts from http://jsbeautifier.org/ [2012-08-11 02:53:21 UTC]
+// version 0.2.1 - 2012-08-28
+// Based on scripts from http://jsbeautifier.org/ [2012-08-28 03:42:01 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -83,7 +83,7 @@ var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
 var maxChar                = getArg("maxChar", 70);
-var unformattedTags        = getArg("unformattedTags", ["a", "pre"]);
+var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
 var beautifyCSS            = getArg("css", false);
 var test                   = getArg("test", false);
@@ -262,7 +262,7 @@ function detectXMLType(str) {
     indent_size (default 4)          - indentation size,
     indent_char (default space)      - character to indent with,
     preserve_newlines (default true) - whether existing line breaks should be preserved,
-    preserve_max_newlines (default unlimited) - maximum number of line breaks to be preserved in one chunk,
+    max_preserve_newlines (default unlimited) - maximum number of line breaks to be preserved in one chunk,
 
     jslint_happy (default false) - if true, then jslint-stricter mode is enforced.
 
@@ -1790,7 +1790,7 @@ if (typeof exports !== "undefined")
     max_char (default 70)            -  maximum amount of characters per line,
     brace_style (default "collapse") - "collapse" | "expand" | "end-expand"
             put braces on the same line as control statements (default), or put braces on own line (Allman / ANSI style), or just put end braces on own line.
-    unformatted (default ['a'])      - list of tags, that shouldn't be reformatted
+    unformatted (defaults to inline tags) - list of tags, that shouldn't be reformatted
     indent_scripts (default normal)  - "keep"|"separate"|"normal"
 
     e.g.
@@ -1818,7 +1818,7 @@ function style_html(html_source, options) {
   indent_character = options.indent_char || ' ';
   brace_style = options.brace_style || 'collapse';
   max_char = options.max_char == 0 ? Infinity : options.max_char || 70;
-  unformatted = options.unformatted || ['a'];
+  unformatted = options.unformatted || ['a', 'span', 'bdo', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'q', 'sub', 'sup', 'tt', 'i', 'b', 'big', 'small', 'u', 's', 'strike', 'font', 'ins', 'del', 'pre', 'address', 'dt', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 
   function Parser() {
 
@@ -1849,9 +1849,10 @@ function style_html(html_source, options) {
 
     this.get_content = function () { //function to capture regular content between tags
 
-      var input_char = '';
-      var content = [];
-      var space = false; //if a space is needed
+      var input_char = '',
+          content = [],
+          space = false; //if a space is needed
+
       while (this.input.charAt(this.pos) !== '<') {
         if (this.pos >= this.input.length) {
           return content.length?content.join(''):['', 'TK_EOF'];
@@ -1942,9 +1943,10 @@ function style_html(html_source, options) {
     }
 
     this.get_tag = function () { //function to get a full tag and parse its type
-      var input_char = '';
-      var content = [];
-      var space = false;
+      var input_char = '',
+          content = [],
+          space = false,
+          tag_start, tag_end;
 
       do {
         if (this.pos >= this.input.length) {
@@ -1984,6 +1986,9 @@ function style_html(html_source, options) {
           }
           space = false;
         }
+        if (input_char === '<') {
+            tag_start = this.pos - 1;
+        }
         content.push(input_char); //inserts character at-a-time (or string)
       } while (input_char !== '>');
 
@@ -2011,6 +2016,14 @@ function style_html(html_source, options) {
       else if (this.Utils.in_array(tag_check, unformatted)) { // do not reformat the "unformatted" tags
         var comment = this.get_unformatted('</'+tag_check+'>', tag_complete); //...delegate to get_unformatted function
         content.push(comment);
+        // Preserve collapsed whitespace either before or after this tag.
+        if (tag_start > 0 && this.Utils.in_array(this.input.charAt(tag_start - 1), this.Utils.whitespace)){
+            content.splice(0, 0, this.input.charAt(tag_start - 1));
+        }
+        tag_end = this.pos - 1;
+        if (this.Utils.in_array(this.input.charAt(tag_end + 1), this.Utils.whitespace)){
+            content.push(this.input.charAt(tag_end + 1));
+        }
         this.tag_type = 'SINGLE';
       }
       else if (tag_check.charAt(0) === '!') { //peek for <!-- comment
@@ -2225,7 +2238,11 @@ function style_html(html_source, options) {
         multi_parser.current_mode = 'CONTENT';
         break;
       case 'TK_TAG_SINGLE':
-        multi_parser.print_newline(false, multi_parser.output);
+        // Don't add a newline before elements that should remain unformatted.
+        var tag_check = multi_parser.token_text.match(/^\s*<([a-z]+)/i);
+        if (!tag_check || !multi_parser.Utils.in_array(tag_check[1], unformatted)){
+            multi_parser.print_newline(false, multi_parser.output);
+        }
         multi_parser.print_token(multi_parser.token_text);
         multi_parser.current_mode = 'CONTENT';
         break;
@@ -3364,6 +3381,8 @@ function convertSource(file, text) {
 			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
 		);
 	}
+	else if(file == "beautify-html.js") // See https://github.com/einars/js-beautify/pull/146
+		return text.replace("this.unformatted", "unformatted");
 	return text;
 }
 function selfUpdate() {
