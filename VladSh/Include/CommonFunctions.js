@@ -1,7 +1,7 @@
 ///Script "library" for working with for WinFS
 // must be placed in ...\Scripts\Include\
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=1582#1582
-// Version: 2.6 (2012.02.16)
+// Version: 2.7 (2012.09.02)
 
 //Default variables
 var pSlash = "\\";
@@ -26,8 +26,8 @@ function getDefaultExt()
 	return pDefaultExt || pExtTXT;
 }
 
-//возвращает расширение по применённой теме (coder-файла); на основе кода Instructor'а
-function getExtBySyntaxFile(hWndE)
+//возвращает имя используемого coder-файла ("псевдорасширение"); на основе кода Instructor'а
+function getActiveSyntax(hWndE)
 {
 	var lpFile;
 	var pExt = "";

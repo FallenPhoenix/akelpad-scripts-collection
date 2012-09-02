@@ -1,7 +1,7 @@
 ///Creation of a new file on the basis of the contained allocated file in the list of the fresh
 ///Универсальное создание нового файла на основе имеющегося в окне редактирования или в списке свежих
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=1505#1505
-// Version: 2.6 (2012.07.31)
+// Version: 2.7 (2012.09.02)
 // 
 // -"Новый на основе выбранного" Call("Scripts::Main", 1, "NewFilebyRecent.js", `"%f"`)  Icon("%a\AkelFiles\Plugs\ToolBar.dll", 1) - из меню свежих файлов (параметр `"%f"` обязателен!)
 // -"Новый на основе текущего" Call("Scripts::Main", 1, "NewFilebyRecent.js")  Icon("%a\AkelFiles\Plugs\ToolBar.dll", 1) - меню вкладок, окна редактирования или тулбара
@@ -33,7 +33,7 @@ else {
 	pContent = AkelPad.GetSelText() || AkelPad.GetTextRange(0, -1);
 	
 	if (AkelPad.Include("CommonFunctions.js")) {
-		ext = getExtBySyntaxFile(0);
+		ext = getActiveSyntax(0);
 		CreateByFile(0);		//создаём со всеми параметрами исходного файла
 	}
 	else

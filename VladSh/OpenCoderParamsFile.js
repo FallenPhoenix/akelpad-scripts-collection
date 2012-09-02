@@ -3,14 +3,14 @@
 // Если в аргументах не передано расширение файла, то открывается файл параметров, соответствующий текущему файлу;
 // текущий файл файл должен быть сохранён
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=8164#8164
-// Version: 1.5 (2012.02.23)
+// Version: 1.6 (2012.09.02)
 
 var pExt = AkelPad.GetArgLine();
 
 if (!pExt)
 {
 	if (AkelPad.Include("CommonFunctions.js"))
-		pExt = getExtBySyntaxFile(AkelPad.GetEditWnd());
+		pExt = getActiveSyntax(AkelPad.GetEditWnd());
 	
 	if (!pExt)
 		pExt = GetExtensionName(AkelPad.GetEditFile(0))
