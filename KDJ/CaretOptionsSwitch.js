@@ -1,24 +1,30 @@
-// CaretOptionsSwitch.js - 2011-12-05
+// CaretOptionsSwitch.js - ver. 2012-09-02
 //
 // Switching four caret options.
 //
 // How to use:
-// Add button to Toolbar plugin:
-// -"Caret option" Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "Option %m %i") Icon(0)
+//   Directly call:
+//     Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "Option")
+//   Add button to Toolbar plugin:
+//     -"Caret option switch" Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "Option %m %i") Icon(0)
+//   Add item to ContextMenu plugin:
+//     -"Caret option switch" Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "Option %m %i")
+//
 // Option argument can have value:
-//   0 - Caret after end of line
+//   0 - Caret after end of line (default)
 //   1 - Show active column
 //   2 - Show active line
 //   3 - Show active line border
 //
 // Example for Active line show/hide:
-// -"Active line switch" Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "2 %m %i") Icon(0)
+//   -"Active line switch" Call("Scripts::Main", 1, "CaretOptionsSwitch.js", "2 %m %i") Icon(0)
 
-var hMainWnd  = AkelPad.GetMainWnd();
-var hEditWnd  = AkelPad.GetEditWnd();
-var nAction   = 0;
-var hToolbar  = 0;
-var nButtonID = 0;
+var hMainWnd = AkelPad.GetMainWnd();
+var hEditWnd = AkelPad.GetEditWnd();
+var oSys     = AkelPad.SystemFunction();
+var nAction  = 0;
+var nHandle  = 0;
+var nItemID  = 0;
 var nSetOptions;
 var nCaretOptions;
 var nAECO_flag;
@@ -35,8 +41,8 @@ if (hMainWnd && hEditWnd)
   }
   if (WScript.Arguments.length > 2)
   {
-    hToolbar  = parseInt(WScript.Arguments(1));
-    nButtonID = parseInt(WScript.Arguments(2));
+    nHandle = parseInt(WScript.Arguments(1));
+    nItemID = parseInt(WScript.Arguments(2));
   }
 
   if (nAction == 0) //Allow caret moving out of the line edge
@@ -66,18 +72,26 @@ if (hMainWnd && hEditWnd)
   if (nSetOptions & nAECO_flag)
   {
     AkelPad.SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 4 /*AECOOP_XOR*/, nAECO_flag);
-    AkelPad.SendMessage(hToolbar, 1026 /*TB_CHECKBUTTON*/, nButtonID, false);
 
     if (nCaretOptions & nCO_flag)
       nCaretOptions = nCaretOptions ^ nCO_flag;
+
+    if (oSys.Call("User32::IsMenu", nHandle))
+      oSys.Call("User32::CheckMenuItem", nHandle, nItemID, 0x0 /*MF_BYCOMMAND|MF_UNCHECKED*/);
+    else
+      AkelPad.SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, false);
   }
   else
   {
     AkelPad.SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 2 /*AECOOP_OR*/, nAECO_flag);
-    AkelPad.SendMessage(hToolbar, 1026 /*TB_CHECKBUTTON*/, nButtonID, true);
 
     if (! (nCaretOptions & nCO_flag))
       nCaretOptions = nCaretOptions | nCO_flag;
+
+    if (oSys.Call("User32::IsMenu", nHandle))
+      oSys.Call("User32::CheckMenuItem", nHandle, nItemID, 0x8 /*MF_BYCOMMAND|MF_CHECKED*/);
+    else
+      AkelPad.SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, true);
   }
 
   AkelPad.SetFrameInfo(0, 17 /*FIS_CARETOPTIONS*/, nCaretOptions);
