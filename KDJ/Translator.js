@@ -1,326 +1,44 @@
-// Translator.js - ver. 2012-08-27
+// Translator.js - ver. 2012-09-02
 //
 // On line translator via Google, MS Bing and Yandex.
 //
-// Usage:
+// Usage in AkelPad window:
 // Call("Scripts::Main", 1, "Translator.js")
 // Call("Scripts::Main", 1, "Translator.js", "en ru") - translates from English to Russian
 // Call("Scripts::Main", 1, "Translator.js", "ru pl 1") - translates from Russian to Polish, source text from Clipboard
 //
+// Usage in command line (required AkelEdit.dll and registration Scripts.dll):
+// Wscript.exe Translator.js
+//
 // Shortcut keys in dialog box:
-// Tab         - change edit window focus source <-> target (double-window mode)
-// Ctrl+Enter, - double-window mode - translates entire text from source text window
-//             - single-window mode - translates selected text from AkelPad window
-// Alt+Enter   - works as Ctrl+Enter, but translated text will be added at the end in target window
-// Shift+Enter - double-window mode - translates selected text from source text window;
+// Tab         - change edit panel focus source <-> target (double-panel mode)
+// Ctrl+Enter, - double-panel mode - translates entire text from source panel
+//             - single-panel mode - translates selected text from AkelPad window or text from Clipboard
+// Alt+Enter   - works as Ctrl+Enter, but translated text will be added at the end in target panel
+// Shift+Enter - double-window mode - translates selected text from source panel;
 //               if is not selection - translates entire text
-//             - single-window mode - translates selected text from AkelPad window
+//             - single-panel mode - translates selected text from AkelPad window or text from Clipboard
 // Alt+U       - switch languages
-// Shift+Alt+U - switch languages and texts (double-window mode only)
+// Shift+Alt+U - switch languages and texts (double-panel mode only)
 // Alt+F1      - choose translator
 // Alt+1       - choose from language
 // Alt+2       - choose to language
-// Ctrl+F      - switch font (GUI/AkelPad)
+// Ctrl+F      - switch font AkelPad/GUI/other
 // Ctrl+U      - switch wordwrap
-// Ctrl+W      - source window on/off
+// Ctrl+W      - source panel on/off
+// Alt+S       - settings
 // Alt+-+      - change opaque/transparency level of dialog box
 // F4          - maximize/restore window
-// Right click - context menu in edit windows
+// Right click - context menu in edit panels
 
-var DT_DWORD        = 3;
-var CB_ADDSTRING    = 0x143;
-var CB_GETCOUNT     = 0x146;
-var CB_GETCURSEL    = 0x147;
-var CB_SETCURSEL    = 0x14E;
-var CB_SHOWDROPDOWN = 0x14F;
-var CB_GETITEMDATA  = 0x150;
-var CB_SETITEMDATA  = 0x151;
-var CB_RESETCONTENT = 0x14B;
-var CBN_SELCHANGE   = 1;
-var CBN_SETFOCUS    = 3;
-var CBN_CLOSEUP     = 8;
+GetAkelPadObject();
 
-var hMainWnd     = AkelPad.GetMainWnd();
-var hEditWnd     = AkelPad.GetEditWnd();
+var oSys         = AkelPad.SystemFunction();
 var hInstanceDLL = AkelPad.GetInstanceDll();
 var sClassName   = "AkelPad::Scripts::" + WScript.ScriptName + "::" + hInstanceDLL;
-var oSys         = AkelPad.SystemFunction();
-var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
-
-var sTxtCaption;
-var sTxtUse;
-var sTxtFromLang;
-var sTxtToLang;
-var sTxtAutoDetect;
-var sTxtTranslate;
-var sTxtTranslateP;
-var sTxtOptions;
-var sTxtSource;
-var sTxtTarget;
-var sTxtSettings;
-var sTxtUndo;
-var sTxtRedo;
-var sTxtCut;
-var sTxtCopyCB;
-var sTxtInsertAP;
-var sTxtPasteCB;
-var sTxtPasteAP;
-var sTxtDelete;
-var sTxtSelectAll;
-var sTxtEntireText;
-var sTxtInterface;
-var sTxtSourceWnd;
-var sTxtLoadText;
-var sTxtImmediate;
-var sTxtUseFontAP;
-var sTxtWordWrap;
-var sTxtSortLang;
-var sTxtSortCode;
-var sTxtSortName;
-var sTxtOwnKey;
-var sTxtRegister;
-var sTxtOK;
-var sTxtCancel;
-var sTxtError;
-var sTxtNoText;
-var sTxtNoSupport;
-var sTxtNoInternet;
-var sTxtWait;
-var sTxtUndefined;
-
-var aLangs = [
-  ["af"   , "", 1, 0, 0], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex*/
-  ["ar"   , "", 1, 1, 0],
-  ["be"   , "", 1, 0, 0],
-  ["bg"   , "", 1, 1, 0],
-  ["ca"   , "", 1, 1, 0],
-  ["cs"   , "", 1, 1, 0],
-  ["cy"   , "", 1, 0, 0],
-  ["da"   , "", 1, 1, 0],
-  ["de"   , "", 1, 1, 1],
-  ["el"   , "", 1, 1, 0],
-  ["en"   , "", 1, 1, 1],
-  ["eo"   , "", 1, 0, 0],
-  ["es"   , "", 1, 1, 1],
-  ["et"   , "", 1, 1, 0],
-  ["fa"   , "", 1, 0, 0],
-  ["fi"   , "", 1, 1, 0],
-  ["fr"   , "", 1, 1, 1],
-  ["ga"   , "", 1, 0, 0],
-  ["gl"   , "", 1, 0, 0],
-  ["hi"   , "", 1, 1, 0],
-  ["hr"   , "", 1, 0, 0],
-  ["ht"   , "", 1, 1, 0],
-  ["hu"   , "", 1, 1, 0],
-  ["id"   , "", 1, 1, 0],
-  ["is"   , "", 1, 0, 0],
-  ["it"   , "", 1, 1, 0],
-  ["iw"   , "", 1, 1, 0],
-  ["ja"   , "", 1, 1, 0],
-  ["ko"   , "", 1, 1, 0],
-  ["la"   , "", 1, 0, 0],
-  ["lt"   , "", 1, 1, 0],
-  ["lv"   , "", 1, 1, 0],
-  ["mk"   , "", 1, 0, 0],
-  ["ms"   , "", 1, 0, 0],
-  ["mt"   , "", 1, 0, 0],
-  ["nl"   , "", 1, 1, 0],
-  ["no"   , "", 1, 1, 0],
-  ["pl"   , "", 1, 1, 1],
-  ["pt"   , "", 1, 1, 0],
-  ["ro"   , "", 1, 1, 0],
-  ["ru"   , "", 1, 1, 1],
-  ["sk"   , "", 1, 1, 0],
-  ["sl"   , "", 1, 1, 0],
-  ["sq"   , "", 1, 0, 0],
-  ["sr"   , "", 1, 0, 0],
-  ["sv"   , "", 1, 1, 0],
-  ["sw"   , "", 1, 0, 0],
-  ["th"   , "", 1, 1, 0],
-  ["tl"   , "", 1, 0, 0],
-  ["tr"   , "", 1, 1, 1],
-  ["uk"   , "", 1, 1, 1],
-  ["vi"   , "", 1, 1, 0],
-  ["yi"   , "", 1, 0, 0],
-  ["zh"   , "", 1, 0, 0],
-  ["zh-CN", "", 1, 1, 0],
-  ["zh-TW", "", 1, 1, 0]];
-
-var aAPIs = [{"Name":        "Google",
-              "APIkey":      "",
-              "APIkeyP":     "",
-              "RegistrURL":  "",
-              "AutoDetect":  1,
-              "TextLen":     48000},
-             {"Name":        "MS Bing",
-              "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
-              "APIkeyP":     "",
-              "RegistrURL":  "http://www.bing.com/developers",
-              "AutoDetect":  1,
-//              "TextLen":     10000}, //POST method
-              "TextLen":     3500}, //GET method
-             {"Name":        "Yandex",
-              "APIkey":      "",
-              "APIkeyP":     "",
-              "RegistrURL":  "",
-              "AutoDetect":  0,
-              "TextLen":     10000}];
-var oSelect = {"API":      0,
-               "FromLang": 0,
-               "ToLang"  : 0,
-               "Source1" : 0,
-               "Source2" : 0,
-               "Target1" : 0,
-               "Target2" : 0};
-var oWndMin = {"W": 656,
-               "H": 200};
-var oWndPos = {"X": 100,
-               "Y": 120,
-               "W": oWndMin.W,
-               "H": oWndMin.H,
-               "Max": false};
-var nOpaque     = 255;
-var bSourceWnd  = 1;
-var bLoadText   = 1;
-var bImmediate  = 0;
-var bFontAP     = 0;
-var bWordWrap   = 1;
-var bSortCode   = 0;
-var nDetectLang = -1;
-var sSource     = "";
-var sTarget     = "";
-var sLanguage   = "";
-var nBufSize    = 0xFFFF;
-var lpBuffer;
 var hWndDlg;
-var hFocus;
-var bCloseCB;
 
-ReadWriteIni(false);
-
-if (bSourceWnd && bLoadText)
-{
-  if ((WScript.Arguments.length > 2) && (WScript.Arguments(2) == "1"))
-  {
-    sSource = AkelPad.GetClipboardText().substr(0, aAPIs[oSelect.API].TextLen);
-    oSelect.Source1 = oSelect.Source2 = 0;
-  }
-  else if (AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0))
-  {
-    sSource = AkelPad.GetSelText(3 /*"\r\n"*/).substr(0, aAPIs[oSelect.API].TextLen);
-    oSelect.Source1 = oSelect.Source2 = 0;
-  }
-}
-
-if (oWndPos.H < oWndMin.H)
-  oWndPos.H = oWndMin.H;
-if (oWndPos.W < oWndMin.W)
-  oWndPos.W = oWndMin.W;
-
-//Main window
-var aSubClassHand = [];
-var aWnd          = [];
-var IDUSE         = 1000;
-var IDAPICB       = 1001;
-var IDDETECTLANG  = 1002;
-var IDFROMLANG    = 1003;
-var IDFROMLANGCB  = 1004;
-var IDTOLANG      = 1005;
-var IDTOLANGCB    = 1006;
-var IDSWITCHLANG  = 1007;
-var IDSWITCHALL   = 1008;
-var IDOPAQMINUS   = 1009;
-var IDOPAQPLUS    = 1010;
-var IDTRANSLATE   = 1011;
-var IDOPTIONS     = 1012;
-var IDTXTSOURCE   = 1013;
-var IDTXTTARGET   = 1014;
-
-//Settings window
-var aWndSet       = [];
-var IDINTERFACECB = 1100;
-var IDINTERFACE   = 1101;
-var IDEDITOPTIONS = 1102;
-var IDSOURCEWND   = 1103;
-var IDLOADTEXT    = 1104;
-var IDIMMEDIATE   = 1105;
-var IDFONTAP      = 1106;
-var IDWORDWRAP    = 1107;
-var IDSORTLANG    = 1108;
-var IDSORTCODE    = 1109;
-var IDSORTNAME    = 1110;
-var IDAPINAME1    = 1111;
-var IDAPIKEYS1    = 1112;
-var IDAPIKEY1     = 1113;
-var IDREGIST1     = 1114;
-var IDREGURL1     = 1115;
-var IDOK          = 1116;
-var IDCANCEL      = 1117;
-
-var WNDTYPE  = 0;
-var WND      = 1;
-var WNDEXSTY = 2;
-var WNDSTY   = 3;
-var WNDX     = 4;
-var WNDY     = 5;
-var WNDW     = 6;
-var WNDH     = 7;
-var WNDTXT   = 8;
-
-//0x50000000 - WS_VISIBLE|WS_CHILD
-//0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
-//0x50000009 - WS_VISIBLE|WS_CHILD|BS_AUTORADIOBUTTON
-//0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
-//0x50010001 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
-//0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
-//0x50010080 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
-//0x50010880 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL|ES_READONLY
-//0x50200003 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_DROPDOWNLIST
-//0x50200103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_SORT|CBS_DROPDOWNLIST
-//0x50210103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_TABSTOP|CBS_SORT|CBS_DROPDOWNLIST
-//0x50311104 - WS_VISIBLE|WS_CHILD|WS_HSCROLL|WS_VSCROLL|WS_TABSTOP|ES_WANTRETURN|ES_NOHIDESEL|ES_MULTILINE
-//Windows               WNDTYPE, WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
-aWnd[IDUSE        ] = ["STATIC",   0,       0, 0x50000000,  10,  10,  80,  13];
-aWnd[IDAPICB      ] = ["COMBOBOX", 0,       0, 0x50200003,  10,  25,  80,  20, ""];
-aWnd[IDDETECTLANG ] = ["STATIC",   0,       0, 0x50000000,  10,  60, 290,  13, ""];
-aWnd[IDFROMLANG   ] = ["STATIC",   0,       0, 0x50000000, 110,  10, 200,  13];
-aWnd[IDFROMLANGCB ] = ["COMBOBOX", 0,       0, 0x50200103, 110,  25, 200,  20, ""];
-aWnd[IDTOLANG     ] = ["STATIC",   0,       0, 0x50000000, 340,  10, 200,  13];
-aWnd[IDTOLANGCB   ] = ["COMBOBOX", 0,       0, 0x50200103, 340,  25, 200,  20, ""];
-aWnd[IDSWITCHLANG ] = ["BUTTON",   0,       0, 0x50000000, 310,  26,  30,  20, "<->"];
-aWnd[IDSWITCHALL  ] = ["BUTTON",   0,       0, 0x50000000, 300,  50,  50,  20, "<->"];
-aWnd[IDOPAQMINUS  ] = ["BUTTON",   0,       0, 0x50000000, 617,   0,  15,  16, "-"];
-aWnd[IDOPAQPLUS   ] = ["BUTTON",   0,       0, 0x50000000, 632,   0,  15,  16, "+"];
-aWnd[IDTRANSLATE  ] = ["BUTTON",   0,       0, 0x50000000, 560,  20,  80,  23];
-aWnd[IDOPTIONS    ] = ["BUTTON",   0,       0, 0x50000000, 560,  45,  80,  23];
-aWnd[IDTXTSOURCE  ] = ["RichEdit20" + _TCHAR,
-                                   0,   0x200, 0x50311104,  10,  75, 310,  80, sSource];
-aWnd[IDTXTTARGET  ] = ["RichEdit20" + _TCHAR,
-                                   0,   0x200, 0x50311104, 330,  75, 310,  80, sTarget];
-
-aWndSet[IDINTERFACECB] = ["COMBOBOX", 0,       0, 0x50210103,  10,  10, 150,  20, ""];
-aWndSet[IDINTERFACE  ] = ["STATIC",   0,       0, 0x50000000, 165,  13, 120,  13];
-aWndSet[IDEDITOPTIONS] = ["BUTTON",   0,       0, 0x50000007,  10,  45, 270, 120, ""];
-aWndSet[IDSOURCEWND  ] = ["BUTTON",   0,       0, 0x50010003,  20,  60, 255,  16];
-aWndSet[IDLOADTEXT   ] = ["BUTTON",   0,       0, 0x50010003,  20,  80, 255,  16];
-aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0,       0, 0x50010003,  20, 100, 255,  16];
-aWndSet[IDFONTAP     ] = ["BUTTON",   0,       0, 0x50010003,  20, 120, 255,  16];
-aWndSet[IDWORDWRAP   ] = ["BUTTON",   0,       0, 0x50010003,  20, 140, 255,  16];
-aWndSet[IDSORTLANG   ] = ["BUTTON",   0,       0, 0x50000007, 290, 100, 120,  65];
-aWndSet[IDSORTCODE   ] = ["BUTTON",   0,       0, 0x50000009, 300, 120,  90,  16];
-aWndSet[IDSORTNAME   ] = ["BUTTON",   0,       0, 0x50000009, 300, 140,  90,  16];
-aWndSet[IDAPINAME1   ] = ["BUTTON",   0,       0, 0x50000007,  10, 180, 400,  75];
-aWndSet[IDAPIKEYS1   ] = ["STATIC",   0,       0, 0x50000000,  20, 200,  70,  13, "AppID:"];
-aWndSet[IDAPIKEY1    ] = ["EDIT",     0,   0x200, 0x50010080,  90, 200, 310,  20, ""];
-aWndSet[IDREGIST1    ] = ["STATIC",   0,       0, 0x50000000,  20, 225,  70,  13];
-aWndSet[IDREGURL1    ] = ["EDIT",     0,   0x200, 0x50010880,  90, 225, 310,  20, aAPIs[1].RegistrURL];
-aWndSet[IDOK         ] = ["BUTTON",   0,       0, 0x50010001, 330,  10,  80,  23];
-aWndSet[IDCANCEL     ] = ["BUTTON",   0,       0, 0x50010000, 330,  35,  80,  23];
-
-ReadInterfaceLang();
-SetInterfaceLangToWndDef();
-
-if (hWndDlg = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, sClassName, 0))
+if (hWndDlg = oSys.Call("User32::FindWindowExW", 0, 0, sClassName, 0))
 {
   if (! oSys.Call("User32::IsWindowVisible", hWndDlg))
     oSys.Call("User32::ShowWindow", hWndDlg, 8 /*SW_SHOWNA*/);
@@ -331,16 +49,333 @@ if (hWndDlg = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, sClassName, 0))
 }
 else
 {
-  lpBuffer = AkelPad.MemAlloc(nBufSize * _TSIZE);
+  var DT_UNICODE = 1;
+  var DT_DWORD   = 3;
+  var DT_BYTE    = 5;
+
+  var CB_ADDSTRING    = 0x143;
+  var CB_GETCOUNT     = 0x146;
+  var CB_GETCURSEL    = 0x147;
+  var CB_SETCURSEL    = 0x14E;
+  var CB_SHOWDROPDOWN = 0x14F;
+  var CB_GETITEMDATA  = 0x150;
+  var CB_SETITEMDATA  = 0x151;
+  var CB_RESETCONTENT = 0x14B;
+  var CBN_SELCHANGE   = 1;
+  var CBN_SETFOCUS    = 3;
+  var CBN_CLOSEUP     = 8;
+
+  var hMainWnd     = AkelPad.GetMainWnd();
+  var hEditWnd     = AkelPad.GetEditWnd();
+  var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
+  var sEditLibName = "AkelEdit.dll";
+  var nOpaque      = 255;
+  var bSourceInCB  = 0;
+  var bSourceWnd   = 1;
+  var bLoadText    = 1;
+  var bImmediate   = 0;
+  var bFontAP      = 0;
+  var bFontGUI     = 0;
+  var bWordWrap    = 1;
+  var bSortCode    = 0;
+  var nDetectLang  = -1;
+  var sSource      = "";
+  var sTarget      = "";
+  var sLanguage    = "";
+  var nBufSize     = 0xFFFF;
+  var lpBuffer;
+  var hEditLib;
+  var hFocus;
+  var bCloseCB;
+  var aFont;
+
+  var sTxtCaption;
+  var sTxtUse;
+  var sTxtFromLang;
+  var sTxtToLang;
+  var sTxtAutoDetect;
+  var sTxtTranslate;
+  var sTxtTranslateP;
+  var sTxtOptions;
+  var sTxtSource;
+  var sTxtTarget;
+  var sTxtSettings;
+  var sTxtUndo;
+  var sTxtRedo;
+  var sTxtCut;
+  var sTxtCopyCB;
+  var sTxtInsertAP;
+  var sTxtPasteCB;
+  var sTxtPasteAP;
+  var sTxtDelete;
+  var sTxtSelectAll;
+  var sTxtEntireText;
+  var sTxtInterface;
+  var sTxtSourceInCB;
+  var sTxtSourceWnd;
+  var sTxtLoadText;
+  var sTxtImmediate;
+  var sTxtFontAP;
+  var sTxtFontGUI;
+  var sTxtWordWrap;
+  var sTxtSortLang;
+  var sTxtSortCode;
+  var sTxtSortName;
+  var sTxtOwnKey;
+  var sTxtRegister;
+  var sTxtOK;
+  var sTxtCancel;
+  var sTxtError;
+  var sTxtNoText;
+  var sTxtNoSupport;
+  var sTxtNoInternet;
+  var sTxtWait;
+  var sTxtUndefined;
+  var sTxtRegScripts;
+  var sTxtNoLibrary;
+
+  var aLangs = [
+    ["af"   , "", 1, 0, 0], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex*/
+    ["ar"   , "", 1, 1, 0],
+    ["be"   , "", 1, 0, 0],
+    ["bg"   , "", 1, 1, 0],
+    ["ca"   , "", 1, 1, 0],
+    ["cs"   , "", 1, 1, 0],
+    ["cy"   , "", 1, 0, 0],
+    ["da"   , "", 1, 1, 0],
+    ["de"   , "", 1, 1, 1],
+    ["el"   , "", 1, 1, 0],
+    ["en"   , "", 1, 1, 1],
+    ["eo"   , "", 1, 0, 0],
+    ["es"   , "", 1, 1, 1],
+    ["et"   , "", 1, 1, 0],
+    ["fa"   , "", 1, 0, 0],
+    ["fi"   , "", 1, 1, 0],
+    ["fr"   , "", 1, 1, 1],
+    ["ga"   , "", 1, 0, 0],
+    ["gl"   , "", 1, 0, 0],
+    ["hi"   , "", 1, 1, 0],
+    ["hr"   , "", 1, 0, 0],
+    ["ht"   , "", 1, 1, 0],
+    ["hu"   , "", 1, 1, 0],
+    ["id"   , "", 1, 1, 0],
+    ["is"   , "", 1, 0, 0],
+    ["it"   , "", 1, 1, 0],
+    ["iw"   , "", 1, 1, 0],
+    ["ja"   , "", 1, 1, 0],
+    ["ko"   , "", 1, 1, 0],
+    ["la"   , "", 1, 0, 0],
+    ["lt"   , "", 1, 1, 0],
+    ["lv"   , "", 1, 1, 0],
+    ["mk"   , "", 1, 0, 0],
+    ["ms"   , "", 1, 0, 0],
+    ["mt"   , "", 1, 0, 0],
+    ["nl"   , "", 1, 1, 0],
+    ["no"   , "", 1, 1, 0],
+    ["pl"   , "", 1, 1, 1],
+    ["pt"   , "", 1, 1, 0],
+    ["ro"   , "", 1, 1, 0],
+    ["ru"   , "", 1, 1, 1],
+    ["sk"   , "", 1, 1, 0],
+    ["sl"   , "", 1, 1, 0],
+    ["sq"   , "", 1, 0, 0],
+    ["sr"   , "", 1, 0, 0],
+    ["sv"   , "", 1, 1, 0],
+    ["sw"   , "", 1, 0, 0],
+    ["th"   , "", 1, 1, 0],
+    ["tl"   , "", 1, 0, 0],
+    ["tr"   , "", 1, 1, 1],
+    ["uk"   , "", 1, 1, 1],
+    ["vi"   , "", 1, 1, 0],
+    ["yi"   , "", 1, 0, 0],
+    ["zh"   , "", 1, 0, 0],
+    ["zh-CN", "", 1, 1, 0],
+    ["zh-TW", "", 1, 1, 0]];
+
+  var aAPIs = [{"Name":        "Google",
+                "APIkey":      "",
+                "APIkeyP":     "",
+                "RegistrURL":  "",
+                "AutoDetect":  1,
+                "TextLen":     48000},
+               {"Name":        "MS Bing",
+                "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
+                "APIkeyP":     "",
+                "RegistrURL":  "http://www.bing.com/developers",
+                "AutoDetect":  1,
+                //"TextLen":     10000}, //POST method
+                "TextLen":     3500}, //GET method
+               {"Name":        "Yandex",
+                "APIkey":      "",
+                "APIkeyP":     "",
+                "RegistrURL":  "",
+                "AutoDetect":  0,
+                "TextLen":     10000}];
+  var oSelect = {"API":      0,
+                 "FromLang": 0,
+                 "ToLang"  : 0,
+                 "Source1" : 0,
+                 "Source2" : 0,
+                 "Target1" : 0,
+                 "Target2" : 0};
+  var oWndMin = {"W": 656,
+                 "H": 200};
+  var oWndPos = {"X": 100,
+                 "Y": 120,
+                 "W": oWndMin.W,
+                 "H": oWndMin.H,
+                 "Max": 0};
+
+  ReadWriteIni(false);
+
+  if (bSourceWnd && bLoadText)
+  {
+    if (bSourceInCB || (! hEditWnd) || ((WScript.Arguments.length > 2) && (WScript.Arguments(2) == "1")))
+    {
+      sSource = AkelPad.GetClipboardText().substr(0, aAPIs[oSelect.API].TextLen);
+      oSelect.Source1 = oSelect.Source2 = 0;
+    }
+    else if (AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0))
+    {
+      sSource = AkelPad.GetSelText(3 /*"\r\n"*/).substr(0, aAPIs[oSelect.API].TextLen);
+      oSelect.Source1 = oSelect.Source2 = 0;
+    }
+  }
+
+  if (oWndPos.H < oWndMin.H)
+    oWndPos.H = oWndMin.H;
+  if (oWndPos.W < oWndMin.W)
+    oWndPos.W = oWndMin.W;
+  if (hEditWnd && bFontAP && bFontGUI)
+    bFontGUI = 0;
+  if (! aFont)
+    aFont = ConvertFontFormat(hGuiFont, 2, 3);
+
+  //Main window
+  var aSubClassHand = [];
+  var aWnd          = [];
+  var IDUSE         = 1000;
+  var IDAPICB       = 1001;
+  var IDDETECTLANG  = 1002;
+  var IDFROMLANG    = 1003;
+  var IDFROMLANGCB  = 1004;
+  var IDTOLANG      = 1005;
+  var IDTOLANGCB    = 1006;
+  var IDSWITCHLANG  = 1007;
+  var IDSWITCHALL   = 1008;
+  var IDOPAQMINUS   = 1009;
+  var IDOPAQPLUS    = 1010;
+  var IDTRANSLATE   = 1011;
+  var IDOPTIONS     = 1012;
+  var IDTXTSOURCE   = 1013;
+  var IDTXTTARGET   = 1014;
+
+  //Settings window
+  var aWndSet       = [];
+  var IDINTERFACECB = 1100;
+  var IDINTERFACE   = 1101;
+  var IDEDITOPTIONS = 1102;
+  var IDSOURCEINCB  = 1103;
+  var IDSOURCEWND   = 1104;
+  var IDLOADTEXT    = 1105;
+  var IDIMMEDIATE   = 1106;
+  var IDWORDWRAP    = 1107;
+  var IDFONTAP      = 1108;
+  var IDFONTGUI     = 1109;
+  var IDFONT        = 1110;
+  var IDSORTLANG    = 1111;
+  var IDSORTCODE    = 1112;
+  var IDSORTNAME    = 1113;
+  var IDAPINAME1    = 1114;
+  var IDAPIKEYS1    = 1115;
+  var IDAPIKEY1     = 1116;
+  var IDREGIST1     = 1117;
+  var IDREGURL1     = 1118;
+  var IDOK          = 1119;
+  var IDCANCEL      = 1120;
+
+  var WNDTYPE  = 0;
+  var WND      = 1;
+  var WNDEXSTY = 2;
+  var WNDSTY   = 3;
+  var WNDX     = 4;
+  var WNDY     = 5;
+  var WNDW     = 6;
+  var WNDH     = 7;
+  var WNDTXT   = 8;
+
+  //0x50000000 - WS_VISIBLE|WS_CHILD
+  //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
+  //0x50000009 - WS_VISIBLE|WS_CHILD|BS_AUTORADIOBUTTON
+  //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
+  //0x50010001 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
+  //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
+  //0x50010080 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
+  //0x50010880 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL|ES_READONLY
+  //0x50200003 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_DROPDOWNLIST
+  //0x50200103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_SORT|CBS_DROPDOWNLIST
+  //0x50210103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_TABSTOP|CBS_SORT|CBS_DROPDOWNLIST
+  //0x50311104 - WS_VISIBLE|WS_CHILD|WS_HSCROLL|WS_VSCROLL|WS_TABSTOP|ES_WANTRETURN|ES_NOHIDESEL|ES_MULTILINE
+  //Windows               WNDTYPE,  WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
+  aWnd[IDUSE        ] = ["STATIC",    0,       0, 0x50000000,  10,  10,  80,  13];
+  aWnd[IDAPICB      ] = ["COMBOBOX",  0,       0, 0x50200003,  10,  25,  80,  20, ""];
+  aWnd[IDDETECTLANG ] = ["STATIC",    0,       0, 0x50000000,  10,  60, 290,  13, ""];
+  aWnd[IDFROMLANG   ] = ["STATIC",    0,       0, 0x50000000, 110,  10, 200,  13];
+  aWnd[IDFROMLANGCB ] = ["COMBOBOX",  0,       0, 0x50200103, 110,  25, 200,  20, ""];
+  aWnd[IDTOLANG     ] = ["STATIC",    0,       0, 0x50000000, 340,  10, 200,  13];
+  aWnd[IDTOLANGCB   ] = ["COMBOBOX",  0,       0, 0x50200103, 340,  25, 200,  20, ""];
+  aWnd[IDSWITCHLANG ] = ["BUTTON",    0,       0, 0x50000000, 310,  26,  30,  20, "<->"];
+  aWnd[IDSWITCHALL  ] = ["BUTTON",    0,       0, 0x50000000, 300,  50,  50,  20, "<->"];
+  aWnd[IDOPAQMINUS  ] = ["BUTTON",    0,       0, 0x50000000, 617,   0,  15,  16, "-"];
+  aWnd[IDOPAQPLUS   ] = ["BUTTON",    0,       0, 0x50000000, 632,   0,  15,  16, "+"];
+  aWnd[IDTRANSLATE  ] = ["BUTTON",    0,       0, 0x50000000, 560,  20,  80,  23];
+  aWnd[IDOPTIONS    ] = ["BUTTON",    0,       0, 0x50000000, 560,  45,  80,  23];
+  aWnd[IDTXTSOURCE  ] = ["AkelEditW", 0,   0x200, 0x50311104,  10,  75, 310,  80, sSource];
+  aWnd[IDTXTTARGET  ] = ["AkelEditW", 0,   0x200, 0x50311104, 330,  75, 310,  80, sTarget];
+
+  aWndSet[IDINTERFACECB] = ["COMBOBOX", 0,       0, 0x50210103,  10,  10, 150,  20, ""];
+  aWndSet[IDINTERFACE  ] = ["STATIC",   0,       0, 0x50000000, 165,  13, 120,  13];
+  aWndSet[IDEDITOPTIONS] = ["BUTTON",   0,       0, 0x50000007,  10,  40, 270, 185, ""];
+  aWndSet[IDSOURCEINCB ] = ["BUTTON",   0,       0, 0x50010003,  20,  55, 255,  16];
+  aWndSet[IDSOURCEWND  ] = ["BUTTON",   0,       0, 0x50010003,  20,  75, 255,  16];
+  aWndSet[IDLOADTEXT   ] = ["BUTTON",   0,       0, 0x50010003,  20,  95, 255,  16];
+  aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0,       0, 0x50010003,  20, 115, 255,  16];
+  aWndSet[IDWORDWRAP   ] = ["BUTTON",   0,       0, 0x50010003,  20, 135, 255,  16];
+  aWndSet[IDFONTAP     ] = ["BUTTON",   0,       0, 0x50010003,  20, 155, 255,  16];
+  aWndSet[IDFONTGUI    ] = ["BUTTON",   0,       0, 0x50010003,  20, 175, 255,  16];
+  aWndSet[IDFONT       ] = ["BUTTON",   0,       0, 0x50010000,  20, 195, 170,  20, aFont.toString()];
+  aWndSet[IDSORTLANG   ] = ["BUTTON",   0,       0, 0x50000007, 290, 160, 120,  65];
+  aWndSet[IDSORTCODE   ] = ["BUTTON",   0,       0, 0x50000009, 300, 180,  90,  16];
+  aWndSet[IDSORTNAME   ] = ["BUTTON",   0,       0, 0x50000009, 300, 200,  90,  16];
+  aWndSet[IDAPINAME1   ] = ["BUTTON",   0,       0, 0x50000007,  10, 235, 400,  75];
+  aWndSet[IDAPIKEYS1   ] = ["STATIC",   0,       0, 0x50000000,  20, 255,  70,  13, "AppID:"];
+  aWndSet[IDAPIKEY1    ] = ["EDIT",     0,   0x200, 0x50010080,  90, 255, 310,  20, ""];
+  aWndSet[IDREGIST1    ] = ["STATIC",   0,       0, 0x50000000,  20, 280,  70,  13];
+  aWndSet[IDREGURL1    ] = ["EDIT",     0,   0x200, 0x50010880,  90, 280, 310,  20, aAPIs[1].RegistrURL];
+  aWndSet[IDOK         ] = ["BUTTON",   0,       0, 0x50010001, 330,  10,  80,  23];
+  aWndSet[IDCANCEL     ] = ["BUTTON",   0,       0, 0x50010000, 330,  35,  80,  23];
+
+  ReadInterfaceLang();
+  SetInterfaceLangToWndDef();
+
+  if (! hMainWnd)
+  {
+    hEditLib = oSys.Call("kernel32::LoadLibraryW", sEditLibName);
+    if (! hEditLib)
+    {
+      WScript.Echo(sTxtNoLibrary + sEditLibName);
+      WScript.Quit();
+    }
+  }
+
+  lpBuffer = AkelPad.MemAlloc(nBufSize * 2);
   AkelPad.WindowRegisterClass(sClassName);
 
-  //0x90CF0000 - WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_MAXIMIZEBOX|WS_MINIMIZEBOX|WS_THICKFRAME
-  //0x91CF0000 - WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_MAXIMIZEBOX|WS_MINIMIZEBOX|WS_THICKFRAME|WS_MAXIMIZE
-  hWndDlg = oSys.Call("user32::CreateWindowEx" + _TCHAR,
+  hWndDlg = oSys.Call("User32::CreateWindowExW",
                       0,               //dwExStyle
                       sClassName,      //lpClassName
                       sTxtCaption,     //lpWindowName
-                      oWndPos.Max ? 0x91CF0000 : 0x90CF0000,
+                      0x80CF0000,      //dwStyle=WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_MAXIMIZEBOX|WS_MINIMIZEBOX|WS_THICKFRAME
                       oWndPos.X,       //x
                       oWndPos.Y,       //y
                       oWndPos.W,       //nWidth
@@ -349,6 +384,9 @@ else
                       0,               //ID
                       hInstanceDLL,    //hInstance
                       DialogCallback); //Script function callback. To use it class must be registered by WindowRegisterClass.
+
+  oSys.Call("User32::ShowWindow", hWndDlg, oWndPos.Max ? 3 /*SW_MAXIMIZE*/ : 1 /*SW_SHOWNORMAL*/);
+
   //Allow other scripts running
   AkelPad.ScriptNoMutex();
 
@@ -357,6 +395,8 @@ else
 
   AkelPad.WindowUnregisterClass(sClassName);
   AkelPad.MemFree(lpBuffer);
+  if (hEditLib)
+    oSys.Call("kernel32::FreeLibrary", hEditLib);
 }
 
 function SetInterfaceLangToWndDef()
@@ -367,19 +407,21 @@ function SetInterfaceLangToWndDef()
   aWnd[IDTRANSLATE][WNDTXT] = sTxtTranslate;
   aWnd[IDOPTIONS  ][WNDTXT] = sTxtOptions;
 
-  aWndSet[IDINTERFACE][WNDTXT] = sTxtInterface;
-  aWndSet[IDSOURCEWND][WNDTXT] = sTxtSourceWnd + " (Ctrl+W)";
-  aWndSet[IDLOADTEXT ][WNDTXT] = sTxtLoadText;
-  aWndSet[IDIMMEDIATE][WNDTXT] = sTxtImmediate;
-  aWndSet[IDFONTAP   ][WNDTXT] = sTxtUseFontAP + " (Ctrl+F)";
-  aWndSet[IDWORDWRAP ][WNDTXT] = sTxtWordWrap + " (Ctrl+U)";
-  aWndSet[IDSORTLANG ][WNDTXT] = sTxtSortLang;
-  aWndSet[IDSORTCODE ][WNDTXT] = sTxtSortCode;
-  aWndSet[IDSORTNAME ][WNDTXT] = sTxtSortName;
-  aWndSet[IDAPINAME1 ][WNDTXT] = aAPIs[1].Name + " - " + sTxtOwnKey;
-  aWndSet[IDREGIST1  ][WNDTXT] = sTxtRegister;
-  aWndSet[IDOK       ][WNDTXT] = sTxtOK;
-  aWndSet[IDCANCEL   ][WNDTXT] = sTxtCancel;
+  aWndSet[IDINTERFACE ][WNDTXT] = sTxtInterface;
+  aWndSet[IDSOURCEINCB][WNDTXT] = sTxtSourceInCB;
+  aWndSet[IDSOURCEWND ][WNDTXT] = sTxtSourceWnd + " (Ctrl+W)";
+  aWndSet[IDLOADTEXT  ][WNDTXT] = sTxtLoadText;
+  aWndSet[IDIMMEDIATE ][WNDTXT] = sTxtImmediate;
+  aWndSet[IDWORDWRAP  ][WNDTXT] = sTxtWordWrap + " (Ctrl+U)";
+  aWndSet[IDFONTAP    ][WNDTXT] = sTxtFontAP + " (Ctrl+F)";
+  aWndSet[IDFONTGUI   ][WNDTXT] = sTxtFontGUI + " (Ctrl+F)";
+  aWndSet[IDSORTLANG  ][WNDTXT] = sTxtSortLang;
+  aWndSet[IDSORTCODE  ][WNDTXT] = sTxtSortCode;
+  aWndSet[IDSORTNAME  ][WNDTXT] = sTxtSortName;
+  aWndSet[IDAPINAME1  ][WNDTXT] = aAPIs[1].Name + " - " + sTxtOwnKey;
+  aWndSet[IDREGIST1   ][WNDTXT] = sTxtRegister;
+  aWndSet[IDOK        ][WNDTXT] = sTxtOK;
+  aWndSet[IDCANCEL    ][WNDTXT] = sTxtCancel;
 }
 
 function DialogCallback(hWnd, uMsg, wParam, lParam)
@@ -391,7 +433,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
     for (i = 1000; i < aWnd.length; ++i)
     {
-      aWnd[i][WND] = oSys.Call("user32::CreateWindowEx" + _TCHAR,
+      aWnd[i][WND] = oSys.Call("User32::CreateWindowExW",
                                 aWnd[i][WNDEXSTY], //dwExStyle
                                 aWnd[i][WNDTYPE],  //lpClassName
                                 0,                 //lpWindowName
@@ -408,8 +450,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       SetWndFontAndText(aWnd[i][WND], hGuiFont, aWnd[i][WNDTXT]);
     }
 
-    SetEditFont();
     SetEditWordWrap();
+    SetEditFont();
 
     for (i = IDTXTSOURCE; i <= IDTXTTARGET; ++i)
     {
@@ -426,7 +468,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     //Fill combobox APIs
     for (i = 0; i < aAPIs.length; ++i)
     {
-      AkelPad.MemCopy(lpBuffer, aAPIs[i].Name, _TSTR);
+      AkelPad.MemCopy(lpBuffer, aAPIs[i].Name, DT_UNICODE);
       AkelPad.SendMessage(aWnd[IDAPICB][WND], CB_ADDSTRING, 0, lpBuffer);
     }
     AkelPad.SendMessage(aWnd[IDAPICB][WND], CB_SETCURSEL, oSelect.API, 0);
@@ -443,8 +485,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     {
       aWnd[IDTXTTARGET][WNDW] = aWnd[IDTXTTARGET][WNDX] + aWnd[IDTXTTARGET][WNDW] - aWnd[IDTXTSOURCE][WNDX];
       aWnd[IDTXTTARGET][WNDX] = aWnd[IDTXTSOURCE][WNDX];
-      oSys.Call("user32::ShowWindow", aWnd[IDSWITCHALL][WND], 0);
-      oSys.Call("user32::ShowWindow", aWnd[IDTXTSOURCE][WND], 0);
+      oSys.Call("User32::ShowWindow", aWnd[IDSWITCHALL][WND], 0);
+      oSys.Call("User32::ShowWindow", aWnd[IDTXTSOURCE][WND], 0);
     }
 
     if (((! bSourceWnd) || (bSourceWnd && bLoadText)) && (bImmediate))
@@ -453,12 +495,12 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       {
         new ActiveXObject("htmlfile").parentWindow.setTimeout(function()
               {
-                oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDTRANSLATE, 0);
+                oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDTRANSLATE, 0);
               }, 0);
       }
       catch (oError)
       {
-        oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDTRANSLATE, 0);
+        oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDTRANSLATE, 0);
       }
     }
   }
@@ -466,7 +508,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   else if (uMsg == 7) //WM_SETFOCUS
   {
     hEditWnd = AkelPad.GetEditWnd();
-    oSys.Call("user32::SetFocus", hFocus);
+    oSys.Call("User32::SetFocus", hFocus);
   }
 
   else if (uMsg == 36) //WM_GETMINMAXINFO
@@ -477,24 +519,15 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 3) //WM_MOVE
   {
-    if (oSys.Call("user32::IsZoomed", hWnd))
-      oWndPos.Max = true;
-    else
-    {
-      oWndPos.Max = false;
+    if (! oSys.Call("User32::IsZoomed", hWnd))
       GetWindowPos(hWnd, oWndPos);
-    }
   }
 
   else if (uMsg == 5) //WM_SIZE
   {
-    if (wParam == 2) //SIZE_MAXIMIZED
-      oWndPos.Max = true;
-    else
-    {
-      oWndPos.Max = false;
+    if (wParam != 2) //SIZE_MAXIMIZED
       GetWindowPos(hWnd, oWndPos);
-    }
+
     ResizeWindow(hWnd);
   }
 
@@ -506,61 +539,55 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     if (wParam == 13 /*VK_RETURN*/)
     {
       if ((Ctrl() || Shift()) &&
-          ((oSys.Call("user32::GetFocus") == aWnd[IDTXTSOURCE][WND]) ||
-           (oSys.Call("user32::GetFocus") == aWnd[IDTXTTARGET][WND])))
+          ((oSys.Call("User32::GetFocus") == aWnd[IDTXTSOURCE][WND]) ||
+           (oSys.Call("User32::GetFocus") == aWnd[IDTXTTARGET][WND])))
         Translate(Shift());
     }
-    else if (wParam == 0x43 /*C key*/)
+    else if ((wParam == 0x43 /*C key*/) && Ctrl() && Shift())
+      InsertTextToAP(hFocus, 0);
+    else if ((wParam == 0x56 /*V key*/) && Ctrl() && Shift())
+      PasteTextFromAP(hFocus, 0);
+    else if ((wParam == 0x46 /*F key*/) && Ctrl())
     {
-      if (Ctrl() && Shift())
-        InsertTextToAP(hFocus, 0);
-    }
-    else if (wParam == 0x56 /*V key*/)
-    {
-      if (Ctrl() && Shift())
-        PasteTextFromAP(hFocus, 0);
-    }
-    else if (wParam == 0x46 /*F key*/)
-    {
-      if (Ctrl())
+      if (hEditWnd)
       {
-        bFontAP = ! bFontAP;
-        SetEditFont();
-        oSys.Call("user32::InvalidateRect", hWnd, 0, 0);
+        if (bFontAP)
+        {
+          bFontAP  = 0;
+          bFontGUI = 1;
+        }
+        else if (bFontGUI)
+          bFontGUI = 0;
+        else
+          bFontAP  = 1;
       }
+      else
+        bFontGUI = ! bFontGUI;
+
+      SetEditFont();
+      oSys.Call("User32::InvalidateRect", hWnd, 0, 0);
     }
-    else if (wParam == 0x55 /*U key*/)
+    else if ((wParam == 0x55 /*U key*/) && Ctrl())
     {
-      if (Ctrl())
-      {
-        bWordWrap = ! bWordWrap;
-        SetEditWordWrap();
-      }
+      bWordWrap = ! bWordWrap;
+      SetEditWordWrap();
     }
-    else if (wParam == 0x57 /*W key*/)
+    else if ((wParam == 0x57 /*W key*/) && Ctrl())
     {
-      if (Ctrl())
-      {
-        bSourceWnd = ! bSourceWnd;
-        ShowSourceWindow();
-      }
+      bSourceWnd = ! bSourceWnd;
+      ShowSourceWindow();
     }
     else if (wParam == 0x73 /*VK_F4*/)
-    {
-      if (oSys.Call("user32::IsZoomed", hWnd))
-        oSys.Call("user32::ShowWindow", hWnd, 9 /*SW_RESTORE*/);
-      else
-        oSys.Call("user32::ShowWindow", hWnd, 3 /*SW_MAXIMIZE*/);
-    }
+      oSys.Call("User32::ShowWindow", hWnd, oSys.Call("User32::IsZoomed", hWnd) ? 9 /*SW_RESTORE*/ : 3 /*SW_MAXIMIZE*/);
     else if ((wParam == 27 /*VK_ESCAPE*/) && bCloseCB)
-      oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 16 /*WM_CLOSE*/, 0, 0);
+      oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
   }
 
   else if (uMsg == 260) //WM_SYSKEYDOWN
   {
     if (wParam == 13) //VK_RETURN
     {
-      oSys.Call("user32::SetFocus", hFocus);
+      oSys.Call("User32::SetFocus", hFocus);
       Translate(Shift(), 1);
     }
     else if (wParam == 0x58) //X key
@@ -589,21 +616,23 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       if (Shift())
       {
         if (bSourceWnd)
-          oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDSWITCHALL, 0);
+          oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDSWITCHALL, 0);
       }
       else
-        oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDSWITCHLANG, 0);
+        oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDSWITCHLANG, 0);
     }
     else if (wParam == 0x70) //VK_F1
-      oSys.Call("user32::SetFocus", aWnd[IDAPICB][WND]);
+      oSys.Call("User32::SetFocus", aWnd[IDAPICB][WND]);
     else if (wParam == 0x31) //1 key
-      oSys.Call("user32::SetFocus", aWnd[IDFROMLANGCB][WND]);
+      oSys.Call("User32::SetFocus", aWnd[IDFROMLANGCB][WND]);
     else if (wParam == 0x32) //2 key
-      oSys.Call("user32::SetFocus", aWnd[IDTOLANGCB][WND]);
+      oSys.Call("User32::SetFocus", aWnd[IDTOLANGCB][WND]);
     else if ((wParam == 109) || (wParam == 189)) //Num- or -
-      oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDOPAQMINUS, 0);
+      oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDOPAQMINUS, 0);
     else if ((wParam == 107) || (wParam == 187)) //Num+ or +
-      oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDOPAQPLUS, 0);
+      oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDOPAQPLUS, 0);
+    else if (wParam == 0x53) //S key
+      Settings();
   }
 
   else if (uMsg == 123) //WM_CONTEXTMENU
@@ -638,7 +667,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     if (nLowParam == IDAPICB)
     {
       if (nHiwParam == CBN_SETFOCUS)
-        oSys.Call("user32::PostMessage" + _TCHAR, lParam, CB_SHOWDROPDOWN, 1, 0);
+        oSys.Call("User32::PostMessageW", lParam, CB_SHOWDROPDOWN, 1, 0);
       if (nHiwParam == CBN_SELCHANGE)
       {
         var nSel1 = oSelect.Source1;
@@ -647,8 +676,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
         oSelect.API = AkelPad.SendMessage(aWnd[IDAPICB][WND], CB_GETCURSEL, 0, 0);
         AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 197 /*EM_SETLIMITTEXT*/, aAPIs[oSelect.API].TextLen, 0);
 
-        oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
-        SetWndFontAndText(aWnd[IDTXTSOURCE][WND], 0, AkelPad.MemRead(lpBuffer, _TSTR).substr(0, aAPIs[oSelect.API].TextLen));
+        oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
+        SetWndFontAndText(aWnd[IDTXTSOURCE][WND], 0, AkelPad.MemRead(lpBuffer, DT_UNICODE).substr(0, aAPIs[oSelect.API].TextLen));
         AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x00B1 /*EM_SETSEL*/, nSel1, nSel2);
 
         ShowDetectLang(false);
@@ -658,8 +687,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       }
       else if (nHiwParam == CBN_CLOSEUP)
       {
-        if (oSys.Call("user32::GetFocus") == lParam)
-          oSys.Call("user32::SetFocus", hFocus);
+        if (oSys.Call("User32::GetFocus") == lParam)
+          oSys.Call("User32::SetFocus", hFocus);
 
         bCloseCB = 0;
       }
@@ -667,7 +696,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     else if ((nLowParam == IDFROMLANGCB) || (nLowParam == IDTOLANGCB))
     {
       if (nHiwParam == CBN_SETFOCUS)
-        oSys.Call("user32::PostMessage" + _TCHAR, lParam, CB_SHOWDROPDOWN, 1, 0);
+        oSys.Call("User32::PostMessageW", lParam, CB_SHOWDROPDOWN, 1, 0);
       else if (nHiwParam == CBN_SELCHANGE)
       {
         ShowDetectLang(false);
@@ -678,8 +707,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       }
       else if (nHiwParam == CBN_CLOSEUP)
       {
-        if (oSys.Call("user32::GetFocus") == lParam)
-          oSys.Call("user32::SetFocus", hFocus);
+        if (oSys.Call("User32::GetFocus") == lParam)
+          oSys.Call("User32::SetFocus", hFocus);
 
         bCloseCB = 0;
       }
@@ -698,8 +727,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     }
     else if ((nLowParam >= IDSWITCHLANG) && (nLowParam <= IDOPTIONS))
     {
-      oSys.Call("user32::DefDlgProc" + _TCHAR, hWnd, 1025 /*DM_SETDEFID*/, nLowParam, 0);
-      oSys.Call("user32::DefDlgProc" + _TCHAR, hWnd, 1025 /*DM_SETDEFID*/, IDUSE, 0);
+      oSys.Call("User32::DefDlgProcW", hWnd, 1025 /*DM_SETDEFID*/, nLowParam, 0);
+      oSys.Call("User32::DefDlgProcW", hWnd, 1025 /*DM_SETDEFID*/, IDUSE, 0);
 
       if (nLowParam == IDSWITCHLANG)
         SwitchLang();
@@ -720,7 +749,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       else if (nLowParam == IDOPTIONS)
         ContextMenu(lParam, -2);
 
-      oSys.Call("user32::SetFocus", hFocus);
+      oSys.Call("User32::SetFocus", hFocus);
     }
   }
 
@@ -730,13 +759,13 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     AkelPad.WindowUnsubClass(aWnd[IDTXTTARGET][WND]);
     ReadWriteIni(true);
     //Destroy dialog
-    oSys.Call("user32::DestroyWindow", hWnd);
+    oSys.Call("User32::DestroyWindow", hWnd);
   }
 
   else if (uMsg == 2) //WM_DESTROY
   {
     //Exit message loop
-    oSys.Call("user32::PostQuitMessage", 0);
+    oSys.Call("User32::PostQuitMessage", 0);
   }
 
   return 0;
@@ -776,12 +805,12 @@ function HiWord(nParam)
 
 function Shift()
 {
-  return Boolean(oSys.Call("user32::GetKeyState", 0x10 /*VK_SHIFT*/) & 0x8000);
+  return Boolean(oSys.Call("User32::GetKeyState", 0x10 /*VK_SHIFT*/) & 0x8000);
 }
 
 function Ctrl()
 {
-  return Boolean(oSys.Call("user32::GetKeyState", 0x11 /*VK_CONTROL*/) & 0x8000);
+  return Boolean(oSys.Call("User32::GetKeyState", 0x11 /*VK_CONTROL*/) & 0x8000);
 }
 
 function SetWndFontAndText(hWnd, hFont, sText)
@@ -789,15 +818,15 @@ function SetWndFontAndText(hWnd, hFont, sText)
   if (hFont)
     AkelPad.SendMessage(hWnd, 48 /*WM_SETFONT*/, hFont, true);
 
-  AkelPad.MemCopy(lpBuffer, sText.substr(0, nBufSize - 1).replace(/\r$/, ""), _TSTR);
-  oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, lpBuffer);
+  AkelPad.MemCopy(lpBuffer, sText.substr(0, nBufSize - 1).replace(/\r$/, ""), DT_UNICODE);
+  oSys.Call("User32::SetWindowTextW", hWnd, lpBuffer);
 }
 
 function GetWindowPos(hWnd, oRect)
 {
   var lpRect = AkelPad.MemAlloc(16) //sizeof(RECT);
 
-  oSys.Call("user32::GetWindowRect", hWnd, lpRect);
+  oSys.Call("User32::GetWindowRect", hWnd, lpRect);
 
   oRect.X = AkelPad.MemRead(lpRect,      DT_DWORD);
   oRect.Y = AkelPad.MemRead(lpRect +  4, DT_DWORD);
@@ -809,12 +838,12 @@ function GetWindowPos(hWnd, oRect)
 
 function ResizeWindow(hWnd)
 {
-  var oRect = new Object();
+  var oRect = {};
 
   GetWindowPos(hWnd, oRect);
 
   for (i = IDFROMLANG; i <= IDSWITCHALL; ++i)
-    oSys.Call("user32::SetWindowPos", aWnd[i][WND], 0,
+    oSys.Call("User32::SetWindowPos", aWnd[i][WND], 0,
                                       aWnd[i][WNDX] + (oRect.W - oWndMin.W) / 2,
                                       aWnd[i][WNDY],
                                       0,
@@ -822,14 +851,14 @@ function ResizeWindow(hWnd)
                                       0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
 
   for (i = IDOPAQMINUS; i <= IDOPTIONS; ++i)
-    oSys.Call("user32::SetWindowPos", aWnd[i][WND], 0,
+    oSys.Call("User32::SetWindowPos", aWnd[i][WND], 0,
                                       aWnd[i][WNDX] + oRect.W - oWndMin.W,
                                       aWnd[i][WNDY],
                                       0,
                                       0,
                                       0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
 
-  oSys.Call("user32::SetWindowPos", aWnd[IDTXTSOURCE][WND], 0,
+  oSys.Call("User32::SetWindowPos", aWnd[IDTXTSOURCE][WND], 0,
                                     0,
                                     0,
                                     aWnd[IDTXTSOURCE][WNDW] + (oRect.W - oWndMin.W) / 2,
@@ -837,14 +866,14 @@ function ResizeWindow(hWnd)
                                     0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
 
   if (bSourceWnd)
-    oSys.Call("user32::SetWindowPos", aWnd[IDTXTTARGET][WND], 0,
+    oSys.Call("User32::SetWindowPos", aWnd[IDTXTTARGET][WND], 0,
                                       aWnd[IDTXTTARGET][WNDX] + (oRect.W - oWndMin.W) / 2,
                                       aWnd[IDTXTTARGET][WNDY],
                                       aWnd[IDTXTTARGET][WNDW] + (oRect.W - oWndMin.W) / 2,
                                       aWnd[IDTXTTARGET][WNDH] + oRect.H - oWndMin.H,
                                       0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
   else
-    oSys.Call("user32::SetWindowPos", aWnd[IDTXTTARGET][WND], 0,
+    oSys.Call("User32::SetWindowPos", aWnd[IDTXTTARGET][WND], 0,
                                       aWnd[IDTXTTARGET][WNDX],
                                       aWnd[IDTXTTARGET][WNDY],
                                       aWnd[IDTXTTARGET][WNDW] + oRect.W - oWndMin.W,
@@ -858,15 +887,15 @@ function PaintSizeGrip(hWnd)
   var lpRect  = AkelPad.MemAlloc(16); //sizeof(RECT)
   var hDC;
 
-  if (hDC = oSys.Call("user32::BeginPaint", hWnd, lpPaint))
+  if (hDC = oSys.Call("User32::BeginPaint", hWnd, lpPaint))
   {
-    oSys.Call("user32::GetClientRect", hWnd, lpRect);
+    oSys.Call("User32::GetClientRect", hWnd, lpRect);
 
-    AkelPad.MemCopy(lpRect,     AkelPad.MemRead(lpRect +  8, DT_DWORD) - oSys.Call("user32::GetSystemMetrics",  2 /*SM_CXVSCROLL*/), DT_DWORD);
-    AkelPad.MemCopy(lpRect + 4, AkelPad.MemRead(lpRect + 12, DT_DWORD) - oSys.Call("user32::GetSystemMetrics", 20 /*SM_CYVSCROLL*/), DT_DWORD);
+    AkelPad.MemCopy(lpRect,     AkelPad.MemRead(lpRect +  8, DT_DWORD) - oSys.Call("User32::GetSystemMetrics",  2 /*SM_CXVSCROLL*/), DT_DWORD);
+    AkelPad.MemCopy(lpRect + 4, AkelPad.MemRead(lpRect + 12, DT_DWORD) - oSys.Call("User32::GetSystemMetrics", 20 /*SM_CYVSCROLL*/), DT_DWORD);
 
-    oSys.Call("user32::DrawFrameControl", hDC, lpRect, 3 /*DFC_SCROLL*/, 0x8 /*DFCS_SCROLLSIZEGRIP*/);
-    oSys.Call("user32::EndPaint", hWnd, lpPaint);
+    oSys.Call("User32::DrawFrameControl", hDC, lpRect, 3 /*DFC_SCROLL*/, 0x8 /*DFCS_SCROLLSIZEGRIP*/);
+    oSys.Call("User32::EndPaint", hWnd, lpPaint);
   }
 
   AkelPad.MemFree(lpPaint);
@@ -883,7 +912,7 @@ function FillComboLangs(nFromLang, nToLang)
 
   if (aAPIs[oSelect.API].AutoDetect)
   {
-    AkelPad.MemCopy(lpBuffer, "   " + sTxtAutoDetect, _TSTR);
+    AkelPad.MemCopy(lpBuffer, "   " + sTxtAutoDetect, DT_UNICODE);
     nPos = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_ADDSTRING, 0, lpBuffer);
     AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_SETITEMDATA, nPos, -1);
   }
@@ -893,9 +922,9 @@ function FillComboLangs(nFromLang, nToLang)
     if (aLangs[i][oSelect.API + 2])
     {
       if (bSortCode) //sort by code
-        AkelPad.MemCopy(lpBuffer, aLangs[i][0] + " - "  + aLangs[i][1], _TSTR);
+        AkelPad.MemCopy(lpBuffer, aLangs[i][0] + " - "  + aLangs[i][1], DT_UNICODE);
       else //sort by name
-        AkelPad.MemCopy(lpBuffer, aLangs[i][1] + " - "  + aLangs[i][0], _TSTR);
+        AkelPad.MemCopy(lpBuffer, aLangs[i][1] + " - "  + aLangs[i][0], DT_UNICODE);
 
       nPos = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_ADDSTRING, 0, lpBuffer);
       AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_SETITEMDATA, nPos, i);
@@ -1015,10 +1044,10 @@ function SwitchLang(bSwitchText)
 
   if (bSwitchText)
   {
-    oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
-    sTarget = AkelPad.MemRead(lpBuffer, _TSTR);
-    oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
-    sSource = AkelPad.MemRead(lpBuffer, _TSTR).substr(0, aAPIs[oSelect.API].TextLen);
+    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
+    sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE);
+    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
+    sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).substr(0, aAPIs[oSelect.API].TextLen);
 
     nSelTarget = AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x00B0 /*EM_GETSEL*/, 0, 0);
     nSelSource = AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x00B0 /*EM_GETSEL*/, 0, 0);
@@ -1045,17 +1074,25 @@ function ShowDetectLang(bShow)
   }
 }
 
-function SetEditFont()
-{
-  var hEditFont = bFontAP ? AkelPad.SendMessage(hEditWnd, 49 /*WM_GETFONT*/, 0, 0) : hGuiFont;
-  AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 48 /*WM_SETFONT*/, hEditFont, 1);
-  AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 48 /*WM_SETFONT*/, hEditFont, 1);
-}
-
 function SetEditWordWrap()
 {
-  AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x0CAA /*AEM_SETWORDWRAP*/, 0x1 /*AEWW_WORD*/, bWordWrap ? 0 : 0xFFFF);
-  AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x0CAA /*AEM_SETWORDWRAP*/, 0x1 /*AEWW_WORD*/, bWordWrap ? 0 : 0xFFFF);
+  AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x0CAA /*AEM_SETWORDWRAP*/, bWordWrap ? 1 /*AEWW_WORD*/ : 0 /*AEWW_NONE*/, 0);
+  AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x0CAA /*AEM_SETWORDWRAP*/, bWordWrap ? 1 /*AEWW_WORD*/ : 0 /*AEWW_NONE*/, 0);
+}
+
+function SetEditFont()
+{
+  var hFont;
+
+  if (hEditWnd && bFontAP)
+    hFont = AkelPad.SendMessage(hEditWnd, 49 /*WM_GETFONT*/, 0, 0);
+  else if (bFontGUI)
+    hFont = hGuiFont;
+  else
+    hFont = ConvertFontFormat(aFont, 3, 2);
+
+  AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 48 /*WM_SETFONT*/, hFont, 1);
+  AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 48 /*WM_SETFONT*/, hFont, 1);
 }
 
 function ShowSourceWindow()
@@ -1073,22 +1110,22 @@ function ShowSourceWindow()
     hFocus = aWnd[IDTXTTARGET][WND];
   }
 
-  oSys.Call("user32::ShowWindow", aWnd[IDSWITCHALL][WND], bSourceWnd);
-  oSys.Call("user32::ShowWindow", aWnd[IDTXTSOURCE][WND], bSourceWnd);
-  oSys.Call("user32::SetFocus", hFocus);
+  oSys.Call("User32::ShowWindow", aWnd[IDSWITCHALL][WND], bSourceWnd);
+  oSys.Call("User32::ShowWindow", aWnd[IDTXTSOURCE][WND], bSourceWnd);
+  oSys.Call("User32::SetFocus", hFocus);
   ResizeWindow(hWndDlg)
 }
 
 function SetOpaqueLevel(hWnd, nLevel)
 {
   var lpBuf;
-  var dwStyle;
+  var nStyle;
 
   if (nLevel < 0)
   {
     lpBuf = AkelPad.MemAlloc(1);
-    if (oSys.Call("user32::GetLayeredWindowAttributes", hWnd, 0, lpBuf, 0))
-      nOpaque = AkelPad.MemRead(lpBuf, 5 /*DT_BYTE*/);
+    if (oSys.Call("User32::GetLayeredWindowAttributes", hWnd, 0, lpBuf, 0))
+      nOpaque = AkelPad.MemRead(lpBuf, DT_BYTE);
     else
       nOpaque = 255;
     nOpaque += (nLevel == -1) ? 20 : -20;
@@ -1101,15 +1138,15 @@ function SetOpaqueLevel(hWnd, nLevel)
     nOpaque = 55;
 
   //WS_EX_LAYERED style
-  dwStyle = oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/);
+  nStyle = oSys.Call("User32::GetWindowLongW", hWnd, -20 /*GWL_EXSTYLE*/);
 
-  if (! (dwStyle & 0x00080000 /*WS_EX_LAYERED*/))
+  if (! (nStyle & 0x00080000 /*WS_EX_LAYERED*/))
   {
-    dwStyle |= 0x00080000 /*WS_EX_LAYERED*/;
-    oSys.Call("user32::SetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/, dwStyle);
+    nStyle |= 0x00080000 /*WS_EX_LAYERED*/;
+    oSys.Call("User32::SetWindowLongW", hWnd, -20 /*GWL_EXSTYLE*/, nStyle);
   }
 
-  oSys.Call("user32::SetLayeredWindowAttributes", hWnd, 0, nOpaque, 2 /*LWA_ALPHA*/);
+  oSys.Call("User32::SetLayeredWindowAttributes", hWnd, 0, nOpaque, 2 /*LWA_ALPHA*/);
 }
 
 function InsertTextToAP(hWnd, bEntireText)
@@ -1119,12 +1156,12 @@ function InsertTextToAP(hWnd, bEntireText)
     var nTextLen;
 
     if (bEntireText)
-      nTextLen = oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpBuffer, nBufSize);
+      nTextLen = oSys.Call("User32::GetWindowTextW", hWnd, lpBuffer, nBufSize);
     else
       nTextLen = AkelPad.SendMessage(hWnd, 0x043E /*EM_GETSELTEXT*/, 0, lpBuffer);
 
     if (nTextLen)
-      AkelPad.ReplaceSel(AkelPad.MemRead(lpBuffer, _TSTR), 1);
+      AkelPad.ReplaceSel(AkelPad.MemRead(lpBuffer, DT_UNICODE), 1);
   }
 }
 
@@ -1132,7 +1169,7 @@ function PasteTextFromAP(hWnd, bEntireText)
 {
   if (hEditWnd && (AkelPad.GetSelStart() != AkelPad.GetSelEnd()))
   {
-    AkelPad.MemCopy(lpBuffer, AkelPad.GetSelText(3 /*"\r\n"*/).substr(0, nBufSize - 1).replace(/\r$/, ""), _TSTR);
+    AkelPad.MemCopy(lpBuffer, AkelPad.GetSelText(3 /*"\r\n"*/).substr(0, nBufSize - 1).replace(/\r$/, ""), DT_UNICODE);
 
     if (bEntireText)
       AkelPad.SendMessage(hWnd, 0x00B1 /*EM_SETSEL*/, 0, -1);
@@ -1143,8 +1180,8 @@ function PasteTextFromAP(hWnd, bEntireText)
 
 function CopyEntireTextToCB(hWnd)
 {
-  if (oSys.Call("user32::GetWindowText" + _TCHAR, hWnd, lpBuffer, nBufSize))
-    AkelPad.SetClipboardText(AkelPad.MemRead(lpBuffer, _TSTR));
+  if (oSys.Call("User32::GetWindowTextW", hWnd, lpBuffer, nBufSize))
+    AkelPad.SetClipboardText(AkelPad.MemRead(lpBuffer, DT_UNICODE));
 }
 
 function PasteEntireTextFromCB(hWnd)
@@ -1168,9 +1205,9 @@ function ContextMenu(hWnd, nPosParam)
   var MF_GRAYED    = 0x1;
   var MF_POPUP     = 0x10;
   var MF_SEPARATOR = 0x800;
-  var hMenu  = oSys.Call("user32::CreatePopupMenu");
-  var hMenu1 = oSys.Call("user32::CreatePopupMenu");
-  var hMenu2 = oSys.Call("user32::CreatePopupMenu");
+  var hMenu  = oSys.Call("User32::CreatePopupMenu");
+  var hMenu1 = oSys.Call("User32::CreatePopupMenu");
+  var hMenu2 = oSys.Call("User32::CreatePopupMenu");
   var oRect;
   var lpPoint;
   var nPosX;
@@ -1179,51 +1216,51 @@ function ContextMenu(hWnd, nPosParam)
   var nCmd;
 
   //Sub menu source text (Entire text)
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 21, sTxtCut + "\tAlt+X");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 22, sTxtCopyCB + "\tAlt+C");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
+  oSys.Call("User32::AppendMenuW", hMenu1,
             AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 0x0432 /*EM_CANPASTE*/, 0, 0) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 23, sTxtPasteCB + "\tAlt+V");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 24, sTxtDelete + "\tAlt+Del");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1, MF_SEPARATOR, 0, 0);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            (hEditWnd && oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND])) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1, MF_SEPARATOR, 0, 0);
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            (hEditWnd && oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND])) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 25, sTxtInsertAP + "\tShift+Alt+C");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
+  oSys.Call("User32::AppendMenuW", hMenu1,
             AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 26, sTxtPasteAP + "\tShift+Alt+V");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1, MF_SEPARATOR, 0, 0);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1, MF_SEPARATOR, 0, 0);
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 27, sTxtTranslate + "\tCtrl+Enter");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu1,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
             (1 << 8) | 28, sTxtTranslateP + "\tAlt+Enter");
 
   //Sub menu target text (Entire text)
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu2,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 21, sTxtCut + "\tAlt+X");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu2,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 22, sTxtCopyCB + "\tAlt+C");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
+  oSys.Call("User32::AppendMenuW", hMenu2,
             AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x0432 /*EM_CANPASTE*/, 0, 0) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 23, sTxtPasteCB + "\tAlt+V");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
-            oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu2,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 24, sTxtDelete + "\tAlt+Del");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2, MF_SEPARATOR, 0, 0);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
-            (hEditWnd && oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTTARGET][WND])) ? MF_STRING : MF_GRAYED,
+  oSys.Call("User32::AppendMenuW", hMenu2, MF_SEPARATOR, 0, 0);
+  oSys.Call("User32::AppendMenuW", hMenu2,
+            (hEditWnd && oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND])) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 25, sTxtInsertAP + "\tShift+Alt+C");
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu2,
+  oSys.Call("User32::AppendMenuW", hMenu2,
             AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 26, sTxtPasteAP + "\tShift+Alt+V");
 
@@ -1235,19 +1272,19 @@ function ContextMenu(hWnd, nPosParam)
     nPosY = oRect.Y + oRect.H;
 
     if (bSourceWnd)
-      oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_POPUP, hMenu1, sTxtSource);
+      oSys.Call("User32::AppendMenuW", hMenu, MF_POPUP, hMenu1, sTxtSource);
 
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_POPUP, hMenu2, sTxtTarget);
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_SEPARATOR, 0, 0);
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_STRING, (1 << 8) | 41, sTxtSettings);
+    oSys.Call("User32::AppendMenuW", hMenu, MF_POPUP, hMenu2, sTxtTarget);
+    oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+    oSys.Call("User32::AppendMenuW", hMenu, MF_STRING, (1 << 8) | 41, sTxtSettings + "\tAlt+S");
   }
   else
   {
     if (nPosParam == -1) //Context menu from keyboard
     {
       lpPoint = AkelPad.MemAlloc(8); //sizeof(POINT)
-      oSys.Call("user32::GetCaretPos", lpPoint);
-      oSys.Call("user32::ClientToScreen", hWnd, lpPoint);
+      oSys.Call("User32::GetCaretPos", lpPoint);
+      oSys.Call("User32::ClientToScreen", hWnd, lpPoint);
       nPosX = AkelPad.MemRead(lpPoint,     DT_DWORD);
       nPosY = AkelPad.MemRead(lpPoint + 4, DT_DWORD) + AkelPad.SendMessage(hWnd, 3188 /*AEM_GETCHARSIZE*/, 0 /*AECS_HEIGHT*/, 0);
       AkelPad.MemFree(lpPoint);
@@ -1260,57 +1297,57 @@ function ContextMenu(hWnd, nPosParam)
 
     nWnd = (hWnd == aWnd[IDTXTSOURCE][WND]) ? 1 : 2;
 
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 0x00C6 /*EM_CANUNDO*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 1, sTxtUndo + "\tCtrl+Z");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 0x0455 /*EM_CANREDO*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 2, sTxtRedo + "\tCtrl+Shift+Z");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_SEPARATOR, 0, 0);
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 3, sTxtCut + "\tCtrl+X");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 4, sTxtCopyCB + "\tCtrl+C");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 0x0432 /*EM_CANPASTE*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 5, sTxtPasteCB + "\tCtrl+V");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 6, sTxtDelete + "\tDel");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
-              oSys.Call("user32::GetWindowTextLength" + _TCHAR, hWnd) ? MF_STRING : MF_GRAYED,
+    oSys.Call("User32::AppendMenuW", hMenu,
+              oSys.Call("User32::GetWindowTextLengthW", hWnd) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 7, sTxtSelectAll + "\tCtrl+A");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_SEPARATOR, 0, 0);
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+    oSys.Call("User32::AppendMenuW", hMenu,
               (hEditWnd && AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0)) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 8, sTxtInsertAP + "\tCtrl+Shift+C");
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+    oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 9, sTxtPasteAP + "\tCtrl+Shift+V");
     if (nWnd == 1)
     {
-      oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_SEPARATOR, 0, 0);
-      oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+      oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+      oSys.Call("User32::AppendMenuW", hMenu,
                 AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
                 (nWnd << 8) | 10, sTxtTranslate + "\tShift+Enter");
-      oSys.Call("user32::AppendMenu" + _TCHAR, hMenu,
+      oSys.Call("User32::AppendMenuW", hMenu,
                 AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
                 (nWnd << 8) | 11, sTxtTranslateP + "\tShift+Alt+Enter");
     }
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_SEPARATOR, 0, 0);
-    oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, MF_POPUP, (nWnd == 1) ? hMenu1 : hMenu2, sTxtEntireText);
+    oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+    oSys.Call("User32::AppendMenuW", hMenu, MF_POPUP, (nWnd == 1) ? hMenu1 : hMenu2, sTxtEntireText);
   }
 
-  nCmd = oSys.Call("user32::TrackPopupMenu", hMenu, (nPosParam > -2)
+  nCmd = oSys.Call("User32::TrackPopupMenu", hMenu, (nPosParam > -2)
                     ? 0x180 /*TPM_NONOTIFY|TPM_RETURNCMD*/
                     : 0x188 /*TPM_RIGHTALIGN|TPM_NONOTIFY|TPM_RETURNCMD*/,
                     nPosX, nPosY, 0, hWndDlg, 0);
 
-  oSys.Call("user32::DestroyMenu", hMenu);
-  oSys.Call("user32::DestroyMenu", hMenu1);
-  oSys.Call("user32::DestroyMenu", hMenu2);
+  oSys.Call("User32::DestroyMenu", hMenu);
+  oSys.Call("User32::DestroyMenu", hMenu1);
+  oSys.Call("User32::DestroyMenu", hMenu2);
 
   nWnd = nCmd >> 8;
   nCmd = nCmd & 0xFF;
@@ -1368,29 +1405,34 @@ function ContextMenu(hWnd, nPosParam)
 
 function Settings()
 {
-  var oRect = new Object();
+  var oRect = {};
+  var nW    = 425;
+  var nH    = 350;
+  var nX, nY;
   var hWndSet;
 
   GetWindowPos(hWndDlg, oRect);
+  nX = oRect.X + (oRect.W - nW) / 2;
+  nY = oRect.Y + (oRect.H - nH) / 2;
 
-  hWndSet = oSys.Call("user32::CreateWindowEx" + _TCHAR,
-                      0,              //dwExStyle
-                      sClassName,     //lpClassName
-                      sTxtSettings,   //lpWindowName
-                      0x90C80000,     //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU
-                      oRect.X + 90,   //x
-                      oRect.Y + 40,   //y
-                      425,            //nWidth
-                      295,            //nHeight
-                      hWndDlg,        //hWndParent
-                      0,              //ID
-                      hInstanceDLL,   //hInstance
+  hWndSet = oSys.Call("User32::CreateWindowExW",
+                      0,            //dwExStyle
+                      sClassName,   //lpClassName
+                      sTxtSettings, //lpWindowName
+                      0x90C80000,   //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU
+                      nX,           //x
+                      nY,           //y
+                      nW,           //nWidth
+                      nH,           //nHeight
+                      hWndDlg,      //hWndParent
+                      0,            //ID
+                      hInstanceDLL, //hInstance
                       DialogCallbackSet); //lpParam
 
   if (hWndSet)
   {
-    oSys.Call("user32::EnableWindow", hMainWnd, 0);
-    oSys.Call("user32::EnableWindow", hWndDlg, 0);
+    oSys.Call("User32::EnableWindow", hMainWnd, 0);
+    oSys.Call("User32::EnableWindow", hWndDlg, 0);
   }
 }
 
@@ -1402,7 +1444,7 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
   {
     for (i = 1100; i < aWndSet.length; ++i)
     {
-      aWndSet[i][WND] = oSys.Call("user32::CreateWindowEx" + _TCHAR,
+      aWndSet[i][WND] = oSys.Call("User32::CreateWindowExW",
                                    aWndSet[i][WNDEXSTY],//dwExStyle
                                    aWndSet[i][WNDTYPE], //lpClassName
                                    0,                   //lpWindowName
@@ -1424,27 +1466,32 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
     FillComboInterface();
 
     //Check buttons
-    AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 241 /*BM_SETCHECK*/, bSourceWnd, 0);
-    AkelPad.SendMessage(aWndSet[IDLOADTEXT ][WND], 241 /*BM_SETCHECK*/, bLoadText,  0);
-    AkelPad.SendMessage(aWndSet[IDIMMEDIATE][WND], 241 /*BM_SETCHECK*/, bImmediate, 0);
-    AkelPad.SendMessage(aWndSet[IDFONTAP   ][WND], 241 /*BM_SETCHECK*/, bFontAP,    0);
-    AkelPad.SendMessage(aWndSet[IDWORDWRAP ][WND], 241 /*BM_SETCHECK*/, bWordWrap,  0);
+    AkelPad.SendMessage(aWndSet[IDSOURCEINCB][WND], 241 /*BM_SETCHECK*/, bSourceInCB || (! hEditWnd), 0);
+    AkelPad.SendMessage(aWndSet[IDSOURCEWND ][WND], 241 /*BM_SETCHECK*/, bSourceWnd, 0);
+    AkelPad.SendMessage(aWndSet[IDLOADTEXT  ][WND], 241 /*BM_SETCHECK*/, bLoadText,  0);
+    AkelPad.SendMessage(aWndSet[IDIMMEDIATE ][WND], 241 /*BM_SETCHECK*/, bImmediate, 0);
+    AkelPad.SendMessage(aWndSet[IDWORDWRAP  ][WND], 241 /*BM_SETCHECK*/, bWordWrap,  0);
+    AkelPad.SendMessage(aWndSet[IDFONTAP    ][WND], 241 /*BM_SETCHECK*/, bFontAP && hEditWnd, 0);
+    AkelPad.SendMessage(aWndSet[IDFONTGUI   ][WND], 241 /*BM_SETCHECK*/, bFontGUI,   0);
     AkelPad.SendMessage(aWndSet[IDSORTNAME - bSortCode][WND], 241 /*BM_SETCHECK*/, 1, 0);
-    oSys.Call("user32::EnableWindow", aWndSet[IDLOADTEXT][WND], bSourceWnd);
-    oSys.Call("user32::EnableWindow", aWndSet[IDIMMEDIATE][WND], (! bSourceWnd) || (bSourceWnd && bLoadText));
+    oSys.Call("User32::EnableWindow", aWndSet[IDSOURCEINCB][WND], hEditWnd);
+    oSys.Call("User32::EnableWindow", aWndSet[IDLOADTEXT  ][WND], bSourceWnd);
+    oSys.Call("User32::EnableWindow", aWndSet[IDIMMEDIATE ][WND], (! bSourceWnd) || (bSourceWnd && bLoadText));
+    oSys.Call("User32::EnableWindow", aWndSet[IDFONTAP    ][WND], hEditWnd);
+    oSys.Call("User32::EnableWindow", aWndSet[IDFONT      ][WND], ((! bFontAP) || (! hEditWnd)) && (! bFontGUI));
   }
 
   else if (uMsg == 7) //WM_SETFOCUS
-    oSys.Call("user32::SetFocus", aWndSet[IDINTERFACECB][WND]);
+    oSys.Call("User32::SetFocus", aWndSet[IDINTERFACECB][WND]);
 
-  else if (uMsg == 256 /*WM_KEYDOWN*/)
+  else if (uMsg == 256) //WM_KEYDOWN
   {
     if (bCloseCB)
     {
-      if (wParam == 13) //VK_RETURN
-        oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDOK, 0);
-      else if (wParam == 27) //VK_ESCAPE
-        oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 16 /*WM_CLOSE*/, 0, 0);
+      if ((wParam == 13 /*VK_RETURN*/) && (oSys.Call("User32::GetFocus") != aWndSet[IDFONT][WND]))
+        oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDOK, 0);
+      else if (wParam == 27 /*VK_ESCAPE*/)
+        oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
     }
   }
 
@@ -1461,12 +1508,40 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
     }
     else if ((nLowParam == IDSOURCEWND) || (nLowParam == IDLOADTEXT))
     {
-      oSys.Call("user32::EnableWindow", aWndSet[IDLOADTEXT][WND],
-                        AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0));
-      oSys.Call("user32::EnableWindow", aWndSet[IDIMMEDIATE][WND],
-                        (! AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0)) ||
-                        (AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0) &&
-                         AkelPad.SendMessage(aWndSet[IDLOADTEXT][WND], 240 /*BM_GETCHECK*/, 0, 0)));
+      oSys.Call("User32::EnableWindow", aWndSet[IDLOADTEXT][WND],
+                AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0));
+      oSys.Call("User32::EnableWindow", aWndSet[IDIMMEDIATE][WND],
+                (! AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0)) ||
+                (AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0) &&
+                 AkelPad.SendMessage(aWndSet[IDLOADTEXT][WND], 240 /*BM_GETCHECK*/, 0, 0)));
+    }
+    else if (nLowParam == IDFONTAP)
+    {
+      if (AkelPad.SendMessage(aWndSet[IDFONTAP][WND], 240 /*BM_GETCHECK*/, 0, 0))
+        AkelPad.SendMessage(aWndSet[IDFONTGUI][WND], 241 /*BM_SETCHECK*/, 0, 0);
+
+      oSys.Call("User32::EnableWindow", aWndSet[IDFONT][WND],
+                (! AkelPad.SendMessage(aWndSet[IDFONTAP][WND], 240 /*BM_GETCHECK*/, 0, 0)) &&
+                (! AkelPad.SendMessage(aWndSet[IDFONTGUI][WND], 240 /*BM_GETCHECK*/, 0, 0)));
+    }
+    else if (nLowParam == IDFONTGUI)
+    {
+      if (AkelPad.SendMessage(aWndSet[IDFONTGUI][WND], 240 /*BM_GETCHECK*/, 0, 0) && hEditWnd)
+        AkelPad.SendMessage(aWndSet[IDFONTAP][WND], 241 /*BM_SETCHECK*/, 0, 0);
+
+      oSys.Call("User32::EnableWindow", aWndSet[IDFONT][WND],
+                ((! AkelPad.SendMessage(aWndSet[IDFONTAP][WND], 240 /*BM_GETCHECK*/, 0, 0)) || (! hEditWnd)) &&
+                 (! AkelPad.SendMessage(aWndSet[IDFONTGUI][WND], 240 /*BM_GETCHECK*/, 0, 0)));
+    }
+    else if (nLowParam == IDFONT)
+    {
+      var vCF;
+      if (vCF = ChooseFont(hWnd, aFont))
+      {
+        aFont = vCF;
+        oSys.Call("User32::SetWindowTextW", aWndSet[IDFONT][WND], aWndSet[IDFONT][WNDTXT] = aFont.toString());
+      }
+      oSys.Call("User32::SetFocus", aWndSet[IDFONT][WND]);
     }
     else if (nLowParam == IDOK)
     {
@@ -1476,7 +1551,7 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
       if (AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_GETITEMDATA, nCurSel, 0) != -1)
       {
         AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], 0x0148 /*CB_GETLBTEXT*/, nCurSel, lpBuffer)
-        sLangName = AkelPad.MemRead(lpBuffer, _TSTR);
+        sLangName = AkelPad.MemRead(lpBuffer, DT_UNICODE);
       }
       if (sLangName.toUpperCase() != sLanguage.toUpperCase())
       {
@@ -1490,33 +1565,39 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
         ShowDetectLang(true);
       }
 
+      if (hEditWnd)
+      {
+        bSourceInCB = AkelPad.SendMessage(aWndSet[IDSOURCEINCB][WND], 240 /*BM_GETCHECK*/, 0, 0);
+        bFontAP     = AkelPad.SendMessage(aWndSet[IDFONTAP    ][WND], 240 /*BM_GETCHECK*/, 0, 0);
+      }
+
       bSourceWnd = AkelPad.SendMessage(aWndSet[IDSOURCEWND][WND], 240 /*BM_GETCHECK*/, 0, 0);
       bLoadText  = AkelPad.SendMessage(aWndSet[IDLOADTEXT ][WND], 240 /*BM_GETCHECK*/, 0, 0);
       bImmediate = AkelPad.SendMessage(aWndSet[IDIMMEDIATE][WND], 240 /*BM_GETCHECK*/, 0, 0);
-      bFontAP    = AkelPad.SendMessage(aWndSet[IDFONTAP   ][WND], 240 /*BM_GETCHECK*/, 0, 0);
       bWordWrap  = AkelPad.SendMessage(aWndSet[IDWORDWRAP ][WND], 240 /*BM_GETCHECK*/, 0, 0);
+      bFontGUI   = AkelPad.SendMessage(aWndSet[IDFONTGUI  ][WND], 240 /*BM_GETCHECK*/, 0, 0);
       bSortCode  = AkelPad.SendMessage(aWndSet[IDSORTCODE ][WND], 240 /*BM_GETCHECK*/, 0, 0);
 
-      SetEditFont();
       SetEditWordWrap();
+      SetEditFont();
       ShowSourceWindow();
       FillComboLangs(AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_GETITEMDATA, oSelect.FromLang, 0),
                      AkelPad.SendMessage(aWnd[IDTOLANGCB  ][WND], CB_GETITEMDATA, oSelect.ToLang,   0));
 
-      oSys.Call("user32::GetWindowText" + _TCHAR, aWndSet[IDAPIKEY1][WND], lpBuffer, nBufSize);
-      aAPIs[1].APIkeyP = AkelPad.MemRead(lpBuffer, _TSTR);
+      oSys.Call("User32::GetWindowTextW", aWndSet[IDAPIKEY1][WND], lpBuffer, nBufSize);
+      aAPIs[1].APIkeyP = AkelPad.MemRead(lpBuffer, DT_UNICODE);
 
-      oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 16 /*WM_CLOSE*/, 0, 0);
+      oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
     }
     else if (nLowParam == IDCANCEL)
-      oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 16 /*WM_CLOSE*/, 0, 0);
+      oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
   }
 
   else if (uMsg == 16) //WM_CLOSE
   {
-    oSys.Call("user32::EnableWindow", hMainWnd, 1);
-    oSys.Call("user32::EnableWindow", hWndDlg, 1);
-    oSys.Call("user32::DestroyWindow", hWnd);
+    oSys.Call("User32::EnableWindow", hMainWnd, 1);
+    oSys.Call("User32::EnableWindow", hWndDlg, 1);
+    oSys.Call("User32::DestroyWindow", hWnd);
   }
 
   return 0;
@@ -1526,12 +1607,12 @@ function FillComboInterface()
 {
   var sScriptName = WScript.ScriptName.substring(0, WScript.ScriptName.lastIndexOf(".")) + "_";
   var sTemplate   = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_*.lng";
-  var hFindFile   = oSys.Call("kernel32::FindFirstFile" + _TCHAR, sTemplate, lpBuffer);
+  var hFindFile   = oSys.Call("kernel32::FindFirstFileW", sTemplate, lpBuffer);
   var sLangFile;
   var sLangName;
   var nPos;
 
-  AkelPad.MemCopy(lpBuffer, "English (built-in)", _TSTR);
+  AkelPad.MemCopy(lpBuffer, "English (built-in)", DT_UNICODE);
   nPos = AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_ADDSTRING, 0, lpBuffer);
   AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_SETITEMDATA, nPos, -1);
   AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_SETCURSEL, nPos, 0);
@@ -1540,21 +1621,179 @@ function FillComboInterface()
   {
     do
     {
-      sLangFile = AkelPad.MemRead(lpBuffer + 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/, _TSTR);
+      sLangFile = AkelPad.MemRead(lpBuffer + 44 /*offsetof(WIN32_FIND_DATAW, cFileName)*/, DT_UNICODE);
       sLangName = sLangFile.substring(sScriptName.length, sLangFile.lastIndexOf("."));
 
       if (sLangName)
       {
-        AkelPad.MemCopy(lpBuffer, sLangName, _TSTR);
+        AkelPad.MemCopy(lpBuffer, sLangName, DT_UNICODE);
         nPos = AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_ADDSTRING, 0, lpBuffer);
 
         if (sLangName.toUpperCase() == sLanguage.toUpperCase())
           AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_SETCURSEL, nPos, 0);
       }
     }
-    while(oSys.Call("kernel32::FindNextFile" + _TCHAR, hFindFile, lpBuffer));
+    while(oSys.Call("kernel32::FindNextFileW", hFindFile, lpBuffer));
   }
   oSys.Call("kernel32::FindClose", hFindFile);
+}
+
+function ChooseFont(hWndOwn, aFontIni)
+{
+  var nCFSize    = 60; //sizeof(CHOOSEFONT)
+  var lpCF       = AkelPad.MemAlloc(nCFSize);
+  var lpLF       = ConvertFontFormat(aFontIni, 3, 1);
+  var lpCallback = oSys.RegisterCallback(0, CFHookProcCallback, 4);
+  var vResult    = 0;
+
+  AkelPad.MemCopy(lpCF     ,    nCFSize, DT_DWORD); //lStructSize
+  AkelPad.MemCopy(lpCF +  4,    hWndOwn, DT_DWORD); //hwndOwner
+  AkelPad.MemCopy(lpCF + 12,       lpLF, DT_DWORD); //lpLogFont
+  AkelPad.MemCopy(lpCF + 20, 0x00010049, DT_DWORD); //Flags=CF_ENABLEHOOK|CF_FORCEFONTEXIST|CF_INITTOLOGFONTSTRUCT|CF_SCREENFONTS
+  AkelPad.MemCopy(lpCF + 32, lpCallback, DT_DWORD); //lpfnHook
+
+  if (oSys.Call("Comdlg32::ChooseFontW", lpCF))
+    vResult = ConvertFontFormat(lpLF, 1, 3);
+
+  oSys.UnregisterCallback(lpCallback);
+  AkelPad.MemFree(lpCF);
+  AkelPad.MemFree(lpLF);
+
+  return vResult;
+}
+
+function CFHookProcCallback(hWnd, uMsg, wParam, lParam)
+{
+  if (uMsg == 272 /*WM_INITDIALOG*/)
+  {
+    var hWndOwn   = AkelPad.MemRead(lParam + 4, DT_DWORD);
+    var oRectWnd  = {};
+    var oRectOwn  = {};
+    var oRectDesk = {};
+
+    //center dialog
+    GetWindowPos(hWnd, oRectWnd);
+    GetWindowPos(hWndOwn, oRectOwn);
+    GetWindowPos(oSys.Call("User32::GetDesktopWindow"), oRectDesk);
+
+    oRectWnd.X = oRectOwn.X + (oRectOwn.W - oRectWnd.W) / 2;
+    oRectWnd.Y = oRectOwn.Y + (oRectOwn.H - oRectWnd.H) / 2;
+
+    if ((oRectWnd.X + oRectWnd.W) > oRectDesk.W)
+      oRectWnd.X = oRectDesk.W - oRectWnd.W;
+    if (oRectWnd.X < 0)
+      oRectWnd.X = 0;
+    if ((oRectWnd.Y + oRectWnd.H) > oRectDesk.H)
+      oRectWnd.Y = oRectDesk.H - oRectWnd.H;
+    if (oRectWnd.Y < 0)
+      oRectWnd.Y = 0;
+
+    oSys.Call("User32::MoveWindow", hWnd, oRectWnd.X, oRectWnd.Y, oRectWnd.W, oRectWnd.H, 0);
+  }
+
+  return 0;
+}
+
+//---------------------------------------------------
+// vFont - pointer to LOGFONTW, font handle, or array
+// nInType - vFont type,
+// nRetType - vResult type:
+//   1 - pointer to LOGFONTW structure
+//   2 - handle to font
+//   3 - array [sFontName, nFontStyle, nFontSize]
+//---------------------------------------------------
+function ConvertFontFormat(vFont, nInType, nRetType)
+{
+  var nLFSize = 28 + 32 * 2; //sizeof(LOGFONTW)
+  var lpLF    = AkelPad.MemAlloc(nLFSize);
+  var hFont;
+  var hDC;
+  var nHeight;
+  var nWeight;
+  var bItalic;
+  var vRetVal;
+  var i;
+
+  if (nInType == 1)
+  {
+    for (i = 0; i < nLFSize; ++i)
+      AkelPad.MemCopy(lpLF + i, AkelPad.MemRead(vFont + i, DT_BYTE), DT_BYTE);
+  }
+  else if (nInType == 2)
+  {
+    if (! vFont)
+      vFont = oSys.Call("Gdi32::GetStockObject", 13 /*SYSTEM_FONT*/);
+
+    oSys.Call("Gdi32::GetObjectW", vFont, nLFSize, lpLF);
+  }
+  else if (nInType == 3)
+  {
+    hDC     = oSys.Call("User32::GetDC", hMainWnd);
+    nHeight = -oSys.Call("Kernel32::MulDiv", vFont[2], oSys.Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/), 72);
+    oSys.Call("User32::ReleaseDC", hMainWnd, hDC);
+
+    nWeight = 400;
+    bItalic = 0;
+    if ((vFont[1] == 2) || (vFont[1] == 4))
+      nWeight = 700;
+    if (vFont[1] > 2)
+      bItalic = 1;
+
+    AkelPad.MemCopy(lpLF     , nHeight,  DT_DWORD); //lfHeight
+    AkelPad.MemCopy(lpLF + 16, nWeight,  DT_DWORD); //lfWeight
+    AkelPad.MemCopy(lpLF + 20, bItalic,  DT_BYTE);  //lfItalic
+    AkelPad.MemCopy(lpLF + 28, vFont[0], DT_UNICODE); //lfFaceName
+  }
+
+  if (nRetType == 1)
+    vRetVal = lpLF;
+  else if (nRetType == 2)
+  {
+    vRetVal = oSys.Call("Gdi32::CreateFontIndirectW", lpLF);
+    AkelPad.MemFree(lpLF);
+  }
+  else if (nRetType == 3)
+  {
+    vRetVal    = [];
+    vRetVal[0] = AkelPad.MemRead(lpLF + 28, DT_UNICODE); //lfFaceName
+
+    nWeight = AkelPad.MemRead(lpLF + 16, DT_DWORD); //lfWeight
+    bItalic = AkelPad.MemRead(lpLF + 20, DT_BYTE);  //lfItalic
+
+    if (nWeight < 600)
+      vRetVal[1] = 1;
+    else
+      vRetVal[1] = 2;
+
+    if (bItalic)
+      vRetVal[1] += 2;
+
+    hDC        = oSys.Call("User32::GetDC", hMainWnd);
+    nHeight    = AkelPad.MemRead(lpLF, DT_DWORD); //lfHeight
+    vRetVal[2] = -oSys.Call("Kernel32::MulDiv", nHeight, 72, oSys.Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/));
+    oSys.Call("User32::ReleaseDC", hMainWnd, hDC); 
+    AkelPad.MemFree(lpLF);
+  }
+
+  return vRetVal;
+}
+
+function GetAkelPadObject()
+{
+  if (typeof AkelPad == "undefined")
+  {
+    var oError;
+
+    try
+    {
+      AkelPad = new ActiveXObject("AkelPad.Document");
+    }
+    catch (oError)
+    {
+      WScript.Echo(sTxtRegScripts);
+      WScript.Quit();
+    }
+  }
 }
 
 function ReadWriteIni(bWrite)
@@ -1568,17 +1807,21 @@ function ReadWriteIni(bWrite)
 
   if (bWrite)
   {
-    oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
-    sSource = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
-    oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
-    sTarget = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+    oWndPos.Max = oSys.Call("User32::IsZoomed", hWndDlg);
+    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
+    sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
+    sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
 
     sIniTxt = 'nOpaque='     + nOpaque     + ';\r\n'  +
+              'bSourceInCB=' + bSourceInCB + ';\r\n'  +
               'bSourceWnd='  + bSourceWnd  + ';\r\n'  +
               'bLoadText='   + bLoadText   + ';\r\n'  +
               'bImmediate='  + bImmediate  + ';\r\n'  +
-              'bFontAP='     + bFontAP     + ';\r\n'  +
               'bWordWrap='   + bWordWrap   + ';\r\n'  +
+              'bFontAP='     + bFontAP     + ';\r\n'  +
+              'bFontGUI='    + bFontGUI    + ';\r\n'  +
+              'aFont=["'     + aFont[0] + '",' + aFont[1] + ',' + aFont[2] + '];\r\n' +
               'bSortCode='   + bSortCode   + ';\r\n'  +
               'nDetectLang=' + nDetectLang + ';\r\n'  +
               'sSource="'    + sSource     + '";\r\n' +
@@ -1600,13 +1843,17 @@ function ReadWriteIni(bWrite)
 
   else if (oFSO.FileExists(sIniFile))
   {
+    oFile = oFSO.OpenTextFile(sIniFile, 1, false, -1);
+
     try
     {
-      eval(AkelPad.ReadFile(sIniFile));
+      eval(oFile.ReadAll());
     }
     catch (oError)
     {
     }
+
+    oFile.Close();
   }
 }
 
@@ -1614,19 +1861,24 @@ function ReadInterfaceLang()
 {
   if (sLanguage)
   {
-    var oFSO      = new ActiveXObject("Scripting.FileSystemObject");
     var sLangFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + sLanguage + ".lng";
+    var oFSO      = new ActiveXObject("Scripting.FileSystemObject");
+    var oFile;
     var oError;
 
     if (oFSO.FileExists(sLangFile))
     {
+      oFile = oFSO.OpenTextFile(sLangFile, 1, false, -2);
+
       try
       {
-        eval(AkelPad.ReadFile(sLangFile));
+        eval(oFile.ReadAll());
       }
       catch (oError)
       {
       }
+
+      oFile.Close();
     }
     else
       BuiltInLang();
@@ -1659,11 +1911,13 @@ function BuiltInLang()
   sTxtSelectAll  = "Select &all";
   sTxtEntireText = "&Entire text";
   sTxtInterface  = "Interface language";
-  sTxtSourceWnd  = "Show window with source text";
-  sTxtLoadText   = "Load selected text in AkelPad at start";
+  sTxtSourceInCB = "Source text from Clipboard";
+  sTxtSourceWnd  = "Show panel with source text";
+  sTxtLoadText   = "Load source text to panel at start";
   sTxtImmediate  = "Start immediately translate";
-  sTxtUseFontAP  = "Use font from AkelPad";
   sTxtWordWrap   = "Wrap lines";
+  sTxtFontAP     = "Font from AkelPad";
+  sTxtFontGUI    = "GUI font";
   sTxtSortLang   = "Languages sort";
   sTxtSortCode   = "By code";
   sTxtSortName   = "By name";
@@ -1672,11 +1926,14 @@ function BuiltInLang()
   sTxtOK         = "OK";
   sTxtCancel     = "Cancel";
   sTxtError      = "Error";
-  sTxtNoText     = "No text to translate.";
+  sTxtNoText     = "There is no text to translate.";
   sTxtNoSupport  = "Your system does not support XMLHttpRequest.";
   sTxtNoInternet = "There was a problem with internet connection.";
   sTxtWait       = "Wait...";
   sTxtUndefined  = "Undefined";
+  sTxtRegScripts = "You must register library: Scripts.dll";
+  sTxtNoLibrary  = "Can not load library: ";
+
 
   aLangs[ 0][1] = "Afrikaans";
   aLangs[ 1][1] = "Arabic";
@@ -1743,7 +2000,7 @@ function Translate(bSelection, bAddToTarget)
   var nLang      = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_GETITEMDATA, oSelect.FromLang, 0);
   var sFromLang  = (nLang < 0) ? "" : aLangs[nLang][0];
   var sToLang    = aLangs[AkelPad.SendMessage(aWnd[IDTOLANGCB][WND], CB_GETITEMDATA, oSelect.ToLang, 0)][0];
-  var nTargetLen = oSys.Call("user32::GetWindowTextLength" + _TCHAR, aWnd[IDTXTTARGET][WND])
+  var nTargetLen = oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND])
   var nTargetSel = 0;
   var sLangName;
   var sURL;
@@ -1770,13 +2027,13 @@ function Translate(bSelection, bAddToTarget)
     if (bSelection && AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 3125 /*AEM_GETSEL*/, 0, 0))
       AkelPad.SendMessage(aWnd[IDTXTSOURCE][WND], 1086 /*EM_GETSELTEXT*/, 0, lpBuffer);
     else
-      oSys.Call("user32::GetWindowText" + _TCHAR, aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
+      oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
 
-    sSource = AkelPad.MemRead(lpBuffer, _TSTR);
+    sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE);
   }
   else
   {
-    if ((WScript.Arguments.length > 2) && (WScript.Arguments(2) == "1"))
+    if (bSourceInCB || (! hEditWnd) || ((WScript.Arguments.length > 2) && (WScript.Arguments(2) == "1")))
       sSource = AkelPad.GetClipboardText().substr(0, aAPIs[oSelect.API].TextLen);
     else
       sSource = AkelPad.GetSelText(3 /*"\r\n"*/).substr(0, aAPIs[oSelect.API].TextLen);
@@ -1892,7 +2149,7 @@ function Translate(bSelection, bAddToTarget)
   if (bAddToTarget && nTargetLen)
     sTarget = "\r\n\r\n" + sTarget;
 
-  AkelPad.MemCopy(lpBuffer, sTarget, _TSTR);
+  AkelPad.MemCopy(lpBuffer, sTarget, DT_UNICODE);
   AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 0x00B1 /*EM_SETSEL*/, bAddToTarget ? -1 : 0, -1);
 
   if (bAddToTarget && nTargetLen)
