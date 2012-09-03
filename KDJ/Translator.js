@@ -1,4 +1,4 @@
-// Translator.js - ver. 2012-09-02
+// Translator.js - ver. 2012-09-03
 //
 // On line translator via Google, MS Bing and Yandex.
 //
@@ -31,6 +31,160 @@
 // F4          - maximize/restore window
 // Right click - context menu in edit panels
 
+var sTxtCaption;
+var sTxtUse;
+var sTxtFromLang;
+var sTxtToLang;
+var sTxtAutoDetect;
+var sTxtTranslate;
+var sTxtTranslateP;
+var sTxtOptions;
+var sTxtSource;
+var sTxtTarget;
+var sTxtSettings;
+var sTxtUndo;
+var sTxtRedo;
+var sTxtCut;
+var sTxtCopyCB;
+var sTxtInsertAP;
+var sTxtPasteCB;
+var sTxtPasteAP;
+var sTxtDelete;
+var sTxtSelectAll;
+var sTxtEntireText;
+var sTxtInterface;
+var sTxtSourceInCB;
+var sTxtSourceWnd;
+var sTxtLoadText;
+var sTxtImmediate;
+var sTxtFontAP;
+var sTxtFontGUI;
+var sTxtWordWrap;
+var sTxtSortLang;
+var sTxtSortCode;
+var sTxtSortName;
+var sTxtOwnKey;
+var sTxtRegister;
+var sTxtOK;
+var sTxtCancel;
+var sTxtError;
+var sTxtNoText;
+var sTxtNoSupport;
+var sTxtNoInternet;
+var sTxtWait;
+var sTxtUndefined;
+var sTxtRegScripts;
+var sTxtNoLibrary;
+
+var aLangs = [
+  ["af"   , "", 1, 0, 0], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex*/
+  ["ar"   , "", 1, 1, 0],
+  ["be"   , "", 1, 0, 0],
+  ["bg"   , "", 1, 1, 0],
+  ["ca"   , "", 1, 1, 0],
+  ["cs"   , "", 1, 1, 0],
+  ["cy"   , "", 1, 0, 0],
+  ["da"   , "", 1, 1, 0],
+  ["de"   , "", 1, 1, 1],
+  ["el"   , "", 1, 1, 0],
+  ["en"   , "", 1, 1, 1],
+  ["eo"   , "", 1, 0, 0],
+  ["es"   , "", 1, 1, 1],
+  ["et"   , "", 1, 1, 0],
+  ["fa"   , "", 1, 0, 0],
+  ["fi"   , "", 1, 1, 0],
+  ["fr"   , "", 1, 1, 1],
+  ["ga"   , "", 1, 0, 0],
+  ["gl"   , "", 1, 0, 0],
+  ["hi"   , "", 1, 1, 0],
+  ["hr"   , "", 1, 0, 0],
+  ["ht"   , "", 1, 1, 0],
+  ["hu"   , "", 1, 1, 0],
+  ["id"   , "", 1, 1, 0],
+  ["is"   , "", 1, 0, 0],
+  ["it"   , "", 1, 1, 0],
+  ["iw"   , "", 1, 1, 0],
+  ["ja"   , "", 1, 1, 0],
+  ["ko"   , "", 1, 1, 0],
+  ["la"   , "", 1, 0, 0],
+  ["lt"   , "", 1, 1, 0],
+  ["lv"   , "", 1, 1, 0],
+  ["mk"   , "", 1, 0, 0],
+  ["ms"   , "", 1, 0, 0],
+  ["mt"   , "", 1, 0, 0],
+  ["nl"   , "", 1, 1, 0],
+  ["no"   , "", 1, 1, 0],
+  ["pl"   , "", 1, 1, 1],
+  ["pt"   , "", 1, 1, 0],
+  ["ro"   , "", 1, 1, 0],
+  ["ru"   , "", 1, 1, 1],
+  ["sk"   , "", 1, 1, 0],
+  ["sl"   , "", 1, 1, 0],
+  ["sq"   , "", 1, 0, 0],
+  ["sr"   , "", 1, 0, 0],
+  ["sv"   , "", 1, 1, 0],
+  ["sw"   , "", 1, 0, 0],
+  ["th"   , "", 1, 1, 0],
+  ["tl"   , "", 1, 0, 0],
+  ["tr"   , "", 1, 1, 1],
+  ["uk"   , "", 1, 1, 1],
+  ["vi"   , "", 1, 1, 0],
+  ["yi"   , "", 1, 0, 0],
+  ["zh"   , "", 1, 0, 0],
+  ["zh-CN", "", 1, 1, 0],
+  ["zh-TW", "", 1, 1, 0]];
+
+var aAPIs = [{"Name":        "Google",
+              "APIkey":      "",
+              "APIkeyP":     "",
+              "RegistrURL":  "",
+              "AutoDetect":  1,
+              "TextLen":     48000},
+             {"Name":        "MS Bing",
+              "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
+              "APIkeyP":     "",
+              "RegistrURL":  "http://www.bing.com/developers",
+              "AutoDetect":  1,
+              //"TextLen":     10000}, //POST method
+              "TextLen":     3500}, //GET method
+             {"Name":        "Yandex",
+              "APIkey":      "",
+              "APIkeyP":     "",
+              "RegistrURL":  "",
+              "AutoDetect":  0,
+              "TextLen":     10000}];
+var oSelect = {"API":      0,
+               "FromLang": 0,
+               "ToLang"  : 0,
+               "Source1" : 0,
+               "Source2" : 0,
+               "Target1" : 0,
+               "Target2" : 0};
+var oWndMin = {"W": 656,
+               "H": 200};
+var oWndPos = {"X": 100,
+               "Y": 120,
+               "W": oWndMin.W,
+               "H": oWndMin.H,
+               "Max": 0};
+
+var nOpaque     = 255;
+var bSourceInCB = 0;
+var bSourceWnd  = 1;
+var bLoadText   = 1;
+var bImmediate  = 0;
+var bFontAP     = 0;
+var bFontGUI    = 0;
+var bWordWrap   = 1;
+var bSortCode   = 0;
+var nDetectLang = -1;
+var sSource     = "";
+var sTarget     = "";
+var sLanguage   = "";
+var aFont;
+
+ReadIniFile();
+ReadInterfaceLang();
 GetAkelPadObject();
 
 var oSys         = AkelPad.SystemFunction();
@@ -69,171 +223,21 @@ else
   var hEditWnd     = AkelPad.GetEditWnd();
   var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
   var sEditLibName = "AkelEdit.dll";
-  var nOpaque      = 255;
-  var bSourceInCB  = 0;
-  var bSourceWnd   = 1;
-  var bLoadText    = 1;
-  var bImmediate   = 0;
-  var bFontAP      = 0;
-  var bFontGUI     = 0;
-  var bWordWrap    = 1;
-  var bSortCode    = 0;
-  var nDetectLang  = -1;
-  var sSource      = "";
-  var sTarget      = "";
-  var sLanguage    = "";
   var nBufSize     = 0xFFFF;
   var lpBuffer;
   var hEditLib;
   var hFocus;
   var bCloseCB;
-  var aFont;
-
-  var sTxtCaption;
-  var sTxtUse;
-  var sTxtFromLang;
-  var sTxtToLang;
-  var sTxtAutoDetect;
-  var sTxtTranslate;
-  var sTxtTranslateP;
-  var sTxtOptions;
-  var sTxtSource;
-  var sTxtTarget;
-  var sTxtSettings;
-  var sTxtUndo;
-  var sTxtRedo;
-  var sTxtCut;
-  var sTxtCopyCB;
-  var sTxtInsertAP;
-  var sTxtPasteCB;
-  var sTxtPasteAP;
-  var sTxtDelete;
-  var sTxtSelectAll;
-  var sTxtEntireText;
-  var sTxtInterface;
-  var sTxtSourceInCB;
-  var sTxtSourceWnd;
-  var sTxtLoadText;
-  var sTxtImmediate;
-  var sTxtFontAP;
-  var sTxtFontGUI;
-  var sTxtWordWrap;
-  var sTxtSortLang;
-  var sTxtSortCode;
-  var sTxtSortName;
-  var sTxtOwnKey;
-  var sTxtRegister;
-  var sTxtOK;
-  var sTxtCancel;
-  var sTxtError;
-  var sTxtNoText;
-  var sTxtNoSupport;
-  var sTxtNoInternet;
-  var sTxtWait;
-  var sTxtUndefined;
-  var sTxtRegScripts;
-  var sTxtNoLibrary;
-
-  var aLangs = [
-    ["af"   , "", 1, 0, 0], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex*/
-    ["ar"   , "", 1, 1, 0],
-    ["be"   , "", 1, 0, 0],
-    ["bg"   , "", 1, 1, 0],
-    ["ca"   , "", 1, 1, 0],
-    ["cs"   , "", 1, 1, 0],
-    ["cy"   , "", 1, 0, 0],
-    ["da"   , "", 1, 1, 0],
-    ["de"   , "", 1, 1, 1],
-    ["el"   , "", 1, 1, 0],
-    ["en"   , "", 1, 1, 1],
-    ["eo"   , "", 1, 0, 0],
-    ["es"   , "", 1, 1, 1],
-    ["et"   , "", 1, 1, 0],
-    ["fa"   , "", 1, 0, 0],
-    ["fi"   , "", 1, 1, 0],
-    ["fr"   , "", 1, 1, 1],
-    ["ga"   , "", 1, 0, 0],
-    ["gl"   , "", 1, 0, 0],
-    ["hi"   , "", 1, 1, 0],
-    ["hr"   , "", 1, 0, 0],
-    ["ht"   , "", 1, 1, 0],
-    ["hu"   , "", 1, 1, 0],
-    ["id"   , "", 1, 1, 0],
-    ["is"   , "", 1, 0, 0],
-    ["it"   , "", 1, 1, 0],
-    ["iw"   , "", 1, 1, 0],
-    ["ja"   , "", 1, 1, 0],
-    ["ko"   , "", 1, 1, 0],
-    ["la"   , "", 1, 0, 0],
-    ["lt"   , "", 1, 1, 0],
-    ["lv"   , "", 1, 1, 0],
-    ["mk"   , "", 1, 0, 0],
-    ["ms"   , "", 1, 0, 0],
-    ["mt"   , "", 1, 0, 0],
-    ["nl"   , "", 1, 1, 0],
-    ["no"   , "", 1, 1, 0],
-    ["pl"   , "", 1, 1, 1],
-    ["pt"   , "", 1, 1, 0],
-    ["ro"   , "", 1, 1, 0],
-    ["ru"   , "", 1, 1, 1],
-    ["sk"   , "", 1, 1, 0],
-    ["sl"   , "", 1, 1, 0],
-    ["sq"   , "", 1, 0, 0],
-    ["sr"   , "", 1, 0, 0],
-    ["sv"   , "", 1, 1, 0],
-    ["sw"   , "", 1, 0, 0],
-    ["th"   , "", 1, 1, 0],
-    ["tl"   , "", 1, 0, 0],
-    ["tr"   , "", 1, 1, 1],
-    ["uk"   , "", 1, 1, 1],
-    ["vi"   , "", 1, 1, 0],
-    ["yi"   , "", 1, 0, 0],
-    ["zh"   , "", 1, 0, 0],
-    ["zh-CN", "", 1, 1, 0],
-    ["zh-TW", "", 1, 1, 0]];
-
-  var aAPIs = [{"Name":        "Google",
-                "APIkey":      "",
-                "APIkeyP":     "",
-                "RegistrURL":  "",
-                "AutoDetect":  1,
-                "TextLen":     48000},
-               {"Name":        "MS Bing",
-                "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
-                "APIkeyP":     "",
-                "RegistrURL":  "http://www.bing.com/developers",
-                "AutoDetect":  1,
-                //"TextLen":     10000}, //POST method
-                "TextLen":     3500}, //GET method
-               {"Name":        "Yandex",
-                "APIkey":      "",
-                "APIkeyP":     "",
-                "RegistrURL":  "",
-                "AutoDetect":  0,
-                "TextLen":     10000}];
-  var oSelect = {"API":      0,
-                 "FromLang": 0,
-                 "ToLang"  : 0,
-                 "Source1" : 0,
-                 "Source2" : 0,
-                 "Target1" : 0,
-                 "Target2" : 0};
-  var oWndMin = {"W": 656,
-                 "H": 200};
-  var oWndPos = {"X": 100,
-                 "Y": 120,
-                 "W": oWndMin.W,
-                 "H": oWndMin.H,
-                 "Max": 0};
-
-  ReadWriteIni(false);
 
   if (bSourceWnd && bLoadText)
   {
     if (bSourceInCB || (! hEditWnd) || ((WScript.Arguments.length > 2) && (WScript.Arguments(2) == "1")))
     {
-      sSource = AkelPad.GetClipboardText().substr(0, aAPIs[oSelect.API].TextLen);
-      oSelect.Source1 = oSelect.Source2 = 0;
+      if (oSys.Call("User32::IsClipboardFormatAvailable", 13 /*CF_UNICODETEXT*/))
+      {
+        sSource = AkelPad.GetClipboardText().substr(0, aAPIs[oSelect.API].TextLen);
+        oSelect.Source1 = oSelect.Source2 = 0;
+      }
     }
     else if (AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0))
     {
@@ -335,27 +339,26 @@ else
 
   aWndSet[IDINTERFACECB] = ["COMBOBOX", 0,       0, 0x50210103,  10,  10, 150,  20, ""];
   aWndSet[IDINTERFACE  ] = ["STATIC",   0,       0, 0x50000000, 165,  13, 120,  13];
-  aWndSet[IDEDITOPTIONS] = ["BUTTON",   0,       0, 0x50000007,  10,  40, 270, 185, ""];
-  aWndSet[IDSOURCEINCB ] = ["BUTTON",   0,       0, 0x50010003,  20,  55, 255,  16];
-  aWndSet[IDSOURCEWND  ] = ["BUTTON",   0,       0, 0x50010003,  20,  75, 255,  16];
-  aWndSet[IDLOADTEXT   ] = ["BUTTON",   0,       0, 0x50010003,  20,  95, 255,  16];
-  aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0,       0, 0x50010003,  20, 115, 255,  16];
-  aWndSet[IDWORDWRAP   ] = ["BUTTON",   0,       0, 0x50010003,  20, 135, 255,  16];
-  aWndSet[IDFONTAP     ] = ["BUTTON",   0,       0, 0x50010003,  20, 155, 255,  16];
-  aWndSet[IDFONTGUI    ] = ["BUTTON",   0,       0, 0x50010003,  20, 175, 255,  16];
+  aWndSet[IDEDITOPTIONS] = ["BUTTON",   0,       0, 0x50000007,  10,  40, 285, 185, ""];
+  aWndSet[IDSOURCEINCB ] = ["BUTTON",   0,       0, 0x50010003,  20,  55, 270,  16];
+  aWndSet[IDSOURCEWND  ] = ["BUTTON",   0,       0, 0x50010003,  20,  75, 270,  16];
+  aWndSet[IDLOADTEXT   ] = ["BUTTON",   0,       0, 0x50010003,  20,  95, 270,  16];
+  aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0,       0, 0x50010003,  20, 115, 270,  16];
+  aWndSet[IDWORDWRAP   ] = ["BUTTON",   0,       0, 0x50010003,  20, 135, 270,  16];
+  aWndSet[IDFONTAP     ] = ["BUTTON",   0,       0, 0x50010003,  20, 155, 270,  16];
+  aWndSet[IDFONTGUI    ] = ["BUTTON",   0,       0, 0x50010003,  20, 175, 270,  16];
   aWndSet[IDFONT       ] = ["BUTTON",   0,       0, 0x50010000,  20, 195, 170,  20, aFont.toString()];
-  aWndSet[IDSORTLANG   ] = ["BUTTON",   0,       0, 0x50000007, 290, 160, 120,  65];
-  aWndSet[IDSORTCODE   ] = ["BUTTON",   0,       0, 0x50000009, 300, 180,  90,  16];
-  aWndSet[IDSORTNAME   ] = ["BUTTON",   0,       0, 0x50000009, 300, 200,  90,  16];
-  aWndSet[IDAPINAME1   ] = ["BUTTON",   0,       0, 0x50000007,  10, 235, 400,  75];
+  aWndSet[IDSORTLANG   ] = ["BUTTON",   0,       0, 0x50000007, 305, 160, 120,  65];
+  aWndSet[IDSORTCODE   ] = ["BUTTON",   0,       0, 0x50000009, 315, 180,  90,  16];
+  aWndSet[IDSORTNAME   ] = ["BUTTON",   0,       0, 0x50000009, 315, 200,  90,  16];
+  aWndSet[IDAPINAME1   ] = ["BUTTON",   0,       0, 0x50000007,  10, 235, 415,  75];
   aWndSet[IDAPIKEYS1   ] = ["STATIC",   0,       0, 0x50000000,  20, 255,  70,  13, "AppID:"];
-  aWndSet[IDAPIKEY1    ] = ["EDIT",     0,   0x200, 0x50010080,  90, 255, 310,  20, ""];
+  aWndSet[IDAPIKEY1    ] = ["EDIT",     0,   0x200, 0x50010080,  90, 255, 325,  20, ""];
   aWndSet[IDREGIST1    ] = ["STATIC",   0,       0, 0x50000000,  20, 280,  70,  13];
-  aWndSet[IDREGURL1    ] = ["EDIT",     0,   0x200, 0x50010880,  90, 280, 310,  20, aAPIs[1].RegistrURL];
-  aWndSet[IDOK         ] = ["BUTTON",   0,       0, 0x50010001, 330,  10,  80,  23];
-  aWndSet[IDCANCEL     ] = ["BUTTON",   0,       0, 0x50010000, 330,  35,  80,  23];
+  aWndSet[IDREGURL1    ] = ["EDIT",     0,   0x200, 0x50010880,  90, 280, 325,  20, aAPIs[1].RegistrURL];
+  aWndSet[IDOK         ] = ["BUTTON",   0,       0, 0x50010001, 345,  10,  80,  23];
+  aWndSet[IDCANCEL     ] = ["BUTTON",   0,       0, 0x50010000, 345,  35,  80,  23];
 
-  ReadInterfaceLang();
   SetInterfaceLangToWndDef();
 
   if (! hMainWnd)
@@ -757,7 +760,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   {
     AkelPad.WindowUnsubClass(aWnd[IDTXTSOURCE][WND]);
     AkelPad.WindowUnsubClass(aWnd[IDTXTTARGET][WND]);
-    ReadWriteIni(true);
+    WriteIniFile();
     //Destroy dialog
     oSys.Call("User32::DestroyWindow", hWnd);
   }
@@ -1406,7 +1409,7 @@ function ContextMenu(hWnd, nPosParam)
 function Settings()
 {
   var oRect = {};
-  var nW    = 425;
+  var nW    = 440;
   var nH    = 350;
   var nX, nY;
   var hWndSet;
@@ -1796,55 +1799,16 @@ function GetAkelPadObject()
   }
 }
 
-function ReadWriteIni(bWrite)
+function ReadIniFile()
 {
-  var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
-  var sIniFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var sIniTxt;
+  var sFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var oFSO  = new ActiveXObject("Scripting.FileSystemObject");
   var oFile;
   var oError;
-  var i;
 
-  if (bWrite)
+  if (oFSO.FileExists(sFile))
   {
-    oWndPos.Max = oSys.Call("User32::IsZoomed", hWndDlg);
-    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
-    sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
-    oSys.Call("User32::GetWindowTextW", aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
-    sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
-
-    sIniTxt = 'nOpaque='     + nOpaque     + ';\r\n'  +
-              'bSourceInCB=' + bSourceInCB + ';\r\n'  +
-              'bSourceWnd='  + bSourceWnd  + ';\r\n'  +
-              'bLoadText='   + bLoadText   + ';\r\n'  +
-              'bImmediate='  + bImmediate  + ';\r\n'  +
-              'bWordWrap='   + bWordWrap   + ';\r\n'  +
-              'bFontAP='     + bFontAP     + ';\r\n'  +
-              'bFontGUI='    + bFontGUI    + ';\r\n'  +
-              'aFont=["'     + aFont[0] + '",' + aFont[1] + ',' + aFont[2] + '];\r\n' +
-              'bSortCode='   + bSortCode   + ';\r\n'  +
-              'nDetectLang=' + nDetectLang + ';\r\n'  +
-              'sSource="'    + sSource     + '";\r\n' +
-              'sTarget="'    + sTarget     + '";\r\n' +
-              'sLanguage="'  + sLanguage   + '";\r\n';
-
-    for (i = 0; i < aAPIs.length; ++i)
-      sIniTxt += 'aAPIs[' + i + '].APIkeyP="' + aAPIs[i].APIkeyP + '";\r\n';
-
-    for (i in oSelect)
-      sIniTxt += 'oSelect.' + i + '=' + oSelect[i] + ';\r\n';
-    for (i in oWndPos)
-      sIniTxt += 'oWndPos.' + i + '=' + oWndPos[i] + ';\r\n';
-
-    oFile = oFSO.OpenTextFile(sIniFile, 2, true, -1);
-    oFile.Write(sIniTxt);
-    oFile.Close();
-  }
-
-  else if (oFSO.FileExists(sIniFile))
-  {
-    oFile = oFSO.OpenTextFile(sIniFile, 1, false, -1);
-
+    oFile = oFSO.OpenTextFile(sFile, 1, false, -1);
     try
     {
       eval(oFile.ReadAll());
@@ -1852,9 +1816,49 @@ function ReadWriteIni(bWrite)
     catch (oError)
     {
     }
-
     oFile.Close();
   }
+}
+
+function WriteIniFile()
+{
+  var oFSO  = new ActiveXObject("Scripting.FileSystemObject");
+  var oFile = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini", 2, true, -1);
+  var sIniTxt;
+  var oError;
+  var i;
+
+  oWndPos.Max = oSys.Call("User32::IsZoomed", hWndDlg);
+  oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
+  sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  oSys.Call("User32::GetWindowTextW", aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
+  sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+
+  sIniTxt = 'nOpaque='     + nOpaque     + ';\r\n'  +
+            'bSourceInCB=' + bSourceInCB + ';\r\n'  +
+            'bSourceWnd='  + bSourceWnd  + ';\r\n'  +
+            'bLoadText='   + bLoadText   + ';\r\n'  +
+            'bImmediate='  + bImmediate  + ';\r\n'  +
+            'bWordWrap='   + bWordWrap   + ';\r\n'  +
+            'bFontAP='     + bFontAP     + ';\r\n'  +
+            'bFontGUI='    + bFontGUI    + ';\r\n'  +
+            'aFont=["'     + aFont[0] + '",' + aFont[1] + ',' + aFont[2] + '];\r\n' +
+            'bSortCode='   + bSortCode   + ';\r\n'  +
+            'nDetectLang=' + nDetectLang + ';\r\n'  +
+            'sSource="'    + sSource     + '";\r\n' +
+            'sTarget="'    + sTarget     + '";\r\n' +
+            'sLanguage="'  + sLanguage   + '";\r\n';
+
+  for (i = 0; i < aAPIs.length; ++i)
+    sIniTxt += 'aAPIs[' + i + '].APIkeyP="' + aAPIs[i].APIkeyP + '";\r\n';
+
+  for (i in oSelect)
+    sIniTxt += 'oSelect.' + i + '=' + oSelect[i] + ';\r\n';
+  for (i in oWndPos)
+    sIniTxt += 'oWndPos.' + i + '=' + oWndPos[i] + ';\r\n';
+
+  oFile.Write(sIniTxt);
+  oFile.Close();
 }
 
 function ReadInterfaceLang()
@@ -1876,6 +1880,7 @@ function ReadInterfaceLang()
       }
       catch (oError)
       {
+        BuiltInLang();
       }
 
       oFile.Close();
