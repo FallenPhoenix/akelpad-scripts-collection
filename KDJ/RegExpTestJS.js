@@ -1,4 +1,4 @@
-// RegExpTestJS.js - ver. 2012-03-04
+// RegExpTestJS.js - ver. 2012-09-05
 //
 // Regular expression tester for JavaScript
 //
@@ -39,7 +39,7 @@ var pTxtArray     = "Array";
 var pTxtEmpArray  = "empty Array";
 var pTxtGlobPro   = "Global RegExp object properties";
 var pTxtTest      = "Test";
-var pTxtHelp      = "RegExp Help";
+var pTxtHelp      = "Help";
 var pTxtOpaqMinus = "Opaque-";
 var pTxtOpaqPlus  = "Opaque+";
 var pTxtClose     = "Close";
@@ -51,7 +51,6 @@ var pTxtPasteCB   = "Paste from clipboard";
 var pTxtPasteAP   = "Paste from AkelPad";
 var pTxtNoRE      = "There is no regular expression."
 var pTxtNoStr     = "There is no string to test.";
-
 var pTxtRECollect = "RegExp Collection";
 var pTxtName      = "Name";
 var pTxtValue     = "Value";
@@ -64,6 +63,8 @@ var pTxtRenRE     = "Rename RegExp";
 var pTxtNewName   = "New name";
 var pTxtREExist   = "This RegExp already exists under name: ";
 var pTxtNameExist = "This name already exists: ";
+var pTxtREHelp    = "RegExp Help";
+var pTxtHelpText  = "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
 
 var DT_DWORD    = 3;
 var BM_GETCHECK = 240;
@@ -109,7 +110,7 @@ var hFocus;
 var bIsTest;
 var bIsReturn;
 
-ReadWriteIni(0);
+ReadIni();
 
 if (AkelPad.GetSelStart() != AkelPad.GetSelEnd())
   pString = AkelPad.GetSelText(3 /*"\r\n"*/);
@@ -206,10 +207,10 @@ lpWnd[IDCOLLECT  ] = ["BUTTON",  0,       0, 0x50010000, 325,  88,  70,  20, pTx
 lpWnd[IDCOPYRE   ] = ["BUTTON",  0,       0, 0x50010000, 420,  88,  70,  20, pTxtCopyPaste];
 lpWnd[IDEDRE     ] = ["EDIT",    0,   0x200, 0x50210004,  15, 110, 475,  35, pREStr];
 lpWnd[IDSTRING   ] = ["BUTTON",  0,       0, 0x50000007,   7, 160, 491, 145, pTxtString];
-lpWnd[IDNEWLINE  ] = ["STATIC",  0,       0, 0x50000000,  50, 177,  50,  13, pTxtNewLine];
-lpWnd[IDNLWIN    ] = ["BUTTON",  0,       0, 0x50000009, 100, 177,  70,  16, pTxtNLWin];
-lpWnd[IDNLUNIX   ] = ["BUTTON",  0,       0, 0x50000009, 180, 177,  70,  16, pTxtNLUnix];
-lpWnd[IDNLMAC    ] = ["BUTTON",  0,       0, 0x50000009, 250, 177,  70,  16, pTxtNLMac];
+lpWnd[IDNEWLINE  ] = ["STATIC",  0,       0, 0x50000000,  50, 177,  70,  13, pTxtNewLine];
+lpWnd[IDNLWIN    ] = ["BUTTON",  0,       0, 0x50000009, 120, 177,  70,  16, pTxtNLWin];
+lpWnd[IDNLUNIX   ] = ["BUTTON",  0,       0, 0x50000009, 200, 177,  70,  16, pTxtNLUnix];
+lpWnd[IDNLMAC    ] = ["BUTTON",  0,       0, 0x50000009, 270, 177,  70,  16, pTxtNLMac];
 lpWnd[IDCOPYSTR  ] = ["BUTTON",  0,       0, 0x50010000, 420, 173,  70,  20, pTxtCopyPaste];
 lpWnd[IDEDSTRING ] = ["EDIT",    0,   0x200, 0x50310004,  15, 195, 475, 105, pString];
 lpWnd[IDACTION   ] = ["BUTTON",  0,       0, 0x50000007,   7, 315, 491,  65, pTxtAction];
@@ -235,13 +236,13 @@ lpWnd[IDCLOSE    ] = ["BUTTON",  0,       0, 0x50010000, 420, 650,  75,  23, pTx
 
 lpCol[IDNAME     ] = ["BUTTON",  0,       0, 0x50000007,  10,  10, 235,  30, pTxtName];
 lpCol[IDLIST     ] = ["LISTBOX", 0,       0, 0x50A10003,  10,  30, 235, 270, ""];
-lpCol[IDVALUE    ] = ["BUTTON",  0,       0, 0x50000007, 255,  40, 190, 235, pTxtValue];
-lpCol[IDREVAL    ] = ["STATIC",  0,       0, 0x50002000, 260,  60, 180, 210, ""];
-lpCol[IDADD      ] = ["BUTTON",  0,       0, 0x50010000,  10, 290,  75,  23, pTxtAdd];
-lpCol[IDRENAME   ] = ["BUTTON",  0,       0, 0x50010000,  90, 290,  75,  23, pTxtRename];
-lpCol[IDDELETE   ] = ["BUTTON",  0,       0, 0x50010000, 170, 290,  75,  23, pTxtDelete];
-lpCol[IDOK       ] = ["BUTTON",  0,       0, 0x50010001, 290, 290,  75,  23, pTxtOK];
-lpCol[IDCOLCLOSE ] = ["BUTTON",  0,       0, 0x50010000, 370, 290,  75,  23, pTxtClose];
+lpCol[IDVALUE    ] = ["BUTTON",  0,       0, 0x50000007, 255,  40, 225, 235, pTxtValue];
+lpCol[IDREVAL    ] = ["STATIC",  0,       0, 0x50002000, 260,  60, 215, 210, ""];
+lpCol[IDADD      ] = ["BUTTON",  0,       0, 0x50010000,  10, 290,  90,  23, pTxtAdd];
+lpCol[IDRENAME   ] = ["BUTTON",  0,       0, 0x50010000, 105, 290,  90,  23, pTxtRename];
+lpCol[IDDELETE   ] = ["BUTTON",  0,       0, 0x50010000, 200, 290,  90,  23, pTxtDelete];
+lpCol[IDOK       ] = ["BUTTON",  0,       0, 0x50010001, 295, 290,  90,  23, pTxtOK];
+lpCol[IDCOLCLOSE ] = ["BUTTON",  0,       0, 0x50010000, 390, 290,  90,  23, pTxtClose];
 
 if (hEditWnd)
 {
@@ -251,9 +252,9 @@ if (hEditWnd)
     {
       //Create dialog
       hWndDlg = oSys.Call("user32::CreateWindowEx" + _TCHAR,
-                          0x00080000,      //dwExStyle: WS_EX_LAYERED
+                          0,               //dwExStyle
                           pClassName,      //lpClassName
-                          0,               //lpWindowName
+                          pTxtCaption,     //lpWindowName
                           0x90CA0000,      //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX
                           0,               //x
                           0,               //y
@@ -281,16 +282,12 @@ if (hEditWnd)
   }
 }
 
-////////
 function DialogCallback(hWnd, uMsg, wParam, lParam)
 {
   var i, nLowParam, nHiwParam;
 
   if (uMsg == 1) //WM_CREATE
   {
-    //Dialog caption
-    oSys.Call("user32::SetWindowText" + _TCHAR, hWnd, pTxtCaption);
-
     //Create windows
     for (i = 1000; i < lpWnd.length; ++i)
     {
@@ -326,7 +323,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     else
       MoveWindow(hMainWnd, hWnd, [nWndPosX, nWndPosY]);
     //Set opaque
-    SetOpaqueLevel(hWnd, nOpaque);
+    if (nOpaque < 255)
+      SetOpaqueLevel(hWnd, nOpaque);
 
     hFocus = lpWnd[IDEDSOURCE][WND];
 
@@ -531,7 +529,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 16) //WM_CLOSE
   {
-    ReadWriteIni(1);
+    WriteIni();
     //Destroy dialog
     oSys.Call("user32::DestroyWindow", hWnd);
   }
@@ -651,6 +649,7 @@ function HiWord(nParam)
 function SetOpaqueLevel(hWnd, nLevel)
 {
   var lpBuf;
+  var nStyle;
 
   if (nLevel < 0)
   {
@@ -667,6 +666,15 @@ function SetOpaqueLevel(hWnd, nLevel)
     nOpaque = 255;
   else if (nOpaque < 55)
     nOpaque = 55;
+
+  //WS_EX_LAYERED style
+  nStyle = oSys.Call("User32::GetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/);
+
+  if (! (nStyle & 0x00080000 /*WS_EX_LAYERED*/))
+  {
+    nStyle |= 0x00080000 /*WS_EX_LAYERED*/;
+    oSys.Call("User32::SetWindowLongW", hWnd, -20 /*GWL_EXSTYLE*/, nStyle);
+  }
 
   oSys.Call("user32::SetLayeredWindowAttributes", hWnd, 0, nOpaque, 2 /*LWA_ALPHA*/);
 }
@@ -832,7 +840,7 @@ function SetRE()
 {
   var pModyf = "";
   var pSource;
-  var nError;
+  var oError;
 
   if (bIgCase) pModyf += "i";
   if (bGlobal) pModyf += "g";
@@ -847,7 +855,7 @@ function SetRE()
     if (pREStr.length > AkelPad.SendMessage(lpWnd[IDEDRE][WND], 213 /*EM_GETLIMITTEXT*/, 0, 0))
       pREStr = "";
   }
-  catch (nError)
+  catch (oError)
   {
     pREStr = "";
   }
@@ -860,7 +868,7 @@ function SetSource()
   var pSource = "";
   var nPos;
   var pModyf;
-  var nError;
+  var oError;
 
   oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
   pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/(^[ \t]+)|([ \t]+$)/g, "");
@@ -887,64 +895,78 @@ function SetSource()
   SetWndFontAndText(lpWnd[IDEDSOURCE][WND], hGuiFont, pSource);
 }
 
-function ReadWriteIni(bWrite)
+function ReadIni()
 {
   var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
   var pIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var rcWnd;
-  var nError;
-  var oFile;
-  var pTxtIni;
-  var i;
+  var pLngName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + AkelPad.GetLangId(0 /*LANGID_FULL*/).toString() + ".lng";
+  var pLngName;
+  var oError;
 
-  if (bWrite)
-  {
-    rcWnd = GetWindowPos(hWndDlg);
-
-    oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
-    pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
-    oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDSTRING][WND], lpBuffer, nBufSize);
-    pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
-    oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDWITH][WND], lpBuffer, nBufSize);
-    pWith = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
-
-    pTxtIni = 'nWndPosX=' + rcWnd.left + ';\r\n'  +
-              'nWndPosY=' + rcWnd.top  + ';\r\n'  +
-              'nOpaque='  + nOpaque    + ';\r\n'  +
-              'nNL='      + nNL        + ';\r\n'  +
-              'nAction='  + nAction    + ';\r\n'  +
-              'pREStr="'  + pREStr     + '";\r\n' +
-              'pString="' + pString    + '";\r\n' +
-              'pWith="'   + pWith      + '";\r\n';
-
-    pTxtIni += 'aRECol=[\r\n';
-    for (i = 0; i < aRECol.length; ++i)
-    {
-      pTxtIni += '["' + 
-                  aRECol[i][0].replace(/[\\"]/g, "\\$&") + '","' + 
-                  aRECol[i][1].replace(/[\\"]/g, "\\$&") + '"]' +
-                  ((i < aRECol.length - 1) ? ',' : '') + '\r\n';
-    }
-    pTxtIni += '];';
-
-    oFile = oFSO.OpenTextFile(pIniName, 2, true, -1);
-    oFile.Write(pTxtIni);
-    oFile.Close();
-  }
-
-  else if (oFSO.FileExists(pIniName))
+  if (oFSO.FileExists(pIniName))
   {
     try
     {
       eval(AkelPad.ReadFile(pIniName));
     }
-    catch (nError)
+    catch (oError)
+    {
+    }
+  }
+
+  if (oFSO.FileExists(pLngName))
+  {
+    try
+    {
+      eval(AkelPad.ReadFile(pLngName));
+    }
+    catch (oError)
     {
     }
   }
 }
 
-////////
+function WriteIni()
+{
+  var oFSO = new ActiveXObject("Scripting.FileSystemObject");
+  var rcWnd;
+  var oFile;
+  var pTxtIni;
+  var i;
+
+  rcWnd = GetWindowPos(hWndDlg);
+
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
+  pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDSTRING][WND], lpBuffer, nBufSize);
+  pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDWITH][WND], lpBuffer, nBufSize);
+  pWith = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
+
+  pTxtIni = 'nWndPosX=' + rcWnd.left + ';\r\n'  +
+            'nWndPosY=' + rcWnd.top  + ';\r\n'  +
+            'nOpaque='  + nOpaque    + ';\r\n'  +
+            'nNL='      + nNL        + ';\r\n'  +
+            'nAction='  + nAction    + ';\r\n'  +
+            'pREStr="'  + pREStr     + '";\r\n' +
+            'pString="' + pString    + '";\r\n' +
+            'pWith="'   + pWith      + '";\r\n';
+
+  pTxtIni += 'aRECol=[\r\n';
+  for (i = 0; i < aRECol.length; ++i)
+  {
+    pTxtIni += '["' + 
+                aRECol[i][0].replace(/[\\"]/g, "\\$&") + '","' + 
+                aRECol[i][1].replace(/[\\"]/g, "\\$&") + '"]' +
+                ((i < aRECol.length - 1) ? ',' : '') + '\r\n';
+  }
+  pTxtIni += '];';
+
+  oFile = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini", 2, true, -1);
+  oFile.Write(pTxtIni);
+  oFile.Close();
+}
+
 function TestRE()
 {
   var pResult = "";
@@ -1060,14 +1082,13 @@ function TestRE()
   oSys.Call("user32::SetFocus", lpWnd[IDEDRESULT][WND]);
 }
 
-////////
 function Help()
 {
   var rcWnd   = GetWindowPos(hWndDlg);
   var hWndHlp = oSys.Call("user32::CreateWindowEx" + _TCHAR,
                           0,              //dwExStyle
                           pClassName,     //lpClassName
-                          pTxtHelp,       //lpWindowName
+                          pTxtREHelp,     //lpWindowName
                           0x90C80000,     //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU
                           rcWnd.left+15,  //x
                           rcWnd.top+40,   //y
@@ -1103,7 +1124,7 @@ function DialogCallbackHelp(hWnd, uMsg, wParam, lParam)
                           0,            //ID
                           hInstanceDLL, //hInstance
                           0);           //lpParam
-    SetWndFontAndText(hWndEdHlp, hGuiFont, HelpText());
+    SetWndFontAndText(hWndEdHlp, hGuiFont, pTxtHelpText);
   }
 
   else if (uMsg == 7) //WM_SETFOCUS
@@ -1128,12 +1149,6 @@ function DialogCallbackHelp(hWnd, uMsg, wParam, lParam)
   return 0;
 }
 
-function HelpText()
-{
-  return "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
-}
-
-////////
 function Collection()
 {
   var rcWnd   = GetWindowPos(hWndDlg);
@@ -1142,9 +1157,9 @@ function Collection()
                           pClassName,     //lpClassName
                           pTxtRECollect,  //lpWindowName
                           0x90C80000,     //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU
-                          rcWnd.left+25,  //x
+                          rcWnd.left+8,   //x
                           rcWnd.top+180,  //y
-                          460,            //nWidth
+                          495,            //nWidth
                           350,            //nHeight
                           hWndDlg,        //hWndParent
                           0,              //ID

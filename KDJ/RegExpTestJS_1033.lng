@@ -1,0 +1,61 @@
+/********************************
+RegExpTestJS.js - ver. 2012-09-05
+Interface language
+Language:      English (1033)
+Translated by: KDJ
+*********************************/
+pTxtCaption   = "Regular Expression Tester JS";
+pTxtRegExp    = "Regular expression (RE)";
+pTxtSource    = "RE.source";
+pTxtEscape    = "&Escape";
+pTxtUnEscape  = "&UnEscape";
+pTxtRE        = "RE";
+pTxtIgCase    = "&ignoreCase";
+pTxtGlobal    = "&global";
+pTxtMultiL    = "&multiline";
+pTxtNewLine   = "New line:";
+pTxtCollect   = "&Collection";
+pTxtNLWin     = "Win (\\r\\n)";
+pTxtNLUnix    = "Unix (\\n)";
+pTxtNLMac     = "Mac (\\r)";
+pTxtString    = "String to test (Str)";
+pTxtAction    = "Action";
+pTxtMeTest    = "RE.test(Str)";
+pTxtMeExec    = "RE.exec(Str)";
+pTxtMeSearch  = "Str.search(RE)";
+pTxtMeMatch   = "Str.match(RE)";
+pTxtMeSplit   = "Str.split(RE)";
+pTxtMeReplace = "Str.replace(RE,With):";
+pTxtResult    = "Result";
+pTxtLastInd   = "RE.lastIndex=";
+pTxtResetInd  = "&Reset index";
+pTxtArray     = "Array";
+pTxtEmpArray  = "empty Array";
+pTxtGlobPro   = "Global RegExp object properties";
+pTxtTest      = "Test";
+pTxtHelp      = "Help";
+pTxtOpaqMinus = "Opaque-";
+pTxtOpaqPlus  = "Opaque+";
+pTxtClose     = "Close";
+pTxtCopyPaste = "Copy/Paste";
+pTxtCopy      = "Copy";
+pTxtCopyCB    = "Copy to clipboard";
+pTxtCopyAP    = "Copy to AkelPad";
+pTxtPasteCB   = "Paste from clipboard";
+pTxtPasteAP   = "Paste from AkelPad";
+pTxtNoRE      = "There is no regular expression."
+pTxtNoStr     = "There is no string to test.";
+pTxtRECollect = "RegExp Collection";
+pTxtName      = "Name";
+pTxtValue     = "Value";
+pTxtAdd       = "Add (Ins)";
+pTxtRename    = "Rename (F2)";
+pTxtDelete    = "Delete (Del)";
+pTxtOK        = "OK (Enter)";
+pTxtAddRE     = "Add RegExp";
+pTxtRenRE     = "Rename RegExp";
+pTxtNewName   = "New name";
+pTxtREExist   = "This RegExp already exists under name: ";
+pTxtNameExist = "This name already exists: ";
+pTxtREHelp    = "RegExp Help";
+pTxtHelpText  = "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
