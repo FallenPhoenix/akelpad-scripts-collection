@@ -3,103 +3,94 @@
 ///Выделение текущего слова; будет выделено, даже если курсор стоит перед первой и после последней буквы слова
 // скрипт должен находиться в ..\Scripts\Include\
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=7969#7969
-// Version: 2.3 (2012.08.24)
+// Version: 2.4 (2012.09.10)
 
 // Возвращает границы слова, на котором установлена каретка
-// используется алгоритм от FeyFre
-function getWordCaretRange()
-{
-	var nCaretPos = AkelPad.GetSelStart();
-	var hWndEdit = AkelPad.GetEditWnd();
-	if (hWndEdit)
-	{
-		var Range = [];
-		Range[0] = AkelPad.SendMessage(hWndEdit, 1100 /*EM_FINDWORDBREAK */, 0/*WB_LEFT*/, nCaretPos);
-		Range[1] = AkelPad.SendMessage(hWndEdit, 1100 /*EM_FINDWORDBREAK */, 7/*WB_RIGHTBREAK*/, Range[0]);
+// используется алгоритм от FeyFre: http://akelpad.sourceforge.net/forum/viewtopic.php?p=7973#7973
+function getWordCaretInfo(hWndEdit) {
+	if (hWndEdit) {
+		var nCaretPos = AkelPad.GetSelStart();
+		var crInfo = [];
+		crInfo.min = AkelPad.SendMessage(hWndEdit, 1100 /*EM_FINDWORDBREAK */, 0/*WB_LEFT*/, nCaretPos);
+		crInfo.max = AkelPad.SendMessage(hWndEdit, 1100 /*EM_FINDWORDBREAK */, 7/*WB_RIGHTBREAK*/, crInfo.min);
 		//! For case when caret located on word start position i.e. "prev-word |word-to-copy"
-		if (Range[1] < nCaretPos)
+		if (crInfo.max < nCaretPos)
 		{
-			Range[0] = AkelPad.SendMessage(hWndEdit, 1100/*EM_FINDWORDBREAK*/, 0/*WB_LEFT*/, nCaretPos + 1);
-			Range[1] = AkelPad.SendMessage(hWndEdit, 1100/*EM_FINDWORDBREAK*/, 7/*WB_RIGHTBREAK*/, Range[0]);
+			crInfo.min = AkelPad.SendMessage(hWndEdit, 1100/*EM_FINDWORDBREAK*/, 0/*WB_LEFT*/, nCaretPos + 1);
+			crInfo.max = AkelPad.SendMessage(hWndEdit, 1100/*EM_FINDWORDBREAK*/, 7/*WB_RIGHTBREAK*/, crInfo.min);
 		}
-		if (Range[1] >= nCaretPos) return Range;
+		if (crInfo.max >= nCaretPos)
+			return crInfo;
 	}
 }
 
 // Возвращает текст слова, на котором установлена каретка
-function getWordCaret()
-{
-	var pResult = "";
-	var Range = getWordCaretRange();
-	if (Range) pResult = AkelPad.GetTextRange(Range[0], Range[1]);
-	return pResult;
+function getWordCaret() {
+	var sResult = "";
+	var hWndEdit = AkelPad.GetEditWnd();
+	var crInfo = getWordCaretInfo(hWndEdit);
+	if (crInfo) sResult = AkelPad.GetTextRange(crInfo.min, crInfo.max);
+	return sResult;
 }
 
 // Выделяет слово, на котором установлена каретка
-function WordCaretSelect()
-{
-	var Range = getWordCaretRange();
-	if (Range) AkelPad.SetSel(Range[0], Range[1]);
-}
-
-
-// Возвращает текст ссылки, на которой установлена каретка
-// По коду KDJ:
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19312#19312
-function getLinkCaret() {
-	var sURL = "";
-	var hWndEdit = AkelPad.GetEditWnd();
-	var oLinkInfo = getLinkInfoUnderCaret(hWndEdit);
-	if (oLinkInfo) {
-		var nLinkStart = AkelPad.SendMessage(hWndEdit, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, oLinkInfo.lpSel);
-		var nLinkEnd = AkelPad.SendMessage(hWndEdit, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, oLinkInfo.lpSel + (_X64?24:12));
-		memFreeLinkInfo(oLinkInfo);
-		sURL = AkelPad.GetTextRange(nLinkStart, nLinkEnd);
-	}
-	return sURL;
-}
-
-// Выделяет ссылку, на которой установлена каретка
-// По коду Instructor'а:
-// http://akelpad.sourceforge.net/forum/viewtopic.php?p=17717#17717
-function LinkCaretSelect() {
+function WordCaretSelect() {
 	var bSelected = false;
 	var hWndEdit = AkelPad.GetEditWnd();
-	var oLinkInfo = getLinkInfoUnderCaret(hWndEdit);
-	if (oLinkInfo) {
-		AkelPad.SendMessage(hWndEdit, 3126 /*AEM_SETSEL*/, oLinkInfo.lpCaret, oLinkInfo.lpSel);
-		memFreeLinkInfo(oLinkInfo);
+	var crInfo = getWordCaretInfo(hWndEdit);
+	if (crInfo) {
+		if (crInfo) AkelPad.SetSel(crInfo.min, crInfo.max);
 		bSelected = true;
 	}
 	return bSelected;
 }
 
-// Возвращает объект с информацией о ссылке для использовании в вышележащих функциях
-// По коду Instructor'а
-function getLinkInfoUnderCaret(hWndEdit) {
-	var lpCaret;
-	var lpSel;
-	if (lpCaret = AkelPad.MemAlloc(_X64?24:12 /*sizeof(AECHARINDEX)*/))
-	{
-		AkelPad.SendMessage(hWndEdit, 3130 /*AEM_GETINDEX*/, 5 /*AEGI_CARETCHAR*/, lpCaret);
-		if (lpSel = AkelPad.MemAlloc(_X64?56:28 /*sizeof(AESELECTION)*/))
+
+// Возвращает границы ссылки, на которой установлена каретка
+// код KDJ, VladSh, Instructor; начиная отсюда: http://akelpad.sourceforge.net/forum/viewtopic.php?p=19312#19312
+function getLinkCaretInfo(hWndEdit) {
+	if (hWndEdit) {
+		var bResult = false;
+		var lpCaret;
+		var lpInfo;
+		var crInfo = [];
+		if (lpCaret = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/))
 		{
-			if (AkelPad.SendMessage(hWndEdit, 3149 /*AEM_INDEXINURL*/, lpCaret, lpSel))
+			AkelPad.SendMessage(hWndEdit, 3130 /*AEM_GETINDEX*/, 5 /*AEGI_CARETCHAR*/, lpCaret);
+			if (lpInfo = AkelPad.MemAlloc(_X64 ? 48 : 24 /*sizeof(AECHARInfo)*/))
 			{
-				return {
-					lpCaret: lpCaret,
-					lpSel: lpSel
-				};
+				if (AkelPad.SendMessage(hWndEdit, 3149 /*AEM_INDEXINURL*/, lpCaret, lpInfo))
+				{
+					crInfo.min = AkelPad.SendMessage(hWndEdit, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpInfo);
+					crInfo.max = AkelPad.SendMessage(hWndEdit, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpInfo + (_X64 ? 24 : 12) /*offsetof(AECHARInfo, ciMax)*/);
+					bResult = true;
+				}
+				AkelPad.MemFree(lpInfo);
 			}
-			AkelPad.MemFree(lpSel);
+			AkelPad.MemFree(lpCaret);
 		}
-		AkelPad.MemFree(lpCaret);
+		if (bResult)
+			return crInfo;
 	}
-	return null;
 }
 
-// Возвращает память после работы с объектом информации о ссылке
-function memFreeLinkInfo(oLinkInfo) {
-	AkelPad.MemFree(oLinkInfo.lpSel);
-	AkelPad.MemFree(oLinkInfo.lpCaret);
+// Возвращает текст ссылки, на которой установлена каретка
+function getLinkCaret() {
+	var sResult = "";
+	var hWndEdit = AkelPad.GetEditWnd();
+	var crInfo = getLinkCaretInfo(hWndEdit);
+	if (crInfo) sResult = AkelPad.GetTextRange(crInfo.min, crInfo.max);
+	return sResult;
+}
+
+// Выделяет ссылку, на которой установлена каретка
+function LinkCaretSelect() {
+	var bSelected = false;
+	var hWndEdit = AkelPad.GetEditWnd();
+	var crInfo = getLinkCaretInfo(hWndEdit);
+	if (crInfo) {
+		if (crInfo) AkelPad.SetSel(crInfo.min, crInfo.max);
+		bSelected = true;
+	}
+	return bSelected;
 }
