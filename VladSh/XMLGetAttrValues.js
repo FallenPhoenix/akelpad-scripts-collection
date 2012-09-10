@@ -1,7 +1,7 @@
 ///Receiving appointed attributes of each line of XML-file
 ///Вытягивание определённых атрибутов из каждой строки файла с XML-структурой
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=11340#11340
-// Version: 1.4 (2011.07.19)
+// Version: 1.5 (2012.09.10)
 
 if (! AkelPad.Include("ShowMenuEx.js")) WScript.Quit();
 if (! AkelPad.Include("ProcessRowText.js")) WScript.Quit();
@@ -18,8 +18,7 @@ var pContent = AkelPad.GetTextRange(0, -1);
 //вызываем основную функцию обработчика всего файла
 var pContent = processRowText(pContent, "\r");
 
-AkelPad.SetSel(0, -1);
-AkelPad.ReplaceSel(pContent);
+AkelPad.Call("Log::Output", 5, pContent + "\r", -1, 1);
 
 
 //функция обработки отдельной строки
