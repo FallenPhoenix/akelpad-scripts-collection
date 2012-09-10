@@ -1,5 +1,5 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9418#9418
-// Version v2.1
+// Version v2.2
 //
 //
 //// Show help for keyword.
@@ -57,7 +57,7 @@ if (hMainWnd)
   //File
   if (!pChmName)
   {
-    pExt=fso.GetExtensionName(AkelPad.GetEditFile(0));
+    pExt=fso.GetExtensionName(AkelPad.GetEditFile(0)).toLowerCase();
     if (!lpExt2Chm[pExt])
     {
       AkelPad.MessageBox(hMainWnd, GetLangString(0).replace(/%s/, pExt), WScript.ScriptName, 16 /*MB_ICONERROR*/);
