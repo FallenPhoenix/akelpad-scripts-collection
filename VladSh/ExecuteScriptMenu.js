@@ -1,21 +1,20 @@
 ///Run the script from his own menu of some scripts
 ///Запуск скрипта из собственного меню избранных скриптов
 // Call("Scripts::Main", 1, "ExecuteScriptMenu.js")                       - menu is displayed from ExecuteScriptMenu.param
-// Call("Scripts::Main", 1, "ExecuteScriptMenu.js", `"LS.param"`)  - menu is displayed from LS.param
-// Call("Scripts::Main", 1, "ExecuteScriptMenu.js", `"LS.param" -2`)  - menu is displayed from LS.param at the cursor position (see constants in ShowMenuEx.js)
+// Call("Scripts::Main", 1, "ExecuteScriptMenu.js", `-paramFile="LS.param"`)  - menu is displayed from LS.param
+// Call("Scripts::Main", 1, "ExecuteScriptMenu.js", `-paramFile="LS.param" -place=-2`)  - menu is displayed from LS.param at the cursor position (see constants in ShowMenuEx.js)
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=8663#8663
-// Version: 1.3 (2011.06.21)
+// Version: 1.4 (2012.09.10)
+
+if (WScript.Arguments.length == 0) WScript.Quit();
 
 if (! AkelPad.Include("ShowMenuEx.js")) WScript.Quit();
 
-if (WScript.Arguments.length >= 2)
-	POS_PLACE = parseInt(WScript.Arguments(1));
-else
-	POS_PLACE = POS_CARET;
+var pPLACE = AkelPad.GetArgValue("place", "");
+if (pPLACE == "") pPLACE = POS_CARET;		// если ничего не передано, то отталкиваемся от позиции каретки
 
-var pScriptName = getSelectedMenuItem(POS_PLACE, "", 0);
-if (pScriptName)
-{
+var pScriptName = getSelectedMenuItem(pPLACE, "", 0);
+if (pScriptName) {
 	quitIfNotFileExist(getScriptNameFull(pScriptName));
 	AkelPad.Call("Scripts::Main", 1, pScriptName);
 }
