@@ -1,10 +1,10 @@
 ///Translates selected text using the Google API
 ///ѕеревод текста использу€ Google-API
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=12612#12612
-// Version: 2.5 (2012.03.19)
+// Version: 2.6 (2012.09.11)
 //
 // -"Translate: Auto -> Ru (Google)" Call("Scripts::Main", 1, "TranslateWithGoogleAPI.js", `-lngT="ru" -Msg=1`)		- autodetect source language + display the result in MessageBox
-// -"ѕеревести: Ru -> En (Google)" Call("Scripts::Main", 1, "TranslateWithGoogleAPI.js", `-lngS="ru" -lngT="en" -resType=2`)		- translate ru -> en + source text is replaced by the translation
+// -"ѕеревести: Ru -> En (Google)" Call("Scripts::Main", 1, "TranslateWithGoogleAPI.js", `-lngS="ru" -lngT="en"`)		- translate ru -> en + source text is replaced by the translation
 
 var resultText;		//в эту переменную возвращаетс€ результат в виде текста, иначе undefined
 var vn_resultObject = "resultObject";
@@ -12,9 +12,9 @@ var vn_resultObject = "resultObject";
 var langSource = AkelPad.GetArgValue("lngS", "auto");		//autodetect source language
 var langTarget = AkelPad.GetArgValue("lngT", "ru");		//target language [ru]
 var nMsgBox = AkelPad.GetArgValue("Msg", 0);			//show the result in MessageBox: [0] / 1
-//nResultType values (does not make sense with Msg=1):
-//0 - copy to clipboard
-//1 - selected text is replaced by the translation
+//resType values in arguments (does not make sense with Msg=1):
+//0 - selected text is replaced by the translation
+//1 - copy to clipboard
 //2 - display the result in new tab
 //3 - output to Log-plugin console
 var nResultType = AkelPad.GetArgValue("resType", 0);
@@ -43,7 +43,7 @@ if (req)
 		{
 			if (resultText != selection)
 			{
-				nResultAction = AkelPad.MessageBox(AkelPad.GetEditWnd(), "Result text:" + "\r\r" + resultText + "\r\r" + "Yes - copy to clipboard" + "\r" + "No - replace selected (source) text", WScript.ScriptName, 32 + 3);
+				nResultAction = AkelPad.MessageBox(AkelPad.GetEditWnd(), "Result text:" + "\r\r" + resultText + "\r\r" + "Yes - replace selected (source) text" + "\r" + "No - copy to clipboard", WScript.ScriptName, 32 + 3);
 				if (nResultAction == 2) WScript.Quit();
 			}
 			else
@@ -69,10 +69,10 @@ if (req)
 		switch (nResultAction)
 		{
 			case 6:
-				AkelPad.SetClipboardText(resultText);
+				AkelPad.ReplaceSel(resultText, true);
 				break;
 			default:
-				AkelPad.ReplaceSel(resultText, true);
+				AkelPad.SetClipboardText(resultText);
 				break;
 		}
 	}
