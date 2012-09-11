@@ -1,7 +1,7 @@
 ///"Save as ..." by analogy with the way it makes MS Word
 ///"Сохранить как..." по аналогии с тем, как это делает MS Word
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=5837#5837
-// Version: 2.15 (2012.09.02)
+// Version: 2.16 (2012.09.11)
 // 
 // -"Сохранить как..." Call("Scripts::Main", 1, "SaveAs.js")
 // -"Сохранить в js..." Call("Scripts::Main", 1, "SaveAs.js", `"js"`)
@@ -18,7 +18,11 @@ var pCurrentFile = AkelPad.GetEditFile(hWndEdit);
 var pInitialFile = pSelText || pCurrentFile || pAllText;		//начальный текст для возможного имени файла
 
 //Определяем расширение будущего файла; значение в аргументах приоритетнее
-var fileExt = AkelPad.GetArgLine() || GetFileExt(pCurrentFile) || getActiveSyntax(hWndEdit);
+var fileExt = AkelPad.GetArgLine() || GetFileExt(pCurrentFile);
+if (!fileExt) {
+	if (AkelPad.Include("CoderFunctions.js"))
+		fileExt = GetSyntaxAliasExtension(hWndEdit);
+}
 if (fileExt == "bbc") fileExt = "";		//bbc важно только для подсветки, а для сохранения то, что указано в настроках проги; если нужно bbc, то его можно выбрать в диалоге
 
 if (pInitialFile && (pInitialFile != pCurrentFile))
