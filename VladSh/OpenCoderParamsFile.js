@@ -3,30 +3,27 @@
 // Если в аргументах не передано расширение файла, то открывается файл параметров, соответствующий текущему файлу;
 // текущий файл файл должен быть сохранён
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=8164#8164
-// Version: 1.6 (2012.09.02)
+// Version: 1.7 (2012.09.11)
+
+if (! AkelPad.Include("OpenHelpString.js")) WScript.Quit();
 
 var pExt = AkelPad.GetArgLine();
+var coderFileName;
 
 if (!pExt)
 {
-	if (AkelPad.Include("CommonFunctions.js"))
-		pExt = getActiveSyntax(AkelPad.GetEditWnd());
+	if (AkelPad.Include("CoderFunctions.js"))
+		coderFileName = GetSyntaxFile(AkelPad.GetEditWnd());
 	
-	if (!pExt)
+	if (!coderFileName) {
 		pExt = GetExtensionName(AkelPad.GetEditFile(0))
+		if (!pExt) WScript.Quit();
+		coderFileName = pExt + ".coder";
+	}
 }
 
-if (pExt)
-{
-	if (! AkelPad.Include("OpenHelpString.js")) WScript.Quit();
-	
-	var pParamFile = "\\AkelFiles\\Plugs\\Coder\\" + pExt + ".coder";
-	
-	openHelpString(pParamFile, AkelPad.GetSelText(), 2);
-}
+openHelpString("\\AkelFiles\\Plugs\\Coder\\" + coderFileName, AkelPad.GetSelText(), 2);
 
-
-function GetExtensionName(pFile)
-{
+function GetExtensionName(pFile) {
 	return pFile.substr(pFile.lastIndexOf(".") + 1);
 }

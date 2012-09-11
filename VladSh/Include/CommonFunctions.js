@@ -26,21 +26,6 @@ function getDefaultExt()
 	return pDefaultExt || pExtTXT;
 }
 
-//возвращает имя используемого coder-файла ("псевдорасширение"); на основе кода Instructor'а
-function getActiveSyntax(hWndE)
-{
-	var lpFile;
-	var pExt = "";
-	if (lpFile = AkelPad.MemAlloc(256))
-	{
-		AkelPad.Call("Coder::Settings", 16, hWndE, lpFile, 256);
-		pExt = AkelPad.MemRead(lpFile, 1  /*DT_UNICODE*/);
-		AkelPad.MemFree(lpFile);
-		pExt = GetFileNameOnly(pExt);
-	}
-	return pExt;
-}
-
 //Вызов диалога Открытия/Сохранения файла (WinAPI) с предварительной обработкой и инициализацией всех необходимых параметров
 function FileDialogDefault(bOpenTrueSaveFalse, pInitialFile, pInitialExt)
 {
@@ -211,14 +196,20 @@ function FileDialog(bOpenTrueSaveFalse, hWnd, pInitialDir, pInitialFile, pInitia
 
 
 ///Создание вкладки нового файла со всеми параметрами исходного файла
-function CreateByFile(hWnd /*hWndEdit*/)
+function CreateByFile(hWnd /*hWndEdit*/, pExt /*расширение, для установки подстветки; если "", будет пытаться определить автоматически*/)
 {
 	var nCodePage = AkelPad.GetEditCodePage(hWnd);
 	var bBOM = AkelPad.GetEditBOM(hWnd);
 	var nNewLine = AkelPad.GetEditNewLine(hWnd);
+	// пытаемся определить расширение для установки нужной подсветки
+	var bCoderInclude = AkelPad.Include("CoderFunctions.js");
+	if (!pExt && bCoderInclude)
+		var pExt = GetSyntaxAliasExtension();
 	AkelPad.Command(4101 /*IDM_FILE_NEW*/);		//создание (закладки) для сохранения выделения отдельным файлом
 	AkelPad.SaveFile(0, "", nCodePage, bBOM);		//выставление кодировки как у исходного файла
 	AkelPad.SendMessage(AkelPad.GetMainWnd(), 1230 /*AKD_SETNEWLINE*/, 0, nNewLine);		//выставление "формата новой строки" как у исходного файла
+	// пытаемся выставить нужную подсветку
+	if (pExt && bCoderInclude) SetSyntax(pExt);
 }
 
 
