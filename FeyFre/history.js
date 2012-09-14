@@ -2,7 +2,8 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=16205#16205
 // http://staynormal.org.ua/akelpad/scripts/history.js
 // FeyFre (c) 2011-2012
-//
+// v0.11 (2012.09.14) Persistent storage UI option
+// v0.10.1 (2012.09.14) Sync with AkelPad API
 // v0.10 Dock anywhere + SmartRun
 // v0.9 Filtering
 // v0.8.2 3.12
@@ -92,30 +93,33 @@ var IDC_HKBT	= 1009;
 var IDC_HKBA	= 1010;
 var IDC_HKBSH	= 1011;
 var IDC_SMARTRUN= 1012;
+var IDC_PERSIST = 1013;
 var layout = {};
-layout[IDC_DNDST]={sf:1,c:"STATIC",    t:"History",wse:0,ws:WS_CHILD|WS_VISIBLE|SS_SUNKEN|SS_CENTER,hwnd:0,
+layout[IDC_DNDST]  ={sf:1,c:"STATIC",    t:"History",            wse:0,ws:WS_CHILD|WS_VISIBLE|SS_SUNKEN|SS_CENTER,hwnd:0,
                    x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:1,B:0},  w:{W:1,H:0,G:-4,B:-2},h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HIDE] ={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
+layout[IDC_HIDE]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
                    x:{W:1,H:0,G:-2,B:-2},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
-layout[IDC_EXIT] ={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
+layout[IDC_EXIT]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
                    x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
-layout[IDC_FILT] ={sf:1,c:"EDIT",      t:"",       wse:WS_EX_CLIENTEDGE,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
+layout[IDC_FILT]   ={sf:1,c:"EDIT",      t:"",                   wse:WS_EX_CLIENTEDGE,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
                    x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:2,B:1},  w:{W:1,H:0,G:-3,B:-1},h:{W:0,H:0,G:0,B:1}};
-layout[IDC_APPLY]={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX|BS_PUSHLIKE,hwnd:0,
+layout[IDC_APPLY]  ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX|BS_PUSHLIKE,hwnd:0,
                    x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:2,B:1},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HIST] ={sf:1,c:"LISTBOX",   t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_HSCROLL|LBS_NOTIFY|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:3,B:2},  w:{W:1,H:0,G:-2,B:0}, h:{W:0,H:1,G:-7,B:-5}};
-layout[IDC_HKT]  ={sf:1,c:HOTKEY_CLASS,t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
+layout[IDC_HIST]   ={sf:1,c:"LISTBOX",   t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_HSCROLL|LBS_NOTIFY|WS_TABSTOP,hwnd:0,
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:3,B:2},  w:{W:1,H:0,G:-2,B:0}, h:{W:0,H:1,G:-8,B:-6}};
+layout[IDC_PERSIST]={sf:1,c:"BUTTON",    t:"Persistent storage", wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,hwnd:0,
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-4,B:-4},w:{W:1,H:0,G:-2,B:0},  h:{W:0,H:0,G:0,B:1}};
+layout[IDC_HKT]    ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
                    x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-3,B:-3},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HKBT] ={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
+layout[IDC_HKBT]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
                    x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-3,B:-3},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HKA]  ={sf:1,c:HOTKEY_CLASS,t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
+layout[IDC_HKA]    ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
                    x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-2,B:-2},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HKBA] ={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
+layout[IDC_HKBA]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
                    x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-2,B:-2},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HKSH] ={sf:1,c:HOTKEY_CLASS,t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
+layout[IDC_HKSH]   ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
                    x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-1,B:-1},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
-layout[IDC_HKBSH]={sf:0,c:"BUTTON",    t:"",       wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
+layout[IDC_HKBSH]  ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
                    x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-1,B:-1},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
 //! Названия функций
 var rott = "Reopen Last";
@@ -356,7 +360,7 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 	{
 		var font = oSys.Call("gdi32::GetStockObject", 17);
 		//! Создать все контролы
-		var wia = [IDC_DNDST,IDC_HIDE,IDC_EXIT,IDC_FILT,IDC_APPLY,IDC_HIST,IDC_HKT,IDC_HKA,IDC_HKSH,IDC_HKBT,IDC_HKBA,IDC_HKBSH];
+		var wia = [IDC_DNDST,IDC_HIDE,IDC_EXIT,IDC_FILT,IDC_APPLY,IDC_HIST,IDC_PERSIST,IDC_HKT,IDC_HKA,IDC_HKSH,IDC_HKBT,IDC_HKBA,IDC_HKBSH];
 		for(var ci in wia)
 		{
 			var id = wia[ci];
@@ -388,6 +392,7 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 		//! Сабкласим список, нужен перехват клавиш VK_RETURN и VK_SPACE
 		AkelPad.WindowSubClass(lb_hist, ListSubClass, WM_KEYDOWN, WM_GETDLGCODE);
 		AkelPad.SendMessage(layout[IDC_APPLY].hwnd, BM_SETCHECK, _APPLY?BST_CHECKED:BST_UNCHECKED, 0);
+		AkelPad.SendMessage(layout[IDC_PERSIST].hwnd, BM_SETCHECK, _PERSIST?BST_CHECKED:BST_UNCHECKED, 0);
 		ReApplyFilter();
 		return 0;
 	}
@@ -491,8 +496,13 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 			}
 			if(IDC == IDC_APPLY)
 			{
-				_APPLY = (AkelPad.SendMessage(layout[IDC_APPLY].hwnd, BM_GETCHECK, 0, 0)==BST_CHECKED)?1:0
+				_APPLY = (AkelPad.SendMessage(layout[IDC_APPLY].hwnd, BM_GETCHECK, 0, 0)==BST_CHECKED)?1:0;
 				ReApplyFilter();
+			}
+			if(IDC == IDC_PERSIST)
+			{
+				_PERSIST = (AkelPad.SendMessage(layout[IDC_PERSIST].hwnd, BM_GETCHECK, 0, 0)==BST_CHECKED)?1:0;
+				WRITE_SETTINGS();
 			}
 		}
 		if(CODE == LBN_DBLCLK)
@@ -715,8 +725,9 @@ function DoReopen(id)
 	history.RemoveId(id);
 }
 //! Обработчик горячей клавиши
-function HK_CallBack(task)
+function HK_CallBack(regparam,callparam,support)
 {
+	var task=regparam;
 	if(task == CBC_OPENALL)
 	{
 		var str;
