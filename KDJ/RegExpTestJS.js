@@ -1,4 +1,4 @@
-// RegExpTestJS.js - ver. 2012-09-05
+// RegExpTestJS.js - ver. 2012-09-15
 //
 // Regular expression tester for JavaScript
 //
@@ -8,63 +8,7 @@
 // Enter - test
 // F1 - RegExp help
 // Shift+Alt+ Right, Left, Down, Up, End, Home, PgDn, PgUp - move dialog box,
-// Shift+Alt+ Num-(-), Num+(+) - change opaque/transparency level of dialog box.
-
-var pTxtCaption   = "Regular Expression Tester JS";
-var pTxtRegExp    = "Regular expression (RE)";
-var pTxtSource    = "RE.source";
-var pTxtEscape    = "&Escape";
-var pTxtUnEscape  = "&UnEscape";
-var pTxtRE        = "RE";
-var pTxtIgCase    = "&ignoreCase";
-var pTxtGlobal    = "&global";
-var pTxtMultiL    = "&multiline";
-var pTxtNewLine   = "New line:";
-var pTxtCollect   = "&Collection";
-var pTxtNLWin     = "Win (\\r\\n)";
-var pTxtNLUnix    = "Unix (\\n)";
-var pTxtNLMac     = "Mac (\\r)";
-var pTxtString    = "String to test (Str)";
-var pTxtAction    = "Action";
-var pTxtMeTest    = "RE.test(Str)";
-var pTxtMeExec    = "RE.exec(Str)";
-var pTxtMeSearch  = "Str.search(RE)";
-var pTxtMeMatch   = "Str.match(RE)";
-var pTxtMeSplit   = "Str.split(RE)";
-var pTxtMeReplace = "Str.replace(RE,With):";
-var pTxtResult    = "Result";
-var pTxtLastInd   = "RE.lastIndex=";
-var pTxtResetInd  = "&Reset index";
-var pTxtArray     = "Array";
-var pTxtEmpArray  = "empty Array";
-var pTxtGlobPro   = "Global RegExp object properties";
-var pTxtTest      = "Test";
-var pTxtHelp      = "Help";
-var pTxtOpaqMinus = "Opaque-";
-var pTxtOpaqPlus  = "Opaque+";
-var pTxtClose     = "Close";
-var pTxtCopyPaste = "Copy/Paste";
-var pTxtCopy      = "Copy";
-var pTxtCopyCB    = "Copy to clipboard";
-var pTxtCopyAP    = "Copy to AkelPad";
-var pTxtPasteCB   = "Paste from clipboard";
-var pTxtPasteAP   = "Paste from AkelPad";
-var pTxtNoRE      = "There is no regular expression."
-var pTxtNoStr     = "There is no string to test.";
-var pTxtRECollect = "RegExp Collection";
-var pTxtName      = "Name";
-var pTxtValue     = "Value";
-var pTxtAdd       = "Add (Ins)";
-var pTxtRename    = "Rename (F2)";
-var pTxtDelete    = "Delete (Del)";
-var pTxtOK        = "OK (Enter)";
-var pTxtAddRE     = "Add RegExp";
-var pTxtRenRE     = "Rename RegExp";
-var pTxtNewName   = "New name";
-var pTxtREExist   = "This RegExp already exists under name: ";
-var pTxtNameExist = "This name already exists: ";
-var pTxtREHelp    = "RegExp Help";
-var pTxtHelpText  = "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
+// Alt+ Num-(-), Num+(+) - change opaque/transparency level of dialog box.
 
 var DT_DWORD    = 3;
 var BM_GETCHECK = 240;
@@ -195,54 +139,54 @@ var WNDTXT   = 8;
 //Windows              WNDTYPE,WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
 lpWnd[IDREGEXP   ] = ["BUTTON",  0,       0, 0x50000007,   7,  10, 491, 140, pTxtRegExp];
 lpWnd[IDSOURCE   ] = ["STATIC",  0,       0, 0x50000000,  15,  27, 150,  13, pTxtSource];
-lpWnd[IDESCAPE   ] = ["BUTTON",  0,       0, 0x50010000, 250,  23,  70,  20, pTxtEscape];
-lpWnd[IDUNESCAPE ] = ["BUTTON",  0,       0, 0x50010000, 325,  23,  70,  20, pTxtUnEscape];
-lpWnd[IDCOPYSOU  ] = ["BUTTON",  0,       0, 0x50010000, 420,  23,  70,  20, pTxtCopyPaste];
+lpWnd[IDESCAPE   ] = ["BUTTON",  0,       0, 0x50010000, 180,  23, 100,  20, pTxtEscape];
+lpWnd[IDUNESCAPE ] = ["BUTTON",  0,       0, 0x50010000, 285,  23, 100,  20, pTxtUnEscape];
+lpWnd[IDCOPYSOU  ] = ["BUTTON",  0,       0, 0x50010000, 390,  23, 100,  20, pTxtCopyPaste];
 lpWnd[IDEDSOURCE ] = ["EDIT",    0,   0x200, 0x50210004,  15,  45, 475,  35, ""];
-lpWnd[IDRE       ] = ["STATIC",  0,       0, 0x50000000,  15,  92, 150,  13, pTxtRE];
-lpWnd[IDIGCASE   ] = ["BUTTON",  0,       0, 0x50010003, 100,  92,  70,  16, pTxtIgCase];
-lpWnd[IDGLOBAL   ] = ["BUTTON",  0,       0, 0x50010003, 183,  92,  55,  16, pTxtGlobal];
-lpWnd[IDMULTIL   ] = ["BUTTON",  0,       0, 0x50010003, 240,  92,  55,  16, pTxtMultiL];
-lpWnd[IDCOLLECT  ] = ["BUTTON",  0,       0, 0x50010000, 325,  88,  70,  20, pTxtCollect];
-lpWnd[IDCOPYRE   ] = ["BUTTON",  0,       0, 0x50010000, 420,  88,  70,  20, pTxtCopyPaste];
+lpWnd[IDRE       ] = ["STATIC",  0,       0, 0x50000000,  15,  92,  30,  13, pTxtRE];
+lpWnd[IDIGCASE   ] = ["BUTTON",  0,       0, 0x50010003,  50,  92,  70,  16, pTxtIgCase];
+lpWnd[IDGLOBAL   ] = ["BUTTON",  0,       0, 0x50010003, 133,  92,  55,  16, pTxtGlobal];
+lpWnd[IDMULTIL   ] = ["BUTTON",  0,       0, 0x50010003, 190,  92,  55,  16, pTxtMultiL];
+lpWnd[IDCOLLECT  ] = ["BUTTON",  0,       0, 0x50010000, 285,  88, 100,  20, pTxtCollect];
+lpWnd[IDCOPYRE   ] = ["BUTTON",  0,       0, 0x50010000, 390,  88, 100,  20, pTxtCopyPaste];
 lpWnd[IDEDRE     ] = ["EDIT",    0,   0x200, 0x50210004,  15, 110, 475,  35, pREStr];
 lpWnd[IDSTRING   ] = ["BUTTON",  0,       0, 0x50000007,   7, 160, 491, 145, pTxtString];
 lpWnd[IDNEWLINE  ] = ["STATIC",  0,       0, 0x50000000,  50, 177,  70,  13, pTxtNewLine];
 lpWnd[IDNLWIN    ] = ["BUTTON",  0,       0, 0x50000009, 120, 177,  70,  16, pTxtNLWin];
 lpWnd[IDNLUNIX   ] = ["BUTTON",  0,       0, 0x50000009, 200, 177,  70,  16, pTxtNLUnix];
 lpWnd[IDNLMAC    ] = ["BUTTON",  0,       0, 0x50000009, 270, 177,  70,  16, pTxtNLMac];
-lpWnd[IDCOPYSTR  ] = ["BUTTON",  0,       0, 0x50010000, 420, 173,  70,  20, pTxtCopyPaste];
+lpWnd[IDCOPYSTR  ] = ["BUTTON",  0,       0, 0x50010000, 390, 173, 100,  20, pTxtCopyPaste];
 lpWnd[IDEDSTRING ] = ["EDIT",    0,   0x200, 0x50310004,  15, 195, 475, 105, pString];
 lpWnd[IDACTION   ] = ["BUTTON",  0,       0, 0x50000007,   7, 315, 491,  65, pTxtAction];
 lpWnd[IDMETEST   ] = ["BUTTON",  0,       0, 0x50000009,  15, 335,  85,  16, pTxtMeTest];
 lpWnd[IDMEEXEC   ] = ["BUTTON",  0,       0, 0x50000009, 115, 335,  85,  16, pTxtMeExec];
 lpWnd[IDMESEARCH ] = ["BUTTON",  0,       0, 0x50000009, 215, 335,  85,  16, pTxtMeSearch];
 lpWnd[IDMEMATCH  ] = ["BUTTON",  0,       0, 0x50000009, 315, 335,  85,  16, pTxtMeMatch];
-lpWnd[IDMESPLIT  ] = ["BUTTON",  0,       0, 0x50000009, 415, 335,  70,  16, pTxtMeSplit];
+lpWnd[IDMESPLIT  ] = ["BUTTON",  0,       0, 0x50000009, 415, 335,  75,  16, pTxtMeSplit];
 lpWnd[IDMEREPLACE] = ["BUTTON",  0,       0, 0x50000009,  15, 355, 120,  16, pTxtMeReplace];
 lpWnd[IDEDWITH   ] = ["EDIT",    0,   0x200, 0x50010080, 135, 355, 355,  20, pWith];
 lpWnd[IDRESULT   ] = ["BUTTON",  0,       0, 0x50000007,   7, 390, 491, 145, pTxtResult];
-lpWnd[IDLASTIND  ] = ["STATIC",  0,       0, 0x50000000,  50, 407, 150,  13, pTxtLastInd];
-lpWnd[IDRESETIND ] = ["BUTTON",  0,       0, 0x50010000, 200, 403,  70,  20, pTxtResetInd];
-lpWnd[IDCOPYRES  ] = ["BUTTON",  0,       0, 0x50010000, 420, 403,  70,  20, pTxtCopy];
+lpWnd[IDLASTIND  ] = ["STATIC",  0,       0, 0x50000000,  50, 407, 130,  13, pTxtLastInd];
+lpWnd[IDRESETIND ] = ["BUTTON",  0,       0, 0x50010000, 180, 403, 100,  20, pTxtResetInd];
+lpWnd[IDCOPYRES  ] = ["BUTTON",  0,       0, 0x50010000, 390, 403, 100,  20, pTxtCopy];
 lpWnd[IDEDRESULT ] = ["EDIT",    0,   0x200, 0x50310804,  15, 425, 475, 105, ""];
-lpWnd[IDGLOBPRO  ] = ["BUTTON",  0,       0, 0x50000007,   7, 545, 406, 125, pTxtGlobPro];
-lpWnd[IDEDGLOBPRO] = ["EDIT",    0,   0x200, 0x50310804,  15, 560, 390, 105, ""];
-lpWnd[IDTEST     ] = ["BUTTON",  0,       0, 0x50010001, 420, 550,  75,  23, pTxtTest];
-lpWnd[IDHELP     ] = ["BUTTON",  0,       0, 0x50010000, 420, 575,  75,  23, pTxtHelp];
-lpWnd[IDOPAQMINUS] = ["BUTTON",  0,       0, 0x50010000, 420, 600,  75,  23, pTxtOpaqMinus];
-lpWnd[IDOPAQPLUS ] = ["BUTTON",  0,       0, 0x50010000, 420, 625,  75,  23, pTxtOpaqPlus];
-lpWnd[IDCLOSE    ] = ["BUTTON",  0,       0, 0x50010000, 420, 650,  75,  23, pTxtClose];
+lpWnd[IDGLOBPRO  ] = ["BUTTON",  0,       0, 0x50000007,   7, 545, 381, 125, pTxtGlobPro];
+lpWnd[IDEDGLOBPRO] = ["EDIT",    0,   0x200, 0x50310804,  15, 560, 365, 105, ""];
+lpWnd[IDTEST     ] = ["BUTTON",  0,       0, 0x50010001, 395, 550, 100,  23, pTxtTest];
+lpWnd[IDHELP     ] = ["BUTTON",  0,       0, 0x50010000, 395, 575, 100,  23, pTxtHelp];
+lpWnd[IDOPAQMINUS] = ["BUTTON",  0,       0, 0x50010000, 395, 600, 100,  23, pTxtOpaqMinus];
+lpWnd[IDOPAQPLUS ] = ["BUTTON",  0,       0, 0x50010000, 395, 625, 100,  23, pTxtOpaqPlus];
+lpWnd[IDCLOSE    ] = ["BUTTON",  0,       0, 0x50010000, 395, 650, 100,  23, pTxtClose];
 
-lpCol[IDNAME     ] = ["BUTTON",  0,       0, 0x50000007,  10,  10, 235,  30, pTxtName];
-lpCol[IDLIST     ] = ["LISTBOX", 0,       0, 0x50A10003,  10,  30, 235, 270, ""];
-lpCol[IDVALUE    ] = ["BUTTON",  0,       0, 0x50000007, 255,  40, 225, 235, pTxtValue];
-lpCol[IDREVAL    ] = ["STATIC",  0,       0, 0x50002000, 260,  60, 215, 210, ""];
-lpCol[IDADD      ] = ["BUTTON",  0,       0, 0x50010000,  10, 290,  90,  23, pTxtAdd];
-lpCol[IDRENAME   ] = ["BUTTON",  0,       0, 0x50010000, 105, 290,  90,  23, pTxtRename];
-lpCol[IDDELETE   ] = ["BUTTON",  0,       0, 0x50010000, 200, 290,  90,  23, pTxtDelete];
-lpCol[IDOK       ] = ["BUTTON",  0,       0, 0x50010001, 295, 290,  90,  23, pTxtOK];
-lpCol[IDCOLCLOSE ] = ["BUTTON",  0,       0, 0x50010000, 390, 290,  90,  23, pTxtClose];
+lpCol[IDNAME     ] = ["BUTTON",  0,       0, 0x50000007,  10,  10, 260,  30, pTxtName];
+lpCol[IDLIST     ] = ["LISTBOX", 0,       0, 0x50A10003,  10,  30, 260, 270, ""];
+lpCol[IDVALUE    ] = ["BUTTON",  0,       0, 0x50000007, 280,  40, 225, 235, pTxtValue];
+lpCol[IDREVAL    ] = ["STATIC",  0,       0, 0x50002000, 285,  60, 215, 210, ""];
+lpCol[IDADD      ] = ["BUTTON",  0,       0, 0x50010000,  10, 290,  95,  23, pTxtAdd];
+lpCol[IDRENAME   ] = ["BUTTON",  0,       0, 0x50010000, 110, 290,  95,  23, pTxtRename];
+lpCol[IDDELETE   ] = ["BUTTON",  0,       0, 0x50010000, 210, 290,  95,  23, pTxtDelete];
+lpCol[IDOK       ] = ["BUTTON",  0,       0, 0x50010001, 310, 290,  95,  23, pTxtOK];
+lpCol[IDCOLCLOSE ] = ["BUTTON",  0,       0, 0x50010000, 410, 290,  95,  23, pTxtClose];
 
 if (hEditWnd)
 {
@@ -369,27 +313,29 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
                 oSys.Call("user32::GetNextDlgTabItem", hWnd, oSys.Call("user32::GetFocus"),
                   oSys.Call("user32::GetAsyncKeyState", 0xA0 /*VK_LSHIFT*/) & 0x80000000));
 
-  else if ((uMsg == 260) /*WM_SYSKEYDOWN*/ &&
-           (oSys.Call("user32::GetAsyncKeyState", 0xA0 /*VK_LSHIFT*/) & 0x80000000) &&
-           (oSys.Call("user32::GetAsyncKeyState", 0xA4 /*VK_LMENU*/)  & 0x80000000))
+  else if (uMsg == 260) //WM_SYSKEYDOWN
   {
-    if (wParam == 0x27) //VK_RIGHT
-      MoveWindow(hMainWnd, hWnd, "R");
-    else if (wParam == 0x25) //VK_LEFT
-      MoveWindow(hMainWnd, hWnd, "L");
-    else if (wParam == 0x28) //VK_DOWN
-      MoveWindow(hMainWnd, hWnd, "D");
-    else if (wParam == 0x26) //VK_UP
-      MoveWindow(hMainWnd, hWnd, "U");
-    else if (wParam == 0x23) //VK_END
-      MoveWindow(hMainWnd, hWnd, "E");
-    else if (wParam == 0x24) //VK_HOME
-      MoveWindow(hMainWnd, hWnd, "H");
-    else if (wParam == 0x22) //VK_NEXT
-      MoveWindow(hMainWnd, hWnd, "B");
-    else if (wParam == 0x21) //VK_PRIOR
-      MoveWindow(hMainWnd, hWnd, "T");
-    else if ((wParam == 109) || (wParam == 189))  //Num- or -
+    if (oSys.Call("user32::GetAsyncKeyState", 0xA0 /*VK_LSHIFT*/) & 0x80000000)
+    {
+      if (wParam == 0x27) //VK_RIGHT
+        MoveWindow(hMainWnd, hWnd, "R");
+      else if (wParam == 0x25) //VK_LEFT
+        MoveWindow(hMainWnd, hWnd, "L");
+      else if (wParam == 0x28) //VK_DOWN
+        MoveWindow(hMainWnd, hWnd, "D");
+      else if (wParam == 0x26) //VK_UP
+        MoveWindow(hMainWnd, hWnd, "U");
+      else if (wParam == 0x23) //VK_END
+        MoveWindow(hMainWnd, hWnd, "E");
+      else if (wParam == 0x24) //VK_HOME
+        MoveWindow(hMainWnd, hWnd, "H");
+      else if (wParam == 0x22) //VK_NEXT
+        MoveWindow(hMainWnd, hWnd, "B");
+      else if (wParam == 0x21) //VK_PRIOR
+        MoveWindow(hMainWnd, hWnd, "T");
+    }
+
+    if ((wParam == 109) || (wParam == 189))  //Num- or -
       SetOpaqueLevel(hWnd, -2);
     else if ((wParam == 107) || (wParam == 187))  //Num+ or +
       SetOpaqueLevel(hWnd, -1);
@@ -895,78 +841,6 @@ function SetSource()
   SetWndFontAndText(lpWnd[IDEDSOURCE][WND], hGuiFont, pSource);
 }
 
-function ReadIni()
-{
-  var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
-  var pIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var pLngName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + AkelPad.GetLangId(0 /*LANGID_FULL*/).toString() + ".lng";
-  var pLngName;
-  var oError;
-
-  if (oFSO.FileExists(pIniName))
-  {
-    try
-    {
-      eval(AkelPad.ReadFile(pIniName));
-    }
-    catch (oError)
-    {
-    }
-  }
-
-  if (oFSO.FileExists(pLngName))
-  {
-    try
-    {
-      eval(AkelPad.ReadFile(pLngName));
-    }
-    catch (oError)
-    {
-    }
-  }
-}
-
-function WriteIni()
-{
-  var oFSO = new ActiveXObject("Scripting.FileSystemObject");
-  var rcWnd;
-  var oFile;
-  var pTxtIni;
-  var i;
-
-  rcWnd = GetWindowPos(hWndDlg);
-
-  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
-  pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
-  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDSTRING][WND], lpBuffer, nBufSize);
-  pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
-  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDWITH][WND], lpBuffer, nBufSize);
-  pWith = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
-
-  pTxtIni = 'nWndPosX=' + rcWnd.left + ';\r\n'  +
-            'nWndPosY=' + rcWnd.top  + ';\r\n'  +
-            'nOpaque='  + nOpaque    + ';\r\n'  +
-            'nNL='      + nNL        + ';\r\n'  +
-            'nAction='  + nAction    + ';\r\n'  +
-            'pREStr="'  + pREStr     + '";\r\n' +
-            'pString="' + pString    + '";\r\n' +
-            'pWith="'   + pWith      + '";\r\n';
-
-  pTxtIni += 'aRECol=[\r\n';
-  for (i = 0; i < aRECol.length; ++i)
-  {
-    pTxtIni += '["' + 
-                aRECol[i][0].replace(/[\\"]/g, "\\$&") + '","' + 
-                aRECol[i][1].replace(/[\\"]/g, "\\$&") + '"]' +
-                ((i < aRECol.length - 1) ? ',' : '') + '\r\n';
-  }
-  pTxtIni += '];';
-
-  oFile = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini", 2, true, -1);
-  oFile.Write(pTxtIni);
-  oFile.Close();
-}
-
 function TestRE()
 {
   var pResult = "";
@@ -1157,9 +1031,9 @@ function Collection()
                           pClassName,     //lpClassName
                           pTxtRECollect,  //lpWindowName
                           0x90C80000,     //WS_VISIBLE|WS_POPUP|WS_CAPTION|WS_SYSMENU
-                          rcWnd.left+8,   //x
+                          rcWnd.left-4,   //x
                           rcWnd.top+180,  //y
-                          495,            //nWidth
+                          520,            //nWidth
                           350,            //nHeight
                           hWndDlg,        //hWndParent
                           0,              //ID
@@ -1534,4 +1408,135 @@ function FindRE(nChar)
       break;
     }
   }
+}
+
+function ReadIni()
+{
+  var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
+  var pIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var pLngName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + AkelPad.GetLangId(0 /*LANGID_FULL*/).toString() + ".lng";
+  var pLngName;
+  var oError;
+
+  if (oFSO.FileExists(pLngName))
+  {
+    try
+    {
+      eval(AkelPad.ReadFile(pLngName));
+    }
+    catch (oError)
+    {
+    }
+  }
+  else
+  {
+    pTxtCaption   = "Regular Expressions Tester for JavaScript";
+    pTxtRegExp    = "Regular Expression (RE)";
+    pTxtSource    = "RE.source";
+    pTxtEscape    = "&Escape";
+    pTxtUnEscape  = "&UnEscape";
+    pTxtRE        = "RE";
+    pTxtIgCase    = "&ignoreCase";
+    pTxtGlobal    = "&global";
+    pTxtMultiL    = "&multiline";
+    pTxtNewLine   = "New line:";
+    pTxtCollect   = "&Collection";
+    pTxtNLWin     = "Win (\\r\\n)";
+    pTxtNLUnix    = "Unix (\\n)";
+    pTxtNLMac     = "Mac (\\r)";
+    pTxtString    = "String to test (Str)";
+    pTxtAction    = "Action";
+    pTxtMeTest    = "RE.test(Str)";
+    pTxtMeExec    = "RE.exec(Str)";
+    pTxtMeSearch  = "Str.search(RE)";
+    pTxtMeMatch   = "Str.match(RE)";
+    pTxtMeSplit   = "Str.split(RE)";
+    pTxtMeReplace = "Str.replace(RE,With):";
+    pTxtResult    = "Result";
+    pTxtLastInd   = "RE.lastIndex=";
+    pTxtResetInd  = "&Reset lastIndex";
+    pTxtArray     = "Array";
+    pTxtEmpArray  = "empty Array";
+    pTxtGlobPro   = "Global RegExp object properties";
+    pTxtTest      = "Test";
+    pTxtHelp      = "Help";
+    pTxtOpaqMinus = "Opaque-";
+    pTxtOpaqPlus  = "Opaque+";
+    pTxtClose     = "Close";
+    pTxtCopyPaste = "Copy/Paste";
+    pTxtCopy      = "Copy";
+    pTxtCopyCB    = "Copy to clipboard";
+    pTxtCopyAP    = "Copy to AkelPad";
+    pTxtPasteCB   = "Paste from clipboard";
+    pTxtPasteAP   = "Paste from AkelPad";
+    pTxtNoRE      = "There is no Regular Expression."
+    pTxtNoStr     = "There is no string to test.";
+    pTxtRECollect = "Collection of Regular Expressions";
+    pTxtName      = "Name";
+    pTxtValue     = "Value";
+    pTxtAdd       = "Add (Ins)";
+    pTxtRename    = "Rename (F2)";
+    pTxtDelete    = "Delete (Del)";
+    pTxtOK        = "OK (Enter)";
+    pTxtAddRE     = "Add Regular Expression";
+    pTxtRenRE     = "Rename Regular Expression";
+    pTxtNewName   = "New name";
+    pTxtREExist   = "This Regular Expression already exists under name: ";
+    pTxtNameExist = "This name already exists: ";
+    pTxtREHelp    = "Help for Regular Expressions";
+    pTxtHelpText  = "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
+  }
+
+  if (oFSO.FileExists(pIniName))
+  {
+    try
+    {
+      eval(AkelPad.ReadFile(pIniName));
+    }
+    catch (oError)
+    {
+    }
+  }
+}
+
+
+function WriteIni()
+{
+  var oFSO = new ActiveXObject("Scripting.FileSystemObject");
+  var rcWnd;
+  var oFile;
+  var pTxtIni;
+  var i;
+
+  rcWnd = GetWindowPos(hWndDlg);
+
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
+  pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDSTRING][WND], lpBuffer, nBufSize);
+  pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDWITH][WND], lpBuffer, nBufSize);
+  pWith = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
+
+  pTxtIni = 'nWndPosX=' + rcWnd.left + ';\r\n'  +
+            'nWndPosY=' + rcWnd.top  + ';\r\n'  +
+            'nOpaque='  + nOpaque    + ';\r\n'  +
+            'nNL='      + nNL        + ';\r\n'  +
+            'nAction='  + nAction    + ';\r\n'  +
+            'pREStr="'  + pREStr     + '";\r\n' +
+            'pString="' + pString    + '";\r\n' +
+            'pWith="'   + pWith      + '";\r\n';
+
+  pTxtIni += 'aRECol=[\r\n';
+  for (i = 0; i < aRECol.length; ++i)
+  {
+    pTxtIni += '["' + 
+                aRECol[i][0].replace(/[\\"]/g, "\\$&") + '","' + 
+                aRECol[i][1].replace(/[\\"]/g, "\\$&") + '"]' +
+                ((i < aRECol.length - 1) ? ',' : '') + '\r\n';
+  }
+  pTxtIni += '];';
+
+  oFile = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini", 2, true, -1);
+  oFile.Write(pTxtIni);
+  oFile.Close();
 }
