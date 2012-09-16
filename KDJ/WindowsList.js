@@ -1,238 +1,250 @@
-// WindowsList.js - ver. 2012-05-22
+// WindowsList.js - ver. 2012-09-16
 //
-// Call("Scripts::Main", 1, "WindowsList.js")
+// Run in AkelPad:
+//   Call("Scripts::Main", 1, "WindowsList.js")
+// Run from command line (required registration: regsvr32.exe Scripts.dll):
+//   wscript.exe WindowsList.js
 //
 // Shortcut keys in dialog box:
-// F9    - refresh list
-// Alt+1 - set focus to windows list box
+// F5, F9 - refresh list
+// Alt+1  - set focus to windows list box
 
-if (! AkelPad.Include("EnumerateWindows_functions.js"))
-  WScript.Quit();
+GetAkelPadObject();
 
 var oSys         = AkelPad.SystemFunction();
 var hInstanceDLL = AkelPad.GetInstanceDll();
 var sClassName   = "AkelPad::Scripts::" + WScript.ScriptName + "::" + hInstanceDLL;
-var sScripName   = "Windows list";
-var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
-var nWndX        = 220;
-var nWndY        = 40;
-var nTitle       = 1;
-var nVisible     = 1;
-var nMinim       = 2;
-var nMaxim       = 2;
-var nSize        = 1;
-var nTopMost     = 2;
-var nToolWin     = 2;
 var hWndDlg;
-var hFocus;
-var hFocusChild;
-var aListTop;
-var aListChild;
 
-var CLASS   = 0;
-var HWND    = 1;
-var EXSTYLE = 2;
-var STYLE   = 3;
-var X       = 4;
-var Y       = 5;
-var W       = 6;
-var H       = 7;
-var TXT     = 8;
-
-var aWnd        = [];
-var IDTITLEG    = 1000;
-var IDTITLE0    = 1001;
-var IDTITLE1    = 1002;
-var IDTITLE2    = 1003;
-var IDVISIBLEG  = 1004;
-var IDVISIBLE0  = 1005;
-var IDVISIBLE1  = 1006;
-var IDVISIBLE2  = 1007;
-var IDMINIMG    = 1008;
-var IDMINIM0    = 1009;
-var IDMINIM1    = 1010;
-var IDMINIM2    = 1011;
-var IDMAXIMG    = 1012;
-var IDMAXIM0    = 1013;
-var IDMAXIM1    = 1014;
-var IDMAXIM2    = 1015;
-var IDSIZEG     = 1016;
-var IDSIZE0     = 1017;
-var IDSIZE1     = 1018;
-var IDSIZE2     = 1019;
-var IDTOPMOSTG  = 1020;
-var IDTOPMOST0  = 1021;
-var IDTOPMOST1  = 1022;
-var IDTOPMOST2  = 1023;
-var IDTOOLWING  = 1024;
-var IDTOOLWIN0  = 1025;
-var IDTOOLWIN1  = 1026;
-var IDTOOLWIN2  = 1027;
-var IDPROCESS   = 1028;
-var IDWNDTITLE  = 1029;
-var IDCOUNT     = 1030;
-var IDWNDLB     = 1031;
-var IDTITLES    = 1032;
-var IDTITLEE    = 1033;
-var IDCLASSS    = 1034;
-var IDCLASSE    = 1035;
-var IDHANDLES   = 1036;
-var IDHANDLEE   = 1037;
-var IDMENUS     = 1038;
-var IDMENUE     = 1039;
-var IDVISIBLES  = 1040;
-var IDVISIBLEE  = 1041;
-var IDMINIMS    = 1042;
-var IDMINIME    = 1043;
-var IDMAXIMS    = 1044;
-var IDMAXIME    = 1045;
-var IDLOCATIONS = 1046;
-var IDLOCATIONE = 1047;
-var IDSIZES     = 1048;
-var IDSIZEE     = 1049;
-var IDTOPMOSTS  = 1050;
-var IDTOPMOSTE  = 1051;
-var IDTOOLWINS  = 1052;
-var IDTOOLWINE  = 1053;
-var IDPIDS      = 1054;
-var IDPIDE      = 1055;
-var IDTIDS      = 1056;
-var IDTIDE      = 1057;
-var IDFILES     = 1058;
-var IDFILEE     = 1059;
-var IDREFRESHB  = 1060;
-var IDSWITCHTOB = 1061;
-var IDHIDESHOWB = 1062;
-var IDMINIMIZEB = 1063;
-var IDMAXIMIZEB = 1064;
-var IDRESTOREB  = 1065;
-var IDCENTERB   = 1066;
-var IDTOPMOSTB  = 1067;
-var IDCHILDB    = 1068;
-
-//0x50000000 - WS_VISIBLE|WS_CHILD
-//0x50000002 - WS_VISIBLE|WS_CHILD|SS_RIGHT
-//0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
-//0x50000009 - WS_VISIBLE|WS_CHILD|BS_AUTORADIOBUTTON
-//0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
-//0x50010880 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_READONLY|ES_AUTOHSCROLL
-//0x50A10081 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_USETABSTOPS|LBS_NOTIFY
-//0x50A10083 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_USETABSTOPS|LBS_NOTIFY|LBS_SORT
-//Windows                CLASS,HWND,EXSTYLE,      STYLE,   X,   Y,   W,   H, TXT
-aWnd[IDTITLEG    ] = ["BUTTON",   0,      0, 0x50000007,  10,  10,  70,  70, "Title"];
-aWnd[IDTITLE0    ] = ["BUTTON",   0,      0, 0x50000009,  25,  30,  40,  16, "No"];
-aWnd[IDTITLE1    ] = ["BUTTON",   0,      0, 0x50000009,  25,  45,  40,  16, "Yes"];
-aWnd[IDTITLE2    ] = ["BUTTON",   0,      0, 0x50000009,  25,  60,  40,  16, "All"];
-aWnd[IDVISIBLEG  ] = ["BUTTON",   0,      0, 0x50000007,  90,  10,  70,  70, "Visible"];
-aWnd[IDVISIBLE0  ] = ["BUTTON",   0,      0, 0x50000009, 105,  30,  40,  16, "No"];
-aWnd[IDVISIBLE1  ] = ["BUTTON",   0,      0, 0x50000009, 105,  45,  40,  16, "Yes"];
-aWnd[IDVISIBLE2  ] = ["BUTTON",   0,      0, 0x50000009, 105,  60,  40,  16, "All"];
-aWnd[IDMINIMG    ] = ["BUTTON",   0,      0, 0x50000007, 170,  10,  70,  70, "Minimized"];
-aWnd[IDMINIM0    ] = ["BUTTON",   0,      0, 0x50000009, 185,  30,  40,  16, "No"];
-aWnd[IDMINIM1    ] = ["BUTTON",   0,      0, 0x50000009, 185,  45,  40,  16, "Yes"];
-aWnd[IDMINIM2    ] = ["BUTTON",   0,      0, 0x50000009, 185,  60,  40,  16, "All"];
-aWnd[IDMAXIMG    ] = ["BUTTON",   0,      0, 0x50000007, 250,  10,  70,  70, "Maximized"];
-aWnd[IDMAXIM0    ] = ["BUTTON",   0,      0, 0x50000009, 265,  30,  40,  16, "No"];
-aWnd[IDMAXIM1    ] = ["BUTTON",   0,      0, 0x50000009, 265,  45,  40,  16, "Yes"];
-aWnd[IDMAXIM2    ] = ["BUTTON",   0,      0, 0x50000009, 265,  60,  40,  16, "All"];
-aWnd[IDSIZEG     ] = ["BUTTON",   0,      0, 0x50000007, 330,  10,  70,  70, "Size"];
-aWnd[IDSIZE0     ] = ["BUTTON",   0,      0, 0x50000009, 345,  30,  40,  16, "No"];
-aWnd[IDSIZE1     ] = ["BUTTON",   0,      0, 0x50000009, 345,  45,  40,  16, "Yes"];
-aWnd[IDSIZE2     ] = ["BUTTON",   0,      0, 0x50000009, 345,  60,  40,  16, "All"];
-aWnd[IDTOPMOSTG  ] = ["BUTTON",   0,      0, 0x50000007, 410,  10,  70,  70, "TopMost"];
-aWnd[IDTOPMOST0  ] = ["BUTTON",   0,      0, 0x50000009, 425,  30,  40,  16, "No"];
-aWnd[IDTOPMOST1  ] = ["BUTTON",   0,      0, 0x50000009, 425,  45,  40,  16, "Yes"];
-aWnd[IDTOPMOST2  ] = ["BUTTON",   0,      0, 0x50000009, 425,  60,  40,  16, "All"];
-aWnd[IDTOOLWING  ] = ["BUTTON",   0,      0, 0x50000007, 490,  10,  70,  70, "ToolWin"];
-aWnd[IDTOOLWIN0  ] = ["BUTTON",   0,      0, 0x50000009, 505,  30,  40,  16, "No"];
-aWnd[IDTOOLWIN1  ] = ["BUTTON",   0,      0, 0x50000009, 505,  45,  40,  16, "Yes"];
-aWnd[IDTOOLWIN2  ] = ["BUTTON",   0,      0, 0x50000009, 505,  60,  40,  16, "All"];
-aWnd[IDPROCESS   ] = ["STATIC",   0,      0, 0x50000000,  10,  95, 100,  13, "Process"];
-aWnd[IDWNDTITLE  ] = ["STATIC",   0,      0, 0x50000000, 130,  95, 100,  13, "Window title"];
-aWnd[IDCOUNT     ] = ["STATIC",   0,      0, 0x50000002, 500,  95,  60,  13, ""];
-aWnd[IDWNDLB     ] = ["LISTBOX",  0,      0, 0x50A10083,  10, 110, 550, 200, ""];
-aWnd[IDTITLES    ] = ["STATIC",   0,      0, 0x50000000,  10, 310,  60,  13, "Title:"];
-aWnd[IDTITLEE    ] = ["EDIT",     0,  0x200, 0x50010880,  65, 310, 415,  20, ""];
-aWnd[IDCLASSS    ] = ["STATIC",   0,      0, 0x50000000,  10, 330,  60,  13, "Class:"];
-aWnd[IDCLASSE    ] = ["EDIT",     0,  0x200, 0x50010880,  65, 330, 300,  20, ""];
-aWnd[IDHANDLES   ] = ["STATIC",   0,      0, 0x50000000,  10, 350,  60,  13, "WinHandle:"];
-aWnd[IDHANDLEE   ] = ["EDIT",     0,  0x200, 0x50010880,  65, 350, 175,  20, ""];
-aWnd[IDMENUS     ] = ["STATIC",   0,      0, 0x50000000, 243, 350,  60,  13, "MenuHandle:"];
-aWnd[IDMENUE     ] = ["EDIT",     0,  0x200, 0x50010880, 305, 350, 175,  20, "hex=FFFFFFFF,  dec=4294967295"];
-aWnd[IDVISIBLES  ] = ["STATIC",   0,      0, 0x50000000,  10, 370,  60,  13, "Visible:"];
-aWnd[IDVISIBLEE  ] = ["EDIT",     0,  0x200, 0x50010880,  65, 370,  30,  20, ""];
-aWnd[IDMINIMS    ] = ["STATIC",   0,      0, 0x50000000,  10, 390,  60,  13, "Minimized:"];
-aWnd[IDMINIME    ] = ["EDIT",     0,  0x200, 0x50010880,  65, 390,  30,  20, ""];
-aWnd[IDMAXIMS    ] = ["STATIC",   0,      0, 0x50000000,  10, 410,  60,  13, "Maximized:"];
-aWnd[IDMAXIME    ] = ["EDIT",     0,  0x200, 0x50010880,  65, 410,  30,  20, ""];
-aWnd[IDLOCATIONS ] = ["STATIC",   0,      0, 0x50000000,  10, 430,  60,  13, "Location:"];
-aWnd[IDLOCATIONE ] = ["EDIT",     0,  0x200, 0x50010880,  65, 430, 120,  20, ""];
-aWnd[IDSIZES     ] = ["STATIC",   0,      0, 0x50000000, 210, 430,  60,  13, "Size:"];
-aWnd[IDSIZEE     ] = ["EDIT",     0,  0x200, 0x50010880, 240, 430, 120,  20, ""];
-aWnd[IDTOPMOSTS  ] = ["STATIC",   0,      0, 0x50000000,  10, 450,  60,  13, "TopMost:"];
-aWnd[IDTOPMOSTE  ] = ["EDIT",     0,  0x200, 0x50010880,  65, 450,  30,  20, ""];
-aWnd[IDTOOLWINS  ] = ["STATIC",   0,      0, 0x50000000,  10, 470,  60,  13, "ToolWin:"];
-aWnd[IDTOOLWINE  ] = ["EDIT",     0,  0x200, 0x50010880,  65, 470,  30,  20, ""];
-aWnd[IDPIDS      ] = ["STATIC",   0,      0, 0x50000000,  10, 490,  60,  13, "ProcessID:"];
-aWnd[IDPIDE      ] = ["EDIT",     0,  0x200, 0x50010880,  65, 490, 175,  20, ""];
-aWnd[IDTIDS      ] = ["STATIC",   0,      0, 0x50000000, 250, 490,  60,  13, "ThreadID:"];
-aWnd[IDTIDE      ] = ["EDIT",     0,  0x200, 0x50010880, 305, 490, 175,  20, ""];
-aWnd[IDFILES     ] = ["STATIC",   0,      0, 0x50000000,  10, 510,  60,  13, "ProcFile:"];
-aWnd[IDFILEE     ] = ["EDIT",     0,  0x200, 0x50010880,  65, 510, 415,  20, ""];
-aWnd[IDREFRESHB  ] = ["BUTTON",   0,      0, 0x50010000, 490, 310,  70,  23, "Refresh (F9)"];
-aWnd[IDSWITCHTOB ] = ["BUTTON",   0,      0, 0x50010000, 490, 335,  70,  23, "&Switch to"];
-aWnd[IDHIDESHOWB ] = ["BUTTON",   0,      0, 0x50010000, 490, 360,  70,  23, "&Hide/Show"];
-aWnd[IDMINIMIZEB ] = ["BUTTON",   0,      0, 0x50010000, 490, 385,  70,  23, "Mi&nimize"];
-aWnd[IDMAXIMIZEB ] = ["BUTTON",   0,      0, 0x50010000, 490, 410,  70,  23, "Ma&ximize"];
-aWnd[IDRESTOREB  ] = ["BUTTON",   0,      0, 0x50010000, 490, 435,  70,  23, "&Restore"];
-aWnd[IDCENTERB   ] = ["BUTTON",   0,      0, 0x50010000, 490, 460,  70,  23, "&Center"];
-aWnd[IDTOPMOSTB  ] = ["BUTTON",   0,      0, 0x50010000, 490, 485,  70,  23, "&TopMost"];
-aWnd[IDCHILDB    ] = ["BUTTON",   0,      0, 0x50010000, 490, 510,  70,  23, "Child &Win"];
-
-var aWndChild        = [];
-var IDCHILDID        = 1100;
-var IDCHILDVISIBLE   = 1101;
-var IDCHILDENABLED   = 1102;
-var IDCHILDCLASS     = 1103;
-var IDCHILDTEXT      = 1104;
-var IDCHILDCOUNT     = 1105;
-var IDCHILDWNDLB     = 1106;
-var IDCHILDHANDLES   = 1107;
-var IDCHILDHANDLEE   = 1108;
-var IDCHILDSTYLES    = 1109;
-var IDCHILDSTYLEE    = 1110;
-var IDCHILDEXSTYLES  = 1111;
-var IDCHILDEXSTYLEE  = 1112;
-var IDCHILDLOCATIONS = 1113;
-var IDCHILDLOCATIONE = 1114;
-var IDCHILDSIZES     = 1115;
-var IDCHILDSIZEE     = 1116;
-
-//Windows                         CLASS,HWND,EXSTYLE,      STYLE,   X,   Y,   W,   H, TXT
-aWndChild[IDCHILDID       ] = ["STATIC",   0,      0, 0x50000000,  10,  10, 100,  13, "WinID"];
-aWndChild[IDCHILDVISIBLE  ] = ["STATIC",   0,      0, 0x50000000,  64,  10, 100,  13, "Visible"];
-aWndChild[IDCHILDENABLED  ] = ["STATIC",   0,      0, 0x50000000, 108,  10, 100,  13, "Enabled"];
-aWndChild[IDCHILDCLASS    ] = ["STATIC",   0,      0, 0x50000000, 162,  10, 100,  13, "Class"];
-aWndChild[IDCHILDTEXT     ] = ["STATIC",   0,      0, 0x50000000, 340,  10, 100,  13, "Text"];
-aWndChild[IDCHILDCOUNT    ] = ["STATIC",   0,      0, 0x50000002, 515,  10,  60,  13, ""];
-aWndChild[IDCHILDWNDLB    ] = ["LISTBOX",  0,      0, 0x50A10081,  10,  25, 565, 200, ""];
-aWndChild[IDCHILDHANDLES  ] = ["STATIC",   0,      0, 0x50000000,  10, 225,  60,  13, "Handle:"];
-aWndChild[IDCHILDHANDLEE  ] = ["EDIT",     0,  0x200, 0x50010880,  60, 225, 180,  20, ""];
-aWndChild[IDCHILDSTYLES   ] = ["STATIC",   0,      0, 0x50000000,  10, 245,  60,  13, "Style:"];
-aWndChild[IDCHILDSTYLEE   ] = ["EDIT",     0,  0x200, 0x50010880,  60, 245, 180,  20, ""];
-aWndChild[IDCHILDEXSTYLES ] = ["STATIC",   0,      0, 0x50000000, 260, 245,  60,  13, "ExStyle:"];
-aWndChild[IDCHILDEXSTYLEE ] = ["EDIT",     0,  0x200, 0x50010880, 300, 245, 180,  20, ""];
-aWndChild[IDCHILDLOCATIONS] = ["STATIC",   0,      0, 0x50000000,  10, 265,  60,  13, "Location:"];
-aWndChild[IDCHILDLOCATIONE] = ["EDIT",     0,  0x200, 0x50010880,  60, 265, 120,  20, ""];
-aWndChild[IDCHILDSIZES    ] = ["STATIC",   0,      0, 0x50000000, 260, 265,  60,  13, "Size:"];
-aWndChild[IDCHILDSIZEE    ] = ["EDIT",     0,  0x200, 0x50010880, 300, 265, 120,  20, ""];
-
-
-
-ReadWriteIni(false);
-
-if (AkelPad.WindowRegisterClass(sClassName))
+if (hWndDlg = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, sClassName, 0))
 {
+  if (! oSys.Call("user32::IsWindowVisible", hWndDlg))
+    oSys.Call("user32::ShowWindow", hWndDlg, 8 /*SW_SHOWNA*/);
+  if (oSys.Call("user32::IsIconic", hWndDlg))
+    oSys.Call("user32::ShowWindow", hWndDlg, 9 /*SW_RESTORE*/);
+
+  oSys.Call("user32::SetForegroundWindow", hWndDlg);
+}
+else
+{
+  var sScripName = "Windows list";
+  var hGuiFont   = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
+  var nWndX      = 220;
+  var nWndY      = 40;
+  var nTitle     = 1;
+  var nVisible   = 1;
+  var nMinim     = 2;
+  var nMaxim     = 2;
+  var nSize      = 1;
+  var nTopMost   = 2;
+  var nToolWin   = 2;
+  var hFocus;
+  var hFocusChild;
+  var aListTop;
+  var aListChild;
+
+  var CLASS   = 0;
+  var HWND    = 1;
+  var EXSTYLE = 2;
+  var STYLE   = 3;
+  var X       = 4;
+  var Y       = 5;
+  var W       = 6;
+  var H       = 7;
+  var TXT     = 8;
+
+  var aWnd        = [];
+  var IDTITLEG    = 1000;
+  var IDTITLE0    = 1001;
+  var IDTITLE1    = 1002;
+  var IDTITLE2    = 1003;
+  var IDVISIBLEG  = 1004;
+  var IDVISIBLE0  = 1005;
+  var IDVISIBLE1  = 1006;
+  var IDVISIBLE2  = 1007;
+  var IDMINIMG    = 1008;
+  var IDMINIM0    = 1009;
+  var IDMINIM1    = 1010;
+  var IDMINIM2    = 1011;
+  var IDMAXIMG    = 1012;
+  var IDMAXIM0    = 1013;
+  var IDMAXIM1    = 1014;
+  var IDMAXIM2    = 1015;
+  var IDSIZEG     = 1016;
+  var IDSIZE0     = 1017;
+  var IDSIZE1     = 1018;
+  var IDSIZE2     = 1019;
+  var IDTOPMOSTG  = 1020;
+  var IDTOPMOST0  = 1021;
+  var IDTOPMOST1  = 1022;
+  var IDTOPMOST2  = 1023;
+  var IDTOOLWING  = 1024;
+  var IDTOOLWIN0  = 1025;
+  var IDTOOLWIN1  = 1026;
+  var IDTOOLWIN2  = 1027;
+  var IDPROCESS   = 1028;
+  var IDWNDTITLE  = 1029;
+  var IDCOUNT     = 1030;
+  var IDWNDLB     = 1031;
+  var IDTITLES    = 1032;
+  var IDTITLEE    = 1033;
+  var IDCLASSS    = 1034;
+  var IDCLASSE    = 1035;
+  var IDHANDLES   = 1036;
+  var IDHANDLEE   = 1037;
+  var IDMENUS     = 1038;
+  var IDMENUE     = 1039;
+  var IDVISIBLES  = 1040;
+  var IDVISIBLEE  = 1041;
+  var IDMINIMS    = 1042;
+  var IDMINIME    = 1043;
+  var IDMAXIMS    = 1044;
+  var IDMAXIME    = 1045;
+  var IDLOCATIONS = 1046;
+  var IDLOCATIONE = 1047;
+  var IDSIZES     = 1048;
+  var IDSIZEE     = 1049;
+  var IDTOPMOSTS  = 1050;
+  var IDTOPMOSTE  = 1051;
+  var IDTOOLWINS  = 1052;
+  var IDTOOLWINE  = 1053;
+  var IDPIDS      = 1054;
+  var IDPIDE      = 1055;
+  var IDTIDS      = 1056;
+  var IDTIDE      = 1057;
+  var IDFILES     = 1058;
+  var IDFILEE     = 1059;
+  var IDREFRESHB  = 1060;
+  var IDSWITCHTOB = 1061;
+  var IDHIDESHOWB = 1062;
+  var IDMINIMIZEB = 1063;
+  var IDMAXIMIZEB = 1064;
+  var IDRESTOREB  = 1065;
+  var IDCENTERB   = 1066;
+  var IDTOPMOSTB  = 1067;
+  var IDCHILDB    = 1068;
+
+  //0x50000000 - WS_VISIBLE|WS_CHILD
+  //0x50000002 - WS_VISIBLE|WS_CHILD|SS_RIGHT
+  //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
+  //0x50000009 - WS_VISIBLE|WS_CHILD|BS_AUTORADIOBUTTON
+  //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
+  //0x50010880 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_READONLY|ES_AUTOHSCROLL
+  //0x50A10081 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_USETABSTOPS|LBS_NOTIFY
+  //0x50A10083 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_USETABSTOPS|LBS_NOTIFY|LBS_SORT
+  //Windows               CLASS,HWND,EXSTYLE,      STYLE,   X,   Y,   W,   H, TXT
+  aWnd[IDTITLEG   ] = ["BUTTON",   0,      0, 0x50000007,  10,  10,  70,  70, "Title"];
+  aWnd[IDTITLE0   ] = ["BUTTON",   0,      0, 0x50000009,  25,  30,  40,  16, "No"];
+  aWnd[IDTITLE1   ] = ["BUTTON",   0,      0, 0x50000009,  25,  45,  40,  16, "Yes"];
+  aWnd[IDTITLE2   ] = ["BUTTON",   0,      0, 0x50000009,  25,  60,  40,  16, "All"];
+  aWnd[IDVISIBLEG ] = ["BUTTON",   0,      0, 0x50000007,  90,  10,  70,  70, "Visible"];
+  aWnd[IDVISIBLE0 ] = ["BUTTON",   0,      0, 0x50000009, 105,  30,  40,  16, "No"];
+  aWnd[IDVISIBLE1 ] = ["BUTTON",   0,      0, 0x50000009, 105,  45,  40,  16, "Yes"];
+  aWnd[IDVISIBLE2 ] = ["BUTTON",   0,      0, 0x50000009, 105,  60,  40,  16, "All"];
+  aWnd[IDMINIMG   ] = ["BUTTON",   0,      0, 0x50000007, 170,  10,  70,  70, "Minimized"];
+  aWnd[IDMINIM0   ] = ["BUTTON",   0,      0, 0x50000009, 185,  30,  40,  16, "No"];
+  aWnd[IDMINIM1   ] = ["BUTTON",   0,      0, 0x50000009, 185,  45,  40,  16, "Yes"];
+  aWnd[IDMINIM2   ] = ["BUTTON",   0,      0, 0x50000009, 185,  60,  40,  16, "All"];
+  aWnd[IDMAXIMG   ] = ["BUTTON",   0,      0, 0x50000007, 250,  10,  70,  70, "Maximized"];
+  aWnd[IDMAXIM0   ] = ["BUTTON",   0,      0, 0x50000009, 265,  30,  40,  16, "No"];
+  aWnd[IDMAXIM1   ] = ["BUTTON",   0,      0, 0x50000009, 265,  45,  40,  16, "Yes"];
+  aWnd[IDMAXIM2   ] = ["BUTTON",   0,      0, 0x50000009, 265,  60,  40,  16, "All"];
+  aWnd[IDSIZEG    ] = ["BUTTON",   0,      0, 0x50000007, 330,  10,  70,  70, "Size"];
+  aWnd[IDSIZE0    ] = ["BUTTON",   0,      0, 0x50000009, 345,  30,  40,  16, "No"];
+  aWnd[IDSIZE1    ] = ["BUTTON",   0,      0, 0x50000009, 345,  45,  40,  16, "Yes"];
+  aWnd[IDSIZE2    ] = ["BUTTON",   0,      0, 0x50000009, 345,  60,  40,  16, "All"];
+  aWnd[IDTOPMOSTG ] = ["BUTTON",   0,      0, 0x50000007, 410,  10,  70,  70, "TopMost"];
+  aWnd[IDTOPMOST0 ] = ["BUTTON",   0,      0, 0x50000009, 425,  30,  40,  16, "No"];
+  aWnd[IDTOPMOST1 ] = ["BUTTON",   0,      0, 0x50000009, 425,  45,  40,  16, "Yes"];
+  aWnd[IDTOPMOST2 ] = ["BUTTON",   0,      0, 0x50000009, 425,  60,  40,  16, "All"];
+  aWnd[IDTOOLWING ] = ["BUTTON",   0,      0, 0x50000007, 490,  10,  70,  70, "ToolWin"];
+  aWnd[IDTOOLWIN0 ] = ["BUTTON",   0,      0, 0x50000009, 505,  30,  40,  16, "No"];
+  aWnd[IDTOOLWIN1 ] = ["BUTTON",   0,      0, 0x50000009, 505,  45,  40,  16, "Yes"];
+  aWnd[IDTOOLWIN2 ] = ["BUTTON",   0,      0, 0x50000009, 505,  60,  40,  16, "All"];
+  aWnd[IDPROCESS  ] = ["STATIC",   0,      0, 0x50000000,  10,  95, 100,  13, "Process"];
+  aWnd[IDWNDTITLE ] = ["STATIC",   0,      0, 0x50000000, 130,  95, 100,  13, "Window title"];
+  aWnd[IDCOUNT    ] = ["STATIC",   0,      0, 0x50000002, 500,  95,  60,  13, ""];
+  aWnd[IDWNDLB    ] = ["LISTBOX",  0,      0, 0x50A10083,  10, 110, 550, 200, ""];
+  aWnd[IDTITLES   ] = ["STATIC",   0,      0, 0x50000000,  10, 310,  60,  13, "Title:"];
+  aWnd[IDTITLEE   ] = ["EDIT",     0,  0x200, 0x50010880,  65, 310, 415,  20, ""];
+  aWnd[IDCLASSS   ] = ["STATIC",   0,      0, 0x50000000,  10, 330,  60,  13, "Class:"];
+  aWnd[IDCLASSE   ] = ["EDIT",     0,  0x200, 0x50010880,  65, 330, 300,  20, ""];
+  aWnd[IDHANDLES  ] = ["STATIC",   0,      0, 0x50000000,  10, 350,  60,  13, "WinHandle:"];
+  aWnd[IDHANDLEE  ] = ["EDIT",     0,  0x200, 0x50010880,  65, 350, 175,  20, ""];
+  aWnd[IDMENUS    ] = ["STATIC",   0,      0, 0x50000000, 243, 350,  60,  13, "MenuHandle:"];
+  aWnd[IDMENUE    ] = ["EDIT",     0,  0x200, 0x50010880, 305, 350, 175,  20, "hex=FFFFFFFF,  dec=4294967295"];
+  aWnd[IDVISIBLES ] = ["STATIC",   0,      0, 0x50000000,  10, 370,  60,  13, "Visible:"];
+  aWnd[IDVISIBLEE ] = ["EDIT",     0,  0x200, 0x50010880,  65, 370,  30,  20, ""];
+  aWnd[IDMINIMS   ] = ["STATIC",   0,      0, 0x50000000,  10, 390,  60,  13, "Minimized:"];
+  aWnd[IDMINIME   ] = ["EDIT",     0,  0x200, 0x50010880,  65, 390,  30,  20, ""];
+  aWnd[IDMAXIMS   ] = ["STATIC",   0,      0, 0x50000000,  10, 410,  60,  13, "Maximized:"];
+  aWnd[IDMAXIME   ] = ["EDIT",     0,  0x200, 0x50010880,  65, 410,  30,  20, ""];
+  aWnd[IDLOCATIONS] = ["STATIC",   0,      0, 0x50000000,  10, 430,  60,  13, "Location:"];
+  aWnd[IDLOCATIONE] = ["EDIT",     0,  0x200, 0x50010880,  65, 430, 120,  20, ""];
+  aWnd[IDSIZES    ] = ["STATIC",   0,      0, 0x50000000, 210, 430,  60,  13, "Size:"];
+  aWnd[IDSIZEE    ] = ["EDIT",     0,  0x200, 0x50010880, 240, 430, 120,  20, ""];
+  aWnd[IDTOPMOSTS ] = ["STATIC",   0,      0, 0x50000000,  10, 450,  60,  13, "TopMost:"];
+  aWnd[IDTOPMOSTE ] = ["EDIT",     0,  0x200, 0x50010880,  65, 450,  30,  20, ""];
+  aWnd[IDTOOLWINS ] = ["STATIC",   0,      0, 0x50000000,  10, 470,  60,  13, "ToolWin:"];
+  aWnd[IDTOOLWINE ] = ["EDIT",     0,  0x200, 0x50010880,  65, 470,  30,  20, ""];
+  aWnd[IDPIDS     ] = ["STATIC",   0,      0, 0x50000000,  10, 490,  60,  13, "ProcessID:"];
+  aWnd[IDPIDE     ] = ["EDIT",     0,  0x200, 0x50010880,  65, 490, 175,  20, ""];
+  aWnd[IDTIDS     ] = ["STATIC",   0,      0, 0x50000000, 250, 490,  60,  13, "ThreadID:"];
+  aWnd[IDTIDE     ] = ["EDIT",     0,  0x200, 0x50010880, 305, 490, 175,  20, ""];
+  aWnd[IDFILES    ] = ["STATIC",   0,      0, 0x50000000,  10, 510,  60,  13, "ProcFile:"];
+  aWnd[IDFILEE    ] = ["EDIT",     0,  0x200, 0x50010880,  65, 510, 415,  20, ""];
+  aWnd[IDREFRESHB ] = ["BUTTON",   0,      0, 0x50010000, 490, 310,  70,  23, "Refresh (F5)"];
+  aWnd[IDSWITCHTOB] = ["BUTTON",   0,      0, 0x50010000, 490, 335,  70,  23, "&Switch to"];
+  aWnd[IDHIDESHOWB] = ["BUTTON",   0,      0, 0x50010000, 490, 360,  70,  23, "&Hide/Show"];
+  aWnd[IDMINIMIZEB] = ["BUTTON",   0,      0, 0x50010000, 490, 385,  70,  23, "Mi&nimize"];
+  aWnd[IDMAXIMIZEB] = ["BUTTON",   0,      0, 0x50010000, 490, 410,  70,  23, "Ma&ximize"];
+  aWnd[IDRESTOREB ] = ["BUTTON",   0,      0, 0x50010000, 490, 435,  70,  23, "&Restore"];
+  aWnd[IDCENTERB  ] = ["BUTTON",   0,      0, 0x50010000, 490, 460,  70,  23, "&Center"];
+  aWnd[IDTOPMOSTB ] = ["BUTTON",   0,      0, 0x50010000, 490, 485,  70,  23, "&TopMost"];
+  aWnd[IDCHILDB   ] = ["BUTTON",   0,      0, 0x50010000, 490, 510,  70,  23, "Child &Win"];
+
+  var aWndChild        = [];
+  var IDCHILDID        = 1100;
+  var IDCHILDVISIBLE   = 1101;
+  var IDCHILDENABLED   = 1102;
+  var IDCHILDCLASS     = 1103;
+  var IDCHILDTEXT      = 1104;
+  var IDCHILDCOUNT     = 1105;
+  var IDCHILDWNDLB     = 1106;
+  var IDCHILDHANDLES   = 1107;
+  var IDCHILDHANDLEE   = 1108;
+  var IDCHILDSTYLES    = 1109;
+  var IDCHILDSTYLEE    = 1110;
+  var IDCHILDEXSTYLES  = 1111;
+  var IDCHILDEXSTYLEE  = 1112;
+  var IDCHILDLOCATIONS = 1113;
+  var IDCHILDLOCATIONE = 1114;
+  var IDCHILDSIZES     = 1115;
+  var IDCHILDSIZEE     = 1116;
+
+  //Windows                         CLASS,HWND,EXSTYLE,      STYLE,   X,   Y,   W,   H, TXT
+  aWndChild[IDCHILDID       ] = ["STATIC",   0,      0, 0x50000000,  10,  10, 100,  13, "WinID"];
+  aWndChild[IDCHILDVISIBLE  ] = ["STATIC",   0,      0, 0x50000000,  64,  10, 100,  13, "Visible"];
+  aWndChild[IDCHILDENABLED  ] = ["STATIC",   0,      0, 0x50000000, 108,  10, 100,  13, "Enabled"];
+  aWndChild[IDCHILDCLASS    ] = ["STATIC",   0,      0, 0x50000000, 162,  10, 100,  13, "Class"];
+  aWndChild[IDCHILDTEXT     ] = ["STATIC",   0,      0, 0x50000000, 340,  10, 100,  13, "Text"];
+  aWndChild[IDCHILDCOUNT    ] = ["STATIC",   0,      0, 0x50000002, 515,  10,  60,  13, ""];
+  aWndChild[IDCHILDWNDLB    ] = ["LISTBOX",  0,      0, 0x50A10081,  10,  25, 565, 200, ""];
+  aWndChild[IDCHILDHANDLES  ] = ["STATIC",   0,      0, 0x50000000,  10, 225,  60,  13, "Handle:"];
+  aWndChild[IDCHILDHANDLEE  ] = ["EDIT",     0,  0x200, 0x50010880,  60, 225, 180,  20, ""];
+  aWndChild[IDCHILDSTYLES   ] = ["STATIC",   0,      0, 0x50000000,  10, 245,  60,  13, "Style:"];
+  aWndChild[IDCHILDSTYLEE   ] = ["EDIT",     0,  0x200, 0x50010880,  60, 245, 180,  20, ""];
+  aWndChild[IDCHILDEXSTYLES ] = ["STATIC",   0,      0, 0x50000000, 260, 245,  60,  13, "ExStyle:"];
+  aWndChild[IDCHILDEXSTYLEE ] = ["EDIT",     0,  0x200, 0x50010880, 300, 245, 180,  20, ""];
+  aWndChild[IDCHILDLOCATIONS] = ["STATIC",   0,      0, 0x50000000,  10, 265,  60,  13, "Location:"];
+  aWndChild[IDCHILDLOCATIONE] = ["EDIT",     0,  0x200, 0x50010880,  60, 265, 120,  20, ""];
+  aWndChild[IDCHILDSIZES    ] = ["STATIC",   0,      0, 0x50000000, 260, 265,  60,  13, "Size:"];
+  aWndChild[IDCHILDSIZEE    ] = ["EDIT",     0,  0x200, 0x50010880, 300, 265, 120,  20, ""];
+
+  ReadWriteIni(false);
+
+  AkelPad.WindowRegisterClass(sClassName);
+
   hWndDlg = oSys.Call("user32::CreateWindowEx" + _TCHAR,
                       0,               //dwExStyle
                       sClassName,      //lpClassName
@@ -254,15 +266,6 @@ if (AkelPad.WindowRegisterClass(sClassName))
   AkelPad.WindowGetMessage();
 
   AkelPad.WindowUnregisterClass(sClassName);
-}
-else if (hWndDlg = oSys.Call("user32::FindWindowEx" + _TCHAR, 0, 0, sClassName, 0))
-{
-  if (! oSys.Call("user32::IsWindowVisible", hWndDlg))
-    oSys.Call("user32::ShowWindow", hWndDlg, 8 /*SW_SHOWNA*/);
-  if (oSys.Call("user32::IsIconic", hWndDlg))
-    oSys.Call("user32::ShowWindow", hWndDlg, 9 /*SW_RESTORE*/);
-
-  oSys.Call("user32::SetForegroundWindow", hWndDlg);
 }
 
 function DialogCallback(hWnd, uMsg, wParam, lParam)
@@ -309,7 +312,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 256 /*WM_KEYDOWN*/)
   {
-    if (wParam == 0x78 /*VK_F9*/)
+    if ((wParam == 0x74 /*VK_F5*/) || (wParam == 0x78 /*VK_F9*/))
       oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDREFRESHB, 0);
     else if (wParam == 27 /*VK_ESCAPE*/)
       oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 16 /*WM_CLOSE*/, 0, 0);
@@ -399,46 +402,6 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     oSys.Call("user32::PostQuitMessage", 0); //Exit message loop
 
   return 0;
-}
-
-function ReadWriteIni(bWrite)
-{
-  var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
-  var sIniFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var sIniTxt;
-  var oFile;
-  var oRect;
-  var oError;
-  var i;
-
-  if (bWrite)
-  {
-    oRect   = GetWindowPos(hWndDlg);
-    sIniTxt = "nWndX="    + oRect.X  + ";\r\n" +
-              "nWndY="    + oRect.Y  + ";\r\n" +
-              "nTitle="   + nTitle   + ";\r\n" +
-              "nVisible=" + nVisible + ";\r\n" +
-              "nMinim="   + nMinim   + ";\r\n" +
-              "nMaxim="   + nMaxim   + ";\r\n" +
-              "nSize="    + nSize    + ";\r\n" +
-              "nTopMost=" + nTopMost + ";\r\n" +
-              "nToolWin=" + nToolWin + ";";
-
-    oFile = oFSO.OpenTextFile(sIniFile, 2, true, -1);
-    oFile.Write(sIniTxt);
-    oFile.Close();
-  }
-
-  else if (oFSO.FileExists(sIniFile))
-  {
-    try
-    {
-      eval(AkelPad.ReadFile(sIniFile));
-    }
-    catch (oError)
-    {
-    }
-  }
 }
 
 function GetWindowPos(hWnd)
@@ -618,12 +581,17 @@ function ShowWndData()
 
 function HexAndDec(nArg)
 {
-  var sHex = nArg.toString(16).toUpperCase();
+  if (nArg)
+  {
+    var sHex = nArg.toString(16).toUpperCase();
 
-  while (sHex.length < 8)
-    sHex = "0" + sHex;
+    while (sHex.length < 8)
+      sHex = "0" + sHex;
 
-  return "hex=" + sHex + ",  dec=" + nArg.toString();
+    return "hex=" + sHex + ",  dec=" + nArg.toString();
+  }
+  else
+    return "";
 }
 
 function YesOrNo(bArg)
@@ -867,5 +835,242 @@ function ShowChildWndData()
     oSys.Call("user32::SetWindowText" + _TCHAR, aWndChild[IDCHILDSIZEE    ][HWND],
               "W=" + aListChild[nInd].W.toString() + ", " +
               "H=" + aListChild[nInd].H.toString());
+  }
+}
+
+function EnumTopLevelWindows(nTitle, nVisible, nMinimized, nMaximized, nSize, nTopMost, nToolWin)
+{
+  var lpEnum = AkelPad.MemAlloc(4004);
+  var lpInfo = AkelPad.MemAlloc(260 * _TSIZE);
+  var aWnd   = [];
+  var hWnd;
+  var hMenu;
+  var lpEnumCallback;
+  var bWndOK;
+  var sTitle;
+  var bVisible;
+  var bMinimized;
+  var bMaximized;
+  var nX;
+  var nY;
+  var nW;
+  var nH;
+  var bTopMost;
+  var sClass;
+  var nPID;
+  var nTID;
+  var hProcess;
+  var sFileName;
+  var sBaseName;
+  var i;
+
+  AkelPad.MemCopy(lpEnum, 0, 3 /*DT_DWORD*/);
+
+  lpEnumCallback = oSys.RegisterCallback("", EnumWindowsProc, 2);
+  oSys.Call("user32::EnumWindows", lpEnumCallback, lpEnum);
+  oSys.UnregisterCallback(lpEnumCallback);
+
+  for (i = 0; i < AkelPad.MemRead(lpEnum, 3 /*DT_DWORD*/); ++i)
+  {
+    hWnd  = AkelPad.MemRead(lpEnum + (i + 1) * 4, 3 /*DT_DWORD*/);
+    hMenu = oSys.Call("user32::GetMenu", hWnd);
+
+    AkelPad.SendMessage(hWnd, 0x000D /*WM_GETTEXT*/, 260, lpInfo);
+    sTitle = AkelPad.MemRead(lpInfo, _TSTR);
+
+    bVisible   = oSys.Call("user32::IsWindowVisible", hWnd);
+    bMinimized = oSys.Call("user32::IsIconic", hWnd);
+    bMaximized = oSys.Call("user32::IsZoomed", hWnd);
+
+    oSys.Call("user32::GetWindowRect", hWnd, lpInfo);
+    nX = AkelPad.MemRead(lpInfo,      3 /*DT_DWORD*/);
+    nY = AkelPad.MemRead(lpInfo +  4, 3 /*DT_DWORD*/);
+    nW = AkelPad.MemRead(lpInfo +  8, 3 /*DT_DWORD*/) - nX;
+    nH = AkelPad.MemRead(lpInfo + 12, 3 /*DT_DWORD*/) - nY;
+
+    bTopMost = oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/) & 0x00000008 /*WS_EX_TOPMOST*/;
+    bToolWin = oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/) & 0x00000080 /*WS_EX_TOOLWINDOW*/;
+
+    bWndOK = true;
+    if (((nTitle == 0)     && sTitle)     || ((nTitle == 1)     && (! sTitle)) ||
+        ((nVisible == 0)   && bVisible)   || ((nVisible == 1)   && (! bVisible)) ||
+        ((nMinimized == 0) && bMinimized) || ((nMinimized == 1) && (! bMinimized)) ||
+        ((nMaximized == 0) && bMaximized) || ((nMaximized == 1) && (! bMaximized)) ||
+        ((nSize == 0)      && (nW + nH))  || ((nSize == 1)      && (! (nW + nH))) ||
+        ((nTopMost == 0)   && bTopMost)   || ((nTopMost == 1)   && (! bTopMost)) ||
+        ((nToolWin == 0)   && bToolWin)   || ((nToolWin == 1)   && (! bToolWin)))
+      bWndOK = false;
+
+    if (bWndOK)
+    {
+      oSys.Call("user32::GetClassName" + _TCHAR, hWnd, lpInfo, 260);
+      sClass = AkelPad.MemRead(lpInfo, _TSTR);
+
+      nTID = oSys.Call("user32::GetWindowThreadProcessId", hWnd, lpInfo);
+      nPID = AkelPad.MemRead(lpInfo, 3 /*DT_DWORD*/);
+
+      hProcess = oSys.Call("Kernel32::OpenProcess", 0x0410 /*PROCESS_QUERY_INFORMATION|PROCESS_VM_READ*/, 0, nPID);
+      oSys.Call("Psapi::GetModuleFileNameEx" + _TCHAR, hProcess, 0, lpInfo, 260);
+      sFileName = AkelPad.MemRead(lpInfo, _TSTR);
+      oSys.Call("Psapi::GetModuleBaseName" + _TCHAR, hProcess, 0, lpInfo, 260);
+      sBaseName = AkelPad.MemRead(lpInfo, _TSTR);
+      oSys.Call("Kernel32::CloseHandle", hProcess);
+
+      aWnd[aWnd.length] = {Handle    : hWnd,
+                           Menu      : hMenu,
+                           Title     : sTitle,
+                           Visible   : bVisible,
+                           Minimized : bMinimized,
+                           Maximized : bMaximized,
+                           X         : nX,
+                           Y         : nY,
+                           W         : nW,
+                           H         : nH,
+                           TopMost   : bTopMost,
+                           ToolWin   : bToolWin,
+                           Class     : sClass,
+                           PID       : nPID,
+                           TID       : nTID,
+                           FileName  : sFileName,
+                           BaseName  : sBaseName};
+    }
+  }
+
+  AkelPad.MemFree(lpEnum);
+  AkelPad.MemFree(lpInfo);
+
+  return aWnd;
+}
+
+function EnumChildWindows(hWndParent)
+{
+  var lpEnum = AkelPad.MemAlloc(4004);
+  var lpInfo = AkelPad.MemAlloc(260 * _TSIZE);
+  var aWnd   = [];
+  var hWnd;
+  var lpEnumCallback;
+  var sText;
+  var nX;
+  var nY;
+  var nW;
+  var nH;
+  var sClass;
+  var i;
+
+  AkelPad.MemCopy(lpEnum, 0, 3 /*DT_DWORD*/);
+
+  lpEnumCallback = oSys.RegisterCallback("", EnumWindowsProc, 2);
+  oSys.Call("user32::EnumChildWindows", hWndParent, lpEnumCallback, lpEnum);
+  oSys.UnregisterCallback(lpEnumCallback);
+
+  for (i = 0; i < AkelPad.MemRead(lpEnum, 3 /*DT_DWORD*/); ++i)
+  {
+    hWnd = AkelPad.MemRead(lpEnum + (i + 1) * 4, 3 /*DT_DWORD*/);
+
+    AkelPad.SendMessage(hWnd, 0x000D /*WM_GETTEXT*/, 260, lpInfo);
+    sText = AkelPad.MemRead(lpInfo, _TSTR);
+
+    oSys.Call("user32::GetWindowRect", hWnd, lpInfo);
+    nX = AkelPad.MemRead(lpInfo,      3 /*DT_DWORD*/);
+    nY = AkelPad.MemRead(lpInfo +  4, 3 /*DT_DWORD*/);
+    nW = AkelPad.MemRead(lpInfo +  8, 3 /*DT_DWORD*/) - nX;
+    nH = AkelPad.MemRead(lpInfo + 12, 3 /*DT_DWORD*/) - nY;
+
+    oSys.Call("user32::GetClassName" + _TCHAR, hWnd, lpInfo, 260);
+    sClass = AkelPad.MemRead(lpInfo, _TSTR);
+
+    aWnd[aWnd.length] = {Handle  : hWnd,
+                         Text    : sText,
+                         Visible : oSys.Call("user32::IsWindowVisible", hWnd),
+                         Enabled : oSys.Call("user32::IsWindowEnabled", hWnd),
+                         X       : nX,
+                         Y       : nY,
+                         W       : nW,
+                         H       : nH,
+                         Class   : sClass,
+                         Style   : oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -16 /*GWL_STYLE*/),
+                         ExStyle : oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -20 /*GWL_EXSTYLE*/),
+                         ID      : oSys.Call("user32::GetWindowLong" + _TCHAR, hWnd, -12 /*GWL_ID*/)};
+  }
+
+  AkelPad.MemFree(lpEnum);
+  AkelPad.MemFree(lpInfo);
+
+  return aWnd;
+}
+
+function EnumWindowsProc(hWnd, lParam)
+{
+  AkelPad.MemCopy(lParam, AkelPad.MemRead(lParam, 3 /*DT_DWORD*/) + 1, 3 /*DT_DWORD*/);
+  AkelPad.MemCopy(lParam + AkelPad.MemRead(lParam, 3 /*DT_DWORD*/) * 4, hWnd, 3 /*DT_DWORD*/);
+
+  if (AkelPad.MemRead(lParam, 3 /*DT_DWORD*/) < 4000)
+    return true;
+  else
+    return false;
+}
+
+function GetAkelPadObject()
+{
+  if (typeof AkelPad == "undefined")
+  {
+    var oError;
+
+    try
+    {
+      AkelPad = new ActiveXObject("AkelPad.Document");
+      _TCHAR  = AkelPad.Constants._TCHAR;
+      _TSTR   = AkelPad.Constants._TSTR;
+      _TSIZE  = AkelPad.Constants._TSIZE;
+    }
+    catch (oError)
+    {
+      WScript.Echo("You need register Scripts.dll");
+      WScript.Quit();
+    }
+  }
+}
+
+function ReadWriteIni(bWrite)
+{
+  var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
+  var sIniFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var sIniTxt;
+  var oFile;
+  var oRect;
+  var oError;
+  var i;
+
+  if (bWrite)
+  {
+    oRect   = GetWindowPos(hWndDlg);
+    sIniTxt = "nWndX="    + oRect.X  + ";\r\n" +
+              "nWndY="    + oRect.Y  + ";\r\n" +
+              "nTitle="   + nTitle   + ";\r\n" +
+              "nVisible=" + nVisible + ";\r\n" +
+              "nMinim="   + nMinim   + ";\r\n" +
+              "nMaxim="   + nMaxim   + ";\r\n" +
+              "nSize="    + nSize    + ";\r\n" +
+              "nTopMost=" + nTopMost + ";\r\n" +
+              "nToolWin=" + nToolWin + ";";
+
+    oFile = oFSO.OpenTextFile(sIniFile, 2, true, -1);
+    oFile.Write(sIniTxt);
+    oFile.Close();
+  }
+
+  else if (oFSO.FileExists(sIniFile))
+  {
+    oFile = oFSO.OpenTextFile(sIniFile, 1, false, -1);
+
+    try
+    {
+      eval(oFile.ReadAll());
+    }
+    catch (oError)
+    {
+    }
+
+    oFile.Close();
   }
 }
