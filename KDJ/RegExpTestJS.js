@@ -139,23 +139,23 @@ var WNDTXT   = 8;
 //Windows              WNDTYPE,WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
 lpWnd[IDREGEXP   ] = ["BUTTON",  0,       0, 0x50000007,   7,  10, 491, 140, pTxtRegExp];
 lpWnd[IDSOURCE   ] = ["STATIC",  0,       0, 0x50000000,  15,  27, 150,  13, pTxtSource];
-lpWnd[IDESCAPE   ] = ["BUTTON",  0,       0, 0x50010000, 180,  23, 100,  20, pTxtEscape];
-lpWnd[IDUNESCAPE ] = ["BUTTON",  0,       0, 0x50010000, 285,  23, 100,  20, pTxtUnEscape];
-lpWnd[IDCOPYSOU  ] = ["BUTTON",  0,       0, 0x50010000, 390,  23, 100,  20, pTxtCopyPaste];
+lpWnd[IDESCAPE   ] = ["BUTTON",  0,       0, 0x50010000, nAX,  23, nAW,  20, pTxtEscape];
+lpWnd[IDUNESCAPE ] = ["BUTTON",  0,       0, 0x50010000, nBX,  23, nBW,  20, pTxtUnEscape];
+lpWnd[IDCOPYSOU  ] = ["BUTTON",  0,       0, 0x50010000, nCX,  23, nCW,  20, pTxtCopyPaste];
 lpWnd[IDEDSOURCE ] = ["EDIT",    0,   0x200, 0x50210004,  15,  45, 475,  35, ""];
 lpWnd[IDRE       ] = ["STATIC",  0,       0, 0x50000000,  15,  92,  30,  13, pTxtRE];
 lpWnd[IDIGCASE   ] = ["BUTTON",  0,       0, 0x50010003,  50,  92,  70,  16, pTxtIgCase];
 lpWnd[IDGLOBAL   ] = ["BUTTON",  0,       0, 0x50010003, 133,  92,  55,  16, pTxtGlobal];
 lpWnd[IDMULTIL   ] = ["BUTTON",  0,       0, 0x50010003, 190,  92,  55,  16, pTxtMultiL];
-lpWnd[IDCOLLECT  ] = ["BUTTON",  0,       0, 0x50010000, 285,  88, 100,  20, pTxtCollect];
-lpWnd[IDCOPYRE   ] = ["BUTTON",  0,       0, 0x50010000, 390,  88, 100,  20, pTxtCopyPaste];
+lpWnd[IDCOLLECT  ] = ["BUTTON",  0,       0, 0x50010000, nBX,  88, nBW,  20, pTxtCollect];
+lpWnd[IDCOPYRE   ] = ["BUTTON",  0,       0, 0x50010000, nCX,  88, nCW,  20, pTxtCopyPaste];
 lpWnd[IDEDRE     ] = ["EDIT",    0,   0x200, 0x50210004,  15, 110, 475,  35, pREStr];
 lpWnd[IDSTRING   ] = ["BUTTON",  0,       0, 0x50000007,   7, 160, 491, 145, pTxtString];
 lpWnd[IDNEWLINE  ] = ["STATIC",  0,       0, 0x50000000,  50, 177,  70,  13, pTxtNewLine];
 lpWnd[IDNLWIN    ] = ["BUTTON",  0,       0, 0x50000009, 120, 177,  70,  16, pTxtNLWin];
 lpWnd[IDNLUNIX   ] = ["BUTTON",  0,       0, 0x50000009, 200, 177,  70,  16, pTxtNLUnix];
 lpWnd[IDNLMAC    ] = ["BUTTON",  0,       0, 0x50000009, 270, 177,  70,  16, pTxtNLMac];
-lpWnd[IDCOPYSTR  ] = ["BUTTON",  0,       0, 0x50010000, 390, 173, 100,  20, pTxtCopyPaste];
+lpWnd[IDCOPYSTR  ] = ["BUTTON",  0,       0, 0x50010000, nCX, 173, nCW,  20, pTxtCopyPaste];
 lpWnd[IDEDSTRING ] = ["EDIT",    0,   0x200, 0x50310004,  15, 195, 475, 105, pString];
 lpWnd[IDACTION   ] = ["BUTTON",  0,       0, 0x50000007,   7, 315, 491,  65, pTxtAction];
 lpWnd[IDMETEST   ] = ["BUTTON",  0,       0, 0x50000009,  15, 335,  85,  16, pTxtMeTest];
@@ -167,16 +167,16 @@ lpWnd[IDMEREPLACE] = ["BUTTON",  0,       0, 0x50000009,  15, 355, 120,  16, pTx
 lpWnd[IDEDWITH   ] = ["EDIT",    0,   0x200, 0x50010080, 135, 355, 355,  20, pWith];
 lpWnd[IDRESULT   ] = ["BUTTON",  0,       0, 0x50000007,   7, 390, 491, 145, pTxtResult];
 lpWnd[IDLASTIND  ] = ["STATIC",  0,       0, 0x50000000,  50, 407, 130,  13, pTxtLastInd];
-lpWnd[IDRESETIND ] = ["BUTTON",  0,       0, 0x50010000, 180, 403, 100,  20, pTxtResetInd];
-lpWnd[IDCOPYRES  ] = ["BUTTON",  0,       0, 0x50010000, 390, 403, 100,  20, pTxtCopy];
+lpWnd[IDRESETIND ] = ["BUTTON",  0,       0, 0x50010000, nRX, 403, nRW,  20, pTxtResetInd];
+lpWnd[IDCOPYRES  ] = ["BUTTON",  0,       0, 0x50010000, nCX, 403, nCW,  20, pTxtCopy];
 lpWnd[IDEDRESULT ] = ["EDIT",    0,   0x200, 0x50310804,  15, 425, 475, 105, ""];
-lpWnd[IDGLOBPRO  ] = ["BUTTON",  0,       0, 0x50000007,   7, 545, 381, 125, pTxtGlobPro];
-lpWnd[IDEDGLOBPRO] = ["EDIT",    0,   0x200, 0x50310804,  15, 560, 365, 105, ""];
-lpWnd[IDTEST     ] = ["BUTTON",  0,       0, 0x50010001, 395, 550, 100,  23, pTxtTest];
-lpWnd[IDHELP     ] = ["BUTTON",  0,       0, 0x50010000, 395, 575, 100,  23, pTxtHelp];
-lpWnd[IDOPAQMINUS] = ["BUTTON",  0,       0, 0x50010000, 395, 600, 100,  23, pTxtOpaqMinus];
-lpWnd[IDOPAQPLUS ] = ["BUTTON",  0,       0, 0x50010000, 395, 625, 100,  23, pTxtOpaqPlus];
-lpWnd[IDCLOSE    ] = ["BUTTON",  0,       0, 0x50010000, 395, 650, 100,  23, pTxtClose];
+lpWnd[IDGLOBPRO  ] = ["BUTTON",  0,       0, 0x50000007,   7, 545, nPW, 125, pTxtGlobPro];
+lpWnd[IDEDGLOBPRO] = ["EDIT",    0,   0x200, 0x50310804,  15, 560, nEW, 105, ""];
+lpWnd[IDTEST     ] = ["BUTTON",  0,       0, 0x50010001, nMX, 550, nMW,  23, pTxtTest];
+lpWnd[IDHELP     ] = ["BUTTON",  0,       0, 0x50010000, nMX, 575, nMW,  23, pTxtHelp];
+lpWnd[IDOPAQMINUS] = ["BUTTON",  0,       0, 0x50010000, nMX, 600, nMW,  23, pTxtOpaqMinus];
+lpWnd[IDOPAQPLUS ] = ["BUTTON",  0,       0, 0x50010000, nMX, 625, nMW,  23, pTxtOpaqPlus];
+lpWnd[IDCLOSE    ] = ["BUTTON",  0,       0, 0x50010000, nMX, 650, nMW,  23, pTxtClose];
 
 lpCol[IDNAME     ] = ["BUTTON",  0,       0, 0x50000007,  10,  10, 260,  30, pTxtName];
 lpCol[IDLIST     ] = ["LISTBOX", 0,       0, 0x50A10003,  10,  30, 260, 270, ""];
@@ -1430,6 +1430,13 @@ function ReadIni()
   }
   else
   {
+    nAX = 205, nAW = 90;
+    nBX = 300, nBW = 90;
+    nCX = 400, nCW = 90;
+    nRX = 205, nRW = 100;
+               nPW = 391;
+    nMX = 405, nMW = 90;
+  
     pTxtCaption   = "Regular Expressions Tester for JavaScript";
     pTxtRegExp    = "Regular Expression (RE)";
     pTxtSource    = "RE.source";
@@ -1486,7 +1493,9 @@ function ReadIni()
     pTxtREHelp    = "Help for Regular Expressions";
     pTxtHelpText  = "	Modifiers\r\nModifiers are used to perform case-insensitive and global searches:\r\nModifier	Description\r\ni	Perform case-insensitive matching\r\ng	Perform a global match (find all matches rather than stopping after the\r\n	first match)\r\nm	Perform multiline matching\r\n\r\n	Brackets\r\nBrackets are used to find a range of characters:\r\nExpression	Description\r\n[abc]		Find any character between the brackets\r\n[^abc]		Find any character not between the brackets\r\n[0-9]		Find any digit from 0 to 9\r\n[A-Z]		Find any character from uppercase A to uppercase Z\r\n[a-z]		Find any character from lowercase a to lowercase z\r\n[A-z]		Find any character from uppercase A to lowercase z\r\n[adgk]		Find any character in the given set\r\n[^adgk]		Find any character outside the given set\r\n(red|blue|green)	Find any of the alternatives specified\r\n\r\n	Metacharacters\r\nMetacharacters are characters with a special meaning:\r\nMetachar	Description\r\n.	Find a single character, except newline or line terminator\r\n\\w	Find a word character\r\n\\W	Find a non-word character\r\n\\d	Find a digit\r\n\\D	Find a non-digit character\r\n\\s	Find a whitespace character\r\n\\S	Find a non-whitespace character\r\n\\b	Find a match at the beginning/end of a word\r\n\\B	Find a match not at the beginning/end of a word\r\n\\0	Find a NUL character\r\n\\n	Find a new line character\r\n\\f	Find a form feed character\r\n\\r	Find a carriage return character\r\n\\t	Find a tab character\r\n\\v	Find a vertical tab character\r\n\\xxx	Find the character specified by an octal number xxx\r\n\\xdd	Find the character specified by a hexadecimal number dd\r\n\\uxxxx	Find the Unicode character specified by a hexadecimal number xxxx\r\n\r\n	Quantifiers\r\nQuantifier	Description\r\nn+	Matches any string that contains at least one n\r\nn*	Matches any string that contains zero or more occurrences of n\r\nn?	Matches any string that contains zero or one occurrences of n\r\nn{X}	Matches any string that contains a sequence of X n's\r\nn{X,Y}	Matches any string that contains a sequence of X or Y n's\r\nn{X,}	Matches any string that contains a sequence of at least X n's\r\nn$	Matches any string with n at the end of it\r\n^n	Matches any string with n at the beginning of it\r\n?=n	Matches any string that is followed by a specific string n\r\n?!n	Matches any string that is not followed by a specific string n\r\n\r\n	RegExp Object Properties\r\nProperty		Description\r\nglobal		Specifies if the \"g\" modifier is set\r\nignoreCase	Specifies if the \"i\" modifier is set\r\nlastIndex		The index at which to start the next match\r\nmultiline		Specifies if the \"m\" modifier is set\r\nsource		The text of the RegExp pattern\r\n\r\n	RegExp Object Methods\r\nMethod	Description\r\ncompile()	Compiles a regular expression\r\nexec()	Tests for a match in a string. Returns the first match\r\ntest()	Tests for a match in a string. Returns true or false\r\n\r\n				_____________________________\r\n				Source: http://www.w3schools.com";
   }
-
+  
+  nEW = nPW - 16;
+  
   if (oFSO.FileExists(pIniName))
   {
     try

@@ -4,6 +4,14 @@ Interface language
 Language:      English (1033)
 Translated by: KDJ
 *********************************/
+
+nAX = 205, nAW = 90;
+nBX = 300, nBW = 90;
+nCX = 400, nCW = 90;
+nRX = 205, nRW = 100;
+           nPW = 391;
+nMX = 405, nMW = 90;
+
 pTxtCaption   = "Regular Expressions Tester for JavaScript";
 pTxtRegExp    = "Regular Expression (RE)";
 pTxtSource    = "RE.source";
