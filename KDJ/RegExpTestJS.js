@@ -1,4 +1,4 @@
-// RegExpTestJS.js - ver. 2012-09-15
+// RegExpTestJS.js - ver. 2012-10-14
 //
 // Regular expression tester for JavaScript
 //
@@ -1415,7 +1415,6 @@ function ReadIni()
   var oFSO     = new ActiveXObject("Scripting.FileSystemObject");
   var pIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
   var pLngName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + AkelPad.GetLangId(0 /*LANGID_FULL*/).toString() + ".lng";
-  var pLngName;
   var oError;
 
   if (oFSO.FileExists(pLngName))
@@ -1507,7 +1506,6 @@ function ReadIni()
     }
   }
 }
-
 
 function WriteIni()
 {
