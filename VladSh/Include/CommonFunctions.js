@@ -204,7 +204,7 @@ function CreateByFile(hWnd /*hWndEdit*/, pExt /*расширение, для установки подств
 	// пытаемся определить расширение для установки нужной подсветки
 	var bCoderInclude = AkelPad.Include("CoderFunctions.js");
 	if (!pExt && bCoderInclude)
-		var pExt = GetSyntaxAliasExtension();
+		pExt = GetSyntaxAliasExtension();
 	AkelPad.Command(4101 /*IDM_FILE_NEW*/);		//создание (закладки) для сохранения выделения отдельным файлом
 	AkelPad.SaveFile(0, "", nCodePage, bBOM);		//выставление кодировки как у исходного файла
 	AkelPad.SendMessage(AkelPad.GetMainWnd(), 1230 /*AKD_SETNEWLINE*/, 0, nNewLine);		//выставление "формата новой строки" как у исходного файла

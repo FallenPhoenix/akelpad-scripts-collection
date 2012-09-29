@@ -1,4 +1,4 @@
-///Select the word at the cursor position
+///Select the word or link at the cursor position
 // script must be placed in ...\Scripts\Include\
 ///Выделение текущего слова; будет выделено, даже если курсор стоит перед первой и после последней буквы слова
 // скрипт должен находиться в ..\Scripts\Include\

@@ -11,7 +11,7 @@ var fCoderSettings = "Coder::Settings";
 // Устанавливает синтаксическую тему по указанному расширению.
 function SetSyntax(pExt)
 {
-   	AkelPad.Call(fCoderSettings, 1, pExt);
+   AkelPad.Call(fCoderSettings, 1, pExt);
 }
 
 // Возвращает имя используемого coder-файла.

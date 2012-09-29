@@ -1,4 +1,5 @@
 ///Add the current word to the white list
+///Добавление текущего слова в белый список проверки орфографии
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=15158#15158
 // Version: 1.2 (2012.08.23)
 //
