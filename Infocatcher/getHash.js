@@ -1,8 +1,8 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11096#11096
 // http://infocatcher.ucoz.net/js/akelpad_scripts/getHash.js
 
-// (c) Infocatcher 2010-2012
-// version 0.2.2 - 2012-01-03
+// (c) Infocatcher 2010-2013
+// version 0.2.4 - 2013-02-08
 
 //===================
 // Based on following scripts:
@@ -29,7 +29,9 @@
 //   -type="MD5"            - hash function ("CRC32", "MD5", "SHA1", "SHA224", "SHA256", "SHA384" or "SHA512")
 //   -codePage=65001        - code page for hash calculation, -1 - use current code page
 //   -autoCalc=true         - auto calculate
-//   -dialog=false          - copy without dialog
+//   -action=0              - show dialog
+//          =1              - copy without dialog
+//          =2              - write into Log::Output without dialog
 //   -onlySelected=true     - use only selected text
 //   -upperCase=false       - convert output to upper case
 //   -warningTime=4000      - show warning for slow calculations
@@ -40,9 +42,15 @@
 
 // Usage:
 //   Call("Scripts::Main", 1, "getHash.js")
-//   Call("Scripts::Main", 1, "getHash.js", `-type="SHA1" -dialog=false -onlySelected=true`)
-//   Call("Scripts::Main", 1, "getHash.js", `-dialog=true -saveOptions=0 -savePosition=false`)
+//   Call("Scripts::Main", 1, "getHash.js", `-type="SHA1" -action=1 -onlySelected=true`)
+//   Call("Scripts::Main", 1, "getHash.js", `-action=0 -saveOptions=0 -savePosition=false`)
 //===================
+
+// Wrapper for AkelPad.Include()
+if(!hashesArgs)
+	var hashesArgs = {};
+(function() {
+var overrideArgs = hashesArgs;
 
 function _localize(s) {
 	var strings = {
@@ -106,6 +114,10 @@ function _localize(s) {
 	return _localize(s);
 }
 
+var ACT_DIALOG = 0;
+var ACT_COPY   = 1;
+var ACT_LOG    = 2;
+
 var DEFAULT_HASH = "md5";
 
 var CP_NOT_CONVERT = -2;
@@ -120,12 +132,18 @@ if(saveOptions || savePosition)
 
 var codePage     = getArg("codePage", -1);
 var autoCalc     = getArg("autoCalc", false);
-var showDialog   = getArg("dialog", true);
+var action       = getArg("action", ACT_DIALOG);
 var onlySelected = getArg("onlySelected", false);
 var warningTime  = getArg("warningTime", 4000);
 
 var type         = getArgOrPref("type", prefs && prefs.STRING, DEFAULT_HASH).toLowerCase();
 var upperCase    = getArgOrPref("upperCase", prefs && prefs.DWORD, false);
+
+if(getArg("action") == undefined) {
+	var showDialog = getArg("dialog"); // Deprecated
+	if(showDialog != undefined)
+		action = !+showDialog;
+}
 
 prefs && prefs.end();
 
@@ -618,44 +636,7 @@ Sha256.toHexStr = function(n) {
 }
 
 
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-/*  Utf8 class: encode / decode between multi-byte Unicode characters and UTF-8 multiple          */
-/*              single-byte character encoding (c) Chris Veness 2002-2010                         */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-var Utf8 = {};  // Utf8 namespace
-
-/**
- * Encode multi-byte Unicode string into utf-8 multiple single-byte characters
- * (BMP / basic multilingual plane only)
- *
- * Chars in range U+0080 - U+07FF are encoded in 2 chars, U+0800 - U+FFFF in 3 chars
- *
- * @param {String} strUni Unicode string to be encoded as UTF-8
- * @returns {String} encoded string
- */
-Utf8.encode = function(strUni) {
-  // use regular expressions & String.replace callback function for better efficiency
-  // than procedural approaches
-  var strUtf = strUni.replace(
-      /[\u0080-\u07ff]/g,  // U+0080 - U+07FF => 2 bytes 110yyyyy, 10zzzzzz
-      function(c) {
-        var cc = c.charCodeAt(0);
-        return String.fromCharCode(0xc0 | cc>>6, 0x80 | cc&0x3f); }
-    );
-  strUtf = strUtf.replace(
-      /[\u0800-\uffff]/g,  // U+0800 - U+FFFF => 3 bytes 1110xxxx, 10yyyyyy, 10zzzzzz
-      function(c) {
-        var cc = c.charCodeAt(0);
-        return String.fromCharCode(0xe0 | cc>>12, 0x80 | cc>>6&0x3F, 0x80 | cc&0x3f); }
-    );
-  return strUtf;
-}
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
-
-
-function SHA512(str, variant) {
+function SHA(str, variant) {
 	// http://www.farfarfar.com/scripts/encrypt/
 	//str_sha(val, "SHA-224")
 	//str_sha(val, "SHA-384")
@@ -947,7 +928,7 @@ function SHA512(str, variant) {
 
 	function coreSHA1(message, messageLength)
 	{
-		var W = new Array();
+		var W = [];
 		var a, b, c, d, e;
 		var K = K_1;
 		var T;
@@ -1002,7 +983,7 @@ function SHA512(str, variant) {
 
 	function coreSHA2(message, messageLength, variant)
 	{
-		var W = new Array();
+		var W = [];
 		var a, b, c, d, e, f, g, h;
 		var T1, T2;
 		var H;
@@ -1181,7 +1162,7 @@ function SHA512(str, variant) {
 	 */
 	function str2binb(str)
 	{
-		var bin = Array();
+		var bin = [];
 		var mask = (1 << charSize) - 1;
 		var length = str.length * charSize;;
 
@@ -1303,7 +1284,7 @@ var hashes = {
 		prettyName: "SHA-224",
 		speed: 40.08,
 		get: function(str) {
-			return SHA512(str, "SHA-224");
+			return SHA(str, "SHA-224");
 		}
 	},
 	sha256: {
@@ -1317,17 +1298,24 @@ var hashes = {
 		prettyName: "SHA-384",
 		speed: 9.66,
 		get: function(str) {
-			return SHA512(str, "SHA-384");
+			return SHA(str, "SHA-384");
 		}
 	},
 	sha512: {
 		prettyName: "SHA-512",
 		speed: 9.21,
 		get: function(str) {
-			return SHA512(str, "SHA-512");
+			return SHA(str, "SHA-512");
 		}
 	}
 };
+for(var hash in hashes) { // allow use hashes.sha256(string)
+	var hashObj = hashes[hash];
+	var get = hashObj.get;
+	for(var p in hashObj)
+		get[p] = hashObj[p];
+	hashes[hash] = get;
+}
 
 function getHash(hWnd, callback) {
 	if(saveOptions == 1) {
@@ -2088,7 +2076,7 @@ function getHashDialog(modal) {
 	AkelPad.WindowUnregisterClass(dialogClass);
 }
 
-if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())) {
+if(hMainWnd && !AkelPad.IsInclude()) {
 	if(!hashes[type]) { // Invalid argument or pref
 		AkelPad.MessageBox(
 			hMainWnd,
@@ -2098,14 +2086,21 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 			16 /*MB_ICONERROR*/
 		);
 		type = DEFAULT_HASH;
-		showDialog = true;
+		action = ACT_DIALOG;
 	}
-	if(showDialog)
+	if(action == ACT_DIALOG)
 		getHashDialog();
 	else {
 		var callback = { value: null };
 		var hash = getHash(null, callback);
-		hash && AkelPad.SetClipboardText(hash);
+		if(hash) {
+			if(action == ACT_COPY)
+				AkelPad.SetClipboardText(hash);
+			else { //if(action == ACT_LOG)
+				var out = type.toUpperCase() + ": " + hash + "\n";
+				AkelPad.Call("Log::Output", 5, out, out.length, 1 /*APPEND*/);
+			}
+		}
 		callback.value && callback.value();
 	}
 }
@@ -2160,6 +2155,8 @@ function getArg(argName, defaultVal) {
 	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
 		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
 			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
+	for(var p in overrideArgs)
+		args[p.toLowerCase()] = overrideArgs[p];
 	getArg = function(argName, defaultVal) {
 		argName = argName.toLowerCase();
 		return typeof args[argName] == "undefined" // argName in args
@@ -2347,3 +2344,20 @@ function convertFromUnicode(str, cp) {
 
 	return ret;
 }
+
+if(AkelPad.IsInclude()) {
+	// this.foo = ... doesn't work:
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=18304#18304
+	// But declarations without "var" becomes global
+	var _exports = {
+		hashes: hashes,
+		convertFromUnicode: convertFromUnicode
+	};
+	var _f = [];
+	for(var _p in _exports)
+		_f[_f.length] = "if(typeof " + _p + " == 'undefined') " + _p + " = e." + _p + ";";
+	// Go to the global scope
+	new Function("e", _f.join("\n"))(_exports);
+}
+
+})();
