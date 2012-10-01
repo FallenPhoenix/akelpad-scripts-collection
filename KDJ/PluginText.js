@@ -1,6 +1,6 @@
-// PluginText.js - ver. 2012-08-20
+// PluginText.js - ver. 2012-10-01
 //
-// Operations on the text from plugins: Coder, ContextMenu, Hotkeys and ToolBar.
+// Operations on the text from plugins: Coder, ContextMenu, Hotkeys and ToolBar*.
 // The text is read from plugin settings (.ini file or registry).
 //
 // Usage:
@@ -1139,13 +1139,18 @@ function LoadTextFileToPlugin()
   if (aSaved.length)
   {
     sMessage += sTxtSaved + "\n";
+
     for (i = 0; i < aSaved.length; ++i)
+    {
       sMessage += GetItemTextLV(aSaved[i], 0) + ": " + GetItemTextLV(aSaved[i], 1) + "\n";
+      RestartPlugin(GetItemTextLV(aSaved[i], 0));
+    }
   }
 
   if (aNoSaved.length)
   {
     sMessage += "\n" + sTxtNoSaved + "\n";
+
     for (i = 0; i < aNoSaved.length; ++i)
       sMessage += GetItemTextLV(aNoSaved[i], 0) + ": " + GetItemTextLV(aNoSaved[i], 1) + "\n";
   }
@@ -1159,6 +1164,56 @@ function PadL0(sString)
     return "0" + sString;
 
   return sString;
+}
+
+function RestartPlugin(sPlugName)
+{
+  var bCoderHL;
+  var bCoderCF;
+  var bCoderAC;
+
+  if (sPlugName == "Coder")
+  {
+    if (AkelPad.IsPluginRunning(sPlugName + "::HighLight"))
+    {
+      bCoderHL = 1;
+      AkelPad.Call(sPlugName + "::HighLight");
+    }
+    if (AkelPad.IsPluginRunning(sPlugName + "::CodeFold"))
+    {
+      bCoderCF = 1;
+      AkelPad.Call(sPlugName + "::CodeFold");
+    }
+    if (AkelPad.IsPluginRunning(sPlugName + "::AutoComplete"))
+    {
+      bCoderAC = 1;
+      AkelPad.Call(sPlugName + "::AutoComplete");
+    }
+
+    if (bCoderHL)
+      AkelPad.Call(sPlugName + "::HighLight");
+    if (bCoderCF)
+      AkelPad.Call(sPlugName + "::CodeFold");
+    if (bCoderAC)
+      AkelPad.Call(sPlugName + "::AutoComplete");
+  }
+  else if ((sPlugName == "ContextMenu") || (sPlugName == "Hotkeys"))
+  {
+    if (AkelPad.IsPluginRunning(sPlugName + "::Main"))
+    {
+      AkelPad.Call(sPlugName + "::Main", 10);
+      AkelPad.Call(sPlugName + "::Main", 10);
+    }
+  }
+  //ToolBar*
+  else
+  {
+    if (AkelPad.IsPluginRunning(sPlugName + "::Main"))
+    {
+      AkelPad.Call(sPlugName + "::Main");
+      AkelPad.Call(sPlugName + "::Main");
+    }
+  }
 }
 
 function RenameTextFile()
