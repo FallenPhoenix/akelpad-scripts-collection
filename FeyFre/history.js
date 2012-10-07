@@ -2,6 +2,7 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=16205#16205
 // http://staynormal.org.ua/akelpad/scripts/history.js
 // FeyFre (c) 2011-2012
+// v0.11.1 (2012.10.07) Fixed "Persistent storage UI option"; tooltips for testing should be unlcoked manually
 // v0.11 (2012.09.14) Persistent storage UI option
 // v0.10.1 (2012.09.14) Sync with AkelPad API
 // v0.10 Dock anywhere + SmartRun
@@ -57,7 +58,9 @@ var g_hDockWnd = 0;
 var DOCKCLASSNAME = "WNDCLS_"+WScript.ScriptBaseName;
 //! Для удобства
 var lb_hist			= 0;
-
+/////
+var ttwnd = 0;
+/////
 var HK_CallBackAddr	= 0;
 var func_opentop	= 0;
 var func_openall	= 0;
@@ -96,31 +99,31 @@ var IDC_SMARTRUN= 1012;
 var IDC_PERSIST = 1013;
 var layout = {};
 layout[IDC_DNDST]  ={sf:1,c:"STATIC",    t:"History",            wse:0,ws:WS_CHILD|WS_VISIBLE|SS_SUNKEN|SS_CENTER,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:1,B:0},  w:{W:1,H:0,G:-4,B:-2},h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:1,B:0},  w:{W:1,H:0,G:-4,B:-2},h:{W:0,H:0,G:0,B:1},tt:"History"};
 layout[IDC_HIDE]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
-                   x:{W:1,H:0,G:-2,B:-2},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-2,B:-2},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"Hide window"};
 layout[IDC_EXIT]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON|BS_OWNERDRAW,hwnd:0,
-                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:1,B:0},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"Shutdown script"};
 layout[IDC_FILT]   ={sf:1,c:"EDIT",      t:"",                   wse:WS_EX_CLIENTEDGE,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:2,B:1},  w:{W:1,H:0,G:-3,B:-1},h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:2,B:1},  w:{W:1,H:0,G:-3,B:-1},h:{W:0,H:0,G:0,B:1},tt:"Filter"};
 layout[IDC_APPLY]  ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX|BS_PUSHLIKE,hwnd:0,
-                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:2,B:1},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:0,G:2,B:1},  w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"Apply filter"};
 layout[IDC_HIST]   ={sf:1,c:"LISTBOX",   t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|LBS_NOINTEGRALHEIGHT|WS_VSCROLL|WS_HSCROLL|LBS_NOTIFY|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:3,B:2},  w:{W:1,H:0,G:-2,B:0}, h:{W:0,H:1,G:-8,B:-6}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:0,G:3,B:2},  w:{W:1,H:0,G:-2,B:0}, h:{W:0,H:1,G:-8,B:-6},tt:"Closing history"};
 layout[IDC_PERSIST]={sf:1,c:"BUTTON",    t:"Persistent storage", wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTOCHECKBOX,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-4,B:-4},w:{W:1,H:0,G:-2,B:0},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-4,B:-4},w:{W:1,H:0,G:-2,B:0},  h:{W:0,H:0,G:0,B:1},tt:"Persistent storage"};
 layout[IDC_HKT]    ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-3,B:-3},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-3,B:-3},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1},tt:"HK Open last"};
 layout[IDC_HKBT]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
-                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-3,B:-3},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-3,B:-3},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"HK Open last set"};
 layout[IDC_HKA]    ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-2,B:-2},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-2,B:-2},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1},tt:"HK Open all"};
 layout[IDC_HKBA]   ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
-                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-2,B:-2},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-2,B:-2},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"HK Open all set"};
 layout[IDC_HKSH]   ={sf:1,c:HOTKEY_CLASS,t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP,hwnd:0,
-                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-1,B:-1},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1}};
+                   x:{W:0,H:0,G:1,B:0},  y:{W:0,H:1,G:-1,B:-1},w:{W:1,H:0,G:-2,B:-1},h:{W:0,H:0,G:0,B:1},tt:"HK Show/Hide"};
 layout[IDC_HKBSH]  ={sf:0,c:"BUTTON",    t:"",                   wse:0,ws:WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,hwnd:0,
-                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-1,B:-1},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1}};
+                   x:{W:1,H:0,G:-1,B:-1},y:{W:0,H:1,G:-1,B:-1},w:{W:0,H:0,G:0,B:1},  h:{W:0,H:0,G:0,B:1},tt:"HK Show/Hide set"};
 //! Названия функций
 var rott = "Reopen Last";
 var rota = "Reopen All";
@@ -359,6 +362,7 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 	if(umsg == WM_CREATE)
 	{
 		var font = oSys.Call("gdi32::GetStockObject", 17);
+		ttwnd = CreateToolTipControl(hwnd);
 		//! Создать все контролы
 		var wia = [IDC_DNDST,IDC_HIDE,IDC_EXIT,IDC_FILT,IDC_APPLY,IDC_HIST,IDC_PERSIST,IDC_HKT,IDC_HKA,IDC_HKSH,IDC_HKBT,IDC_HKBA,IDC_HKBSH];
 		for(var ci in wia)
@@ -373,7 +377,10 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 			}
 			ShowWindow(layout[id].hwnd,SW_SHOW);
 			UpdateWindow(layout[id].hwnd);
+			if(layout[id].tt!=0)
+			AddToolTip(ttwnd,hwnd,layout[id].hwnd,layout[id].tt);
 		}
+		oSys.Call("user32::SetWindowText"+_TCHAR,layout[IDC_PERSIST].hwnd,layout[IDC_PERSIST].t);
 		lb_hist = layout[IDC_HIST].hwnd;
 		//! Настройка агрегатора горячих клавиш
 		AkelPad.SendMessage(layout[IDC_HKT].hwnd,HKM_SETRULES,0, HOTKEYF_ALT|HOTKEYF_CONTROL|HOTKEYF_SHIFT);
@@ -593,6 +600,8 @@ function DockWindowProc(hwnd, umsg, wparam,lparam)
 	}
 	else if(umsg == WM_DESTROY)
 	{
+		if(ttwnd!=0)
+			DestroyWindow(ttwnd);
 		//! Закрыли нас. 
 		_SIDE = AkelPad.MemRead(g_pDock+16, DT_DWORD);
 		WRITE_SETTINGS();
@@ -886,8 +895,9 @@ function CreateWindowEx(styleex,_class,title,style,x,y,cx,cy,parent,menu,lparam)
 	//! Нативные строки
 	var mem_class = AkelPad.MemAlloc((_class.length+1)*_TSIZE);
 	AkelPad.MemCopy(mem_class, _class, _TSTR);
-	var mem_title = AkelPad.MemAlloc((title.length+1)*_TSIZE);
-	AkelPad.MemCopy(mem_title, title, _TSTR);
+	var mem_title = 0;
+	if(title != 0) {AkelPad.MemAlloc((title.length+1)*_TSIZE);
+	AkelPad.MemCopy(mem_title, title, _TSTR);}
 	var hwnd = oSys.Call("user32::CreateWindowEx" + _TCHAR,
 							styleex,				//! Расширенный стиль
 							mem_class,			//! Класс окна
@@ -899,7 +909,7 @@ function CreateWindowEx(styleex,_class,title,style,x,y,cx,cy,parent,menu,lparam)
 							lparam);				//! Доп. параметр
 	//! Освободить память
 	AkelPad.MemFree(mem_class);
-	AkelPad.MemFree(mem_title);
+	if(mem_title!=0) AkelPad.MemFree(mem_title);
 	return hwnd;
 }
 //! Показать окно, SW_* константы
@@ -1049,3 +1059,58 @@ function HList()
 	}
 	return obj;
 }
+///////////////////////////////
+// *Disabled, testing
+////////
+function CreateToolTipControl(parent)
+{
+	return 0;
+	var hwnd = CreateWindowEx(
+	WS_EX_TOPMOST,//styleex
+	TOOLTIPS_CLASS,//class
+	0,//title
+	WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP,//style
+	CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,//x,y,cx,cy
+	parent,//parent
+	0,//menu
+	0//lparam
+	);
+	oSys.Call("user32::SetWindowPos",HWND_TOPMOST,0,0,0,0,SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+	AkelPad.SendMessage(hwnd, TTM_ACTIVATE, 1, 0);
+	return hwnd;
+}
+function AddToolTip(ttwnd,parent,tool,text)
+{
+	return;
+	var ti = AkelPad.MemAlloc(_X64?72:48);
+	var	offsets={
+		cbSize:0,
+		uFlags:(_X64?4:4),
+		hwnd:(_X64?8:8),
+		uId:(_X64?16:12),
+		rect:(_X64?24:16),
+		hinst:(_X64?40:32),
+		lpszText:(_X64?48:36),
+		lParam:(_X64?56:40),
+		lpReserved:(_X64?64:44)
+	};
+	oSys.Call("kernel32::RtlZeroMemory",ti,_X64?72:48);
+	AkelPad.MemCopy(ti+offsets.cbSize, _X64?72:48, DT_DWORD);
+	AkelPad.MemCopy(ti+offsets.uFlags, TTF_IDISHWND|TTF_SUBCLASS|TTF_TRACK, DT_DWORD);
+	AkelPad.MemCopy(ti+offsets.hwnd, parent, DT_QWORD);
+	AkelPad.MemCopy(ti+offsets.uId, tool, DT_QWORD);
+	//RECT ={0,0,0,0} AkelPad.MemCopy(ti+offsets.cbSize, _X64?72:48, DT_DWORD);
+	//hinst=NULL,AkelPad.MemCopy(ti+offsets.cbSize, _X64?72:48, DT_DWORD);
+	var txt = AkelPad.MemAlloc((text.length+1)*_TSIZE);
+	AkelPad.MemCopy(txt, text, _TSTR);
+	AkelPad.MemCopy(ti+offsets.lpszText, txt, DT_QWORD);
+	//lParam=0 AkelPad.MemCopy(ti+offsets.cbSize, _X64?72:48, DT_DWORD);
+	//lpReserved=0 AkelPad.MemCopy(ti+offsets.cbSize, _X64?72:48, DT_DWORD);
+	AkelPad.SendMessage(ttwnd, TTM_ADDTOOL, 0, ti);
+	//AkelPad.SendMessage(ttwnd, TTM_TRACKACTIVATE, 1, ti);
+	AkelPad.MemFree(txt);
+	AkelPad.MemFree(ti);
+}
+////////
+// /Disabled, testing
+///////////////////////////////
