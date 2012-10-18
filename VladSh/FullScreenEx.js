@@ -1,7 +1,12 @@
 ﻿///Go to FullScreen-mode with additional options for display panels; a return to normal-mode
 ///Переход в полноэкранный режим с возможностью отображения определённого тулбара; возвращение в нормальный режим
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=18081#18081
-// Version: 2.1 (2012.05.24)
+// Version: 2.3 (2012.10.18)
+// 
+// Parameters:
+// 	• ToolBar - имя dll-файла плагина без расширения, "" или без параметра - плагин отображаться не будет
+// 	• Explorer, CodeFold, Clipboard, Log, StatusBar, Menu: [0] - не отображать / 1 - отображать
+//		• TabBar: [0] - не отображать / 1 - отображать с автоопределением положения / 4301 - сверху / 4302 - снизу
 // 
 // Examples:
 // -"Обычный" Call("Scripts::Main", 1, "FullScreenEx.js")
@@ -21,7 +26,6 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 	var pCodeFold = "Coder::CodeFold";
 	var pClipboard = "Clipboard::Capture";
 	var pLog = "Log::Output";
-	var IDM_VIEW_SHOW_STATUSBAR = 4211;
 	var hWndMain = AkelPad.GetMainWnd();
 	
 	var bExplorer = AkelPad.GetArgValue("Explorer", 0);
@@ -30,6 +34,7 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 	var bLog = AkelPad.GetArgValue("Log", 0);
 	var bStatusBar = AkelPad.GetArgValue("StatusBar", 0);
 	var bMenu = AkelPad.GetArgValue("Menu", 0);
+	var nTabBar = AkelPad.GetArgValue("TabBar", 0);
 	
 	//если панели перед запуском включены, - отключаем, т.к. без этого потом не запустятся
 	
@@ -49,10 +54,9 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 		AkelPad.Call(pLog);
 	
 	if (bStatusBar && AkelPad.SendMessage(hWndMain, 1222 /*AKD_GETMAININFO*/, 142 /*MI_STATUSBAR*/, 0))
-		AkelPad.Command(IDM_VIEW_SHOW_STATUSBAR);
+		AkelPad.Command(4211 /*IDM_VIEW_SHOW_STATUSBAR*/);
 	
-	if (bMenu)
-	{
+	if (bMenu) {
 		var oSys = AkelPad.SystemFunction();
 		var hMenu = oSys.Call("user32::GetMenu", hWndMain);
 	}
@@ -80,6 +84,21 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 	
 	if (bMenu)
 		oSys.Call("user32::SetMenu", hWndMain, hMenu);
+	
+	if (nTabBar) {
+		var nCommand;
+		if (nTabBar > 1)
+			nCommand = nTabBar;
+		else {
+			var nState = AkelPad.SendMessage(hWndMain, 1222 /*AKD_GETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, 0);
+			if (nState & 2 /*TAB_VIEW_TOP*/)
+				nCommand = 4301;		/*IDM_WINDOW_TABVIEW_TOP*/
+			else
+				nCommand = 4302;		/*IDM_WINDOW_TABVIEW_BOTTOM*/
+		}
+		AkelPad.Command(4303 /*IDM_WINDOW_TABVIEW_NONE*/);
+		AkelPad.Command(nCommand);
+	}
 }
 
 //ПЕРЕХОД ИЗ ПОЛНОЭКРАННОГО РЕЖИМА В ОБЫЧНЫЙ
