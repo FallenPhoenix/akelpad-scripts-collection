@@ -1,9 +1,10 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11246#11246
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.1 - 2012-08-28
-// Based on scripts from http://jsbeautifier.org/ [2012-08-28 03:42:01 UTC]
+// version 0.2.2 - 2012-11-05
+// Based on scripts from http://jsbeautifier.org/ [2012-11-05 06:41:10 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -11,6 +12,11 @@
 // Arguments:
 //   -onlySelected=true           - use only selected text
 //   -action=1                    - 0 - insert (default), 1 - insert to new document, 2 - copy, 3 - show
+//   -restoreCaretPos=true        - restore caret position (works only without selection)
+//   -setSyntax=0                 - don't change syntax theme (Coder plugin)
+//             =1                 - set syntax theme only in documents without theme
+//             =2                 - (default) don't change syntax "type" (e.g. don't change "xml" to "html")
+//             =3                 - always set
 //   -indentSize=1                - indent with a tab character
 //              =4                - indent with 4 spaces
 //   -preserveNewlines=true       - preserve empty lines
@@ -19,6 +25,7 @@
 //              ="end-expand"     - end braces on own line
 //              ="expand-strict"  - braces always on own line (not recommended)
 //   -keepArrayIndentation=true   - keep array indentation
+//   -breakChainedMethods=false   - break lines on chained methods
 //   -jsLintHappy=true            - use "function ()" instead of "function()"
 //   -spaceBeforeConditional=true - space before conditional: "if(x)" / "if (x)"
 //   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
@@ -75,10 +82,13 @@ var ACT_SHOW           = 3;
 // getArg(argName, defaultValue)
 var onlySelected           = getArg("onlySelected", false);
 var action                 = getArg("action", ACT_INSERT);
+var restoreCaretPos        = getArg("restoreCaretPos", true);
+var setSyntaxMode          = getArg("setSyntax", 2);
 var indentSize             = getArg("indentSize", 1);
 var preserveNewlines       = getArg("preserveNewlines", true);
 var braceStyle             = getArg("braceStyle", "end-expand");
 var keepArrayIndentation   = getArg("keepArrayIndentation", true);
+var breakChainedMethods    = getArg("breakChainedMethods", false);
 var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
@@ -123,6 +133,7 @@ function beautify(source, syntax) { // Based on beautify function
 		preserve_newlines:        preserveNewlines,
 		brace_style:              braceStyle,
 		keep_array_indentation:   keepArrayIndentation,
+		break_chained_methods:    breakChainedMethods,
 		jslint_happy:             jsLintHappy,
 		space_before_conditional: spaceBeforeConditional,
 		indent_scripts:           indentScripts,
@@ -322,15 +333,15 @@ function js_beautify(js_source_text, options) {
     opt_brace_style = options.brace_style ? options.brace_style : (opt_brace_style ? opt_brace_style : "collapse");
 
 
-    var opt_indent_size = options.indent_size ? options.indent_size : 4;
-    var opt_indent_char = options.indent_char ? options.indent_char : ' ';
-    var opt_preserve_newlines = typeof options.preserve_newlines === 'undefined' ? true : options.preserve_newlines;
-    var opt_max_preserve_newlines = typeof options.max_preserve_newlines === 'undefined' ? false : options.max_preserve_newlines;
-    var opt_jslint_happy = options.jslint_happy === 'undefined' ? false : options.jslint_happy;
-    var opt_keep_array_indentation = typeof options.keep_array_indentation === 'undefined' ? false : options.keep_array_indentation;
-    var opt_space_before_conditional = typeof options.space_before_conditional === 'undefined' ? true : options.space_before_conditional;
-    var opt_indent_case = typeof options.indent_case === 'undefined' ? false : options.indent_case;
-    var opt_unescape_strings = typeof options.unescape_strings === 'undefined' ? false : options.unescape_strings;
+    var opt_indent_size = options.indent_size ? options.indent_size : 4,
+        opt_indent_char = options.indent_char ? options.indent_char : ' ',
+        opt_preserve_newlines = typeof options.preserve_newlines === 'undefined' ? true : options.preserve_newlines,
+        opt_break_chained_methods = typeof options.break_chained_methods === 'undefined' ? false : options.break_chained_methods,
+        opt_max_preserve_newlines = typeof options.max_preserve_newlines === 'undefined' ? false : options.max_preserve_newlines,
+        opt_jslint_happy = options.jslint_happy === 'undefined' ? false : options.jslint_happy,
+        opt_keep_array_indentation = typeof options.keep_array_indentation === 'undefined' ? false : options.keep_array_indentation,
+        opt_space_before_conditional = typeof options.space_before_conditional === 'undefined' ? true : options.space_before_conditional,
+        opt_unescape_strings = typeof options.unescape_strings === 'undefined' ? false : options.unescape_strings;
 
     just_added_newline = false;
 
@@ -377,7 +388,7 @@ function js_beautify(js_source_text, options) {
         opt_keep_array_indentation = old_keep_array_indentation;
     }
 
-    function print_newline(ignore_repeated) {
+    function print_newline(ignore_repeated, reset_statement_flags) {
 
         flags.eat_next_space = false;
         if (opt_keep_array_indentation && is_array(flags.mode)) {
@@ -385,8 +396,13 @@ function js_beautify(js_source_text, options) {
         }
 
         ignore_repeated = typeof ignore_repeated === 'undefined' ? true : ignore_repeated;
+        reset_statement_flags = typeof reset_statement_flags === 'undefined' ? true : reset_statement_flags;
 
-        flags.if_line = false;
+        if (reset_statement_flags) {
+            flags.if_line = false;
+            flags.chain_extra_indentation = 0;
+        }
+
         trim_output();
 
         if (!output.length) {
@@ -400,14 +416,11 @@ function js_beautify(js_source_text, options) {
         if (preindent_string) {
             output.push(preindent_string);
         }
-        for (var i = 0; i < flags.indentation_level; i += 1) {
+        for (var i = 0; i < flags.indentation_level + flags.chain_extra_indentation; i += 1) {
             output.push(indent_string);
         }
         if (flags.var_line && flags.var_line_reindented) {
             output.push(indent_string); // skip space-stuffing, if indenting with a tab
-        }
-        if (flags.case_body) {
-            output.push(indent_string);
         }
     }
 
@@ -461,12 +474,12 @@ function js_beautify(js_source_text, options) {
             var_line_reindented: false,
             in_html_comment: false,
             if_line: false,
+            chain_extra_indentation: 0,
             in_case_statement: false, // switch(..){ INSIDE HERE }
             in_case: false, // we're on the exact line with "case 0:"
             case_body: false, // the indented case-action block
             eat_next_space: false,
-            indentation_baseline: -1,
-            indentation_level: (flags ? flags.indentation_level + (flags.case_body ? 1 : 0) + ((flags.var_line && flags.var_line_reindented) ? 1 : 0) : 0),
+            indentation_level: (flags ? flags.indentation_level + ((flags.var_line && flags.var_line_reindented) ? 1 : 0) : 0),
             ternary_depth: 0
         };
     }
@@ -544,19 +557,6 @@ function js_beautify(js_source_text, options) {
 
         if (keep_whitespace) {
 
-            //
-            // slight mess to allow nice preservation of array indentation and reindent that correctly
-            // first time when we get to the arrays:
-            // var a = [
-            // ....'something'
-            // we make note of whitespace_count = 4 into flags.indentation_baseline
-            // so we know that 4 whitespaces in original source match indent_level of reindented source
-            //
-            // and afterwards, when we get to
-            //    'something,
-            // .......'something else'
-            // we know that this should be indented to indent_level + (7 - indentation_baseline) spaces
-            //
             var whitespace_count = 0;
 
             while (in_array(c, whitespace)) {
@@ -584,18 +584,10 @@ function js_beautify(js_source_text, options) {
                 parser_pos += 1;
 
             }
-            if (flags.indentation_baseline === -1) {
-                flags.indentation_baseline = whitespace_count;
-            }
 
             if (just_added_newline) {
-                for (i = 0; i < flags.indentation_level + 1; i += 1) {
-                    output.push(indent_string);
-                }
-                if (flags.indentation_baseline !== -1) {
-                    for (i = 0; i < whitespace_count - flags.indentation_baseline; i++) {
-                        output.push(' ');
-                    }
+                for (i = 0; i < whitespace_count; i++) {
+                    output.push(' ');
                 }
             }
 
@@ -882,6 +874,10 @@ function js_beautify(js_source_text, options) {
             return ['-->', 'TK_COMMENT'];
         }
 
+        if (c === '.') {
+            return [c, 'TK_DOT'];
+        }
+
         if (in_array(c, punct)) {
             while (parser_pos < input_length && in_array(c + input.charAt(parser_pos), punct)) {
                 c += input.charAt(parser_pos);
@@ -1031,6 +1027,20 @@ function js_beautify(js_source_text, options) {
             }
             print_token();
 
+            break;
+
+        case 'TK_DOT':
+
+            if (is_special_word(last_text)) {
+                print_single_space();
+            } else if (last_text === ')') {
+                if (opt_break_chained_methods || wanted_newline) {
+                    flags.chain_extra_indentation = 1;
+                    print_newline(true /* ignore_repeated */, false /* reset_statement_flags */);
+                }
+            }
+
+            print_token();
             break;
 
         case 'TK_END_EXPR':
@@ -1194,23 +1204,16 @@ function js_beautify(js_source_text, options) {
             }
 
             if (token_text === 'case' || (token_text === 'default' && flags.in_case_statement)) {
-                if (last_text === ':' || flags.case_body) {
+                print_newline();
+                if (flags.case_body) {
                     // switch cases following one another
+                    flags.indentation_level--;
+                    flags.case_body = false;
                     remove_indent();
-                } else {
-                    // case statement starts in the same line where switch
-                    if (!opt_indent_case) {
-                        flags.indentation_level--;
-                    }
-                    print_newline();
-                    if (!opt_indent_case) {
-                        flags.indentation_level++;
-                    }
                 }
                 print_token();
                 flags.in_case = true;
                 flags.in_case_statement = true;
-                flags.case_body = false;
                 break;
             }
 
@@ -1328,6 +1331,11 @@ function js_beautify(js_source_text, options) {
                 print_newline();
             } else if (last_type === 'TK_WORD') {
                 print_single_space();
+            } else {
+                if (opt_preserve_newlines && wanted_newline) {
+                    print_newline();
+                    output.push(indent_string);
+                }
             }
             print_token();
             break;
@@ -1391,7 +1399,6 @@ function js_beautify(js_source_text, options) {
 
             var space_before = true;
             var space_after = true;
-
             if (is_special_word(last_text)) {
                 // "return" had a special handling in TK_WORD. Now we need to return the favor
                 print_single_space();
@@ -1400,16 +1407,15 @@ function js_beautify(js_source_text, options) {
             }
 
             // hack for actionscript's import .*;
-            if (token_text === '*' && last_type === 'TK_UNKNOWN' && !last_last_text.match(/^\d+$/)) {
+            if (token_text === '*' && last_type === 'TK_DOT' && !last_last_text.match(/^\d+$/)) {
                 print_token();
                 break;
             }
 
             if (token_text === ':' && flags.in_case) {
-                if (opt_indent_case) {
-                    flags.case_body = true;
-                }
-                print_token(); // colon really asks for separate treatment
+                flags.case_body = true;
+                indent();
+                print_token();
                 print_newline();
                 flags.in_case = false;
                 break;
@@ -1441,10 +1447,6 @@ function js_beautify(js_source_text, options) {
                     // foo(); --bar;
                     print_newline();
                 }
-            } else if (token_text === '.') {
-                // decimal digits or object.property
-                space_before = false;
-
             } else if (token_text === ':') {
                 if (flags.ternary_depth === 0) {
                     if (flags.mode === 'BLOCK') {
@@ -1538,9 +1540,6 @@ function js_beautify(js_source_text, options) {
             break;
 
         case 'TK_UNKNOWN':
-            if (is_special_word(last_text)) {
-                print_single_space();
-            }
             print_token();
             break;
         }
@@ -1676,7 +1675,7 @@ function css_beautify(source_text, options) {
         indentString = indentString.slice(0, -indentSize);
     }
 
-    print = {}
+    var print = {}
     print["{"] = function(ch) {
         print.singleSpace();
         output.push(ch);
@@ -1835,7 +1834,7 @@ function style_html(html_source, options) {
 
     this.Utils = { //Uilities made available to the various functions
       whitespace: "\n\r\t ".split(''),
-      single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed'.split(','), //all the single tags for HTML
+      single_token: 'br,input,link,meta,!doctype,basefont,base,area,hr,wbr,param,img,isindex,?xml,embed,?php,?,?='.split(','), //all the single tags for HTML
       extra_liners: 'head,body,/html'.split(','), //for tags that need a line of whitespace before them
       in_array: function (what, arr) {
         for (var i=0; i<arr.length; i++) {
@@ -2640,7 +2639,8 @@ var opts = {
     jslint_happy: false,
     keep_array_indentation: false,
     brace_style: 'collapse',
-    space_before_conditional: true
+    space_before_conditional: true,
+    break_chained_methods: false
 };
 
 function test_beautifier(input)
@@ -2678,7 +2678,7 @@ function bt(input, expectation)
     // }
 
     if (opts.indent_size === 4 && input) {
-        wrapped_input = '{\n' + input + '\nfoo=bar;}';
+        wrapped_input = '{\n' + input.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
         wrapped_expectation = '{\n' + expectation.replace(/^(.+)$/mg, '    $1') + '\n    foo = bar;\n}';
         test_fragment(wrapped_input, wrapped_expectation);
     }
@@ -2768,8 +2768,8 @@ function run_beautifier_tests(test_obj)
     bt('(xx)()'); // magic function call
     bt('a[1]()'); // another magic function call
     bt('if(a){b();}else if(c) foo();', "if (a) {\n    b();\n} else if (c) foo();");
-    bt('switch(x) {case 0: case 1: a(); break; default: break}', "switch (x) {\ncase 0:\ncase 1:\n    a();\n    break;\ndefault:\n    break\n}");
-    bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\ncase -1:\n    break;\ncase !y:\n    break;\n}');
+    bt('switch(x) {case 0: case 1: a(); break; default: break}', "switch (x) {\n    case 0:\n    case 1:\n        a();\n        break;\n    default:\n        break\n}");
+    bt('switch(x){case -1:break;case !y:break;}', 'switch (x) {\n    case -1:\n        break;\n    case !y:\n        break;\n}');
     bt('a !== b');
     bt('if (a) b(); else c();', "if (a) b();\nelse c();");
     bt("// comment\n(function something() {})"); // typical greasemonkey start
@@ -3009,12 +3009,14 @@ function run_beautifier_tests(test_obj)
 
 
     opts.keep_array_indentation = true;
+    bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f']");
+    bt("a = ['a', 'b', 'c',\n    'd', 'e', 'f',\n        'g', 'h', 'i']");
+    bt("a = ['a', 'b', 'c',\n        'd', 'e', 'f',\n            'g', 'h', 'i']");
 
-    test_fragment('var a = [\n// comment:\n{\n foo:bar\n}\n];', 'var a = [\n    // comment:\n{\n    foo: bar\n}\n];');
 
     bt('var x = [{}\n]', 'var x = [{}\n]');
     bt('var x = [{foo:bar}\n]', 'var x = [{\n    foo: bar\n}\n]');
-    bt("a = ['something',\n'completely',\n'different'];\nif (x);", "a = ['something',\n    'completely',\n    'different'];\nif (x);");
+    bt("a = ['something',\n'completely',\n'different'];\nif (x);");
     bt("a = ['a','b','c']", "a = ['a', 'b', 'c']");
     bt("a = ['a',   'b','c']", "a = ['a', 'b', 'c']");
 
@@ -3093,7 +3095,7 @@ function run_beautifier_tests(test_obj)
     bt("'foo''bar''baz'", "'foo'\n'bar'\n'baz'");
 
 
-    test_fragment("if (..) {\n    // ....\n}\n(function");
+    test_fragment("if (zz) {\n    // ....\n}\n(function");
 
     bt("{\n    get foo() {}\n}");
     bt("{\n    var a = get\n    foo();\n}");
@@ -3107,15 +3109,17 @@ function run_beautifier_tests(test_obj)
     bt('<!-- dont crash');
     bt('for () /abc/.test()');
     bt('if (k) /aaa/m.test(v) && l();');
-    bt('switch (true) {\ncase /swf/i.test(foo):\n    bar();\n}');
+    bt('switch (true) {\n    case /swf/i.test(foo):\n        bar();\n}');
     bt('createdAt = {\n    type: Date,\n    default: Date.now\n}');
-    bt('switch (createdAt) {\ncase a:\n    Date,\ndefault:\n    Date.now\n}');
+    bt('switch (createdAt) {\n    case a:\n        Date,\n    default:\n        Date.now\n}');
     opts.space_before_conditional = false;
     bt('if(a) b()');
 
     opts.preserve_newlines = true;
     bt('var a = 42; // foo\n\nvar b;');
     bt('var a = 42; // foo\n\n\nvar b;');
+    bt("var a = 'foo' +\n    'bar';");
+    bt("var a = \"foo\" +\n    \"bar\";");
 
     opts.unescape_strings = false;
     bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
@@ -3146,6 +3150,13 @@ function run_beautifier_tests(test_obj)
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n/asdf/;');
+
+    opts.break_chained_methods = true;
+    bt('foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('foo.bar().baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat);\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('foo.bar().baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('this.something = foo.bar().baz().cucumber(fat)', 'this.something = foo.bar()\n    .baz()\n    .cucumber(fat)');
+    bt('this.something.xxx = foo.moo.bar()');
 
     Urlencoded.run_tests(sanitytest);
 
@@ -3310,6 +3321,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 	if(update)
 		selfUpdate();
 	else {
+		var res;
 		if(!test) {
 			var newLine = 2; //"\n"
 			var src = AkelPad.GetSelText(newLine);
@@ -3321,7 +3333,7 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 				src = src.replace(/\r/g, "\n");
 		}
 		if(test || !src) {
-			var res = runTests();
+			res = runTests();
 			var icon = /tests failed/.test(res) ? 48 /*MB_ICONEXCLAMATION*/ : 64 /*MB_ICONINFORMATION*/;
 			AkelPad.MessageBox(hMainWnd, res, WScript.ScriptName, icon);
 		}
@@ -3329,17 +3341,26 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 			if(action == ACT_INSERT)
 				var lpFrameTarget = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
 
+			if(
+				selectAll
+				&& (action == ACT_INSERT || action == ACT_INSERT_NEW_DOC)
+				&& restoreCaretPos
+			) {
+				var selStart = AkelPad.GetTextRange(0, AkelPad.GetSelStart())
+					.replace(/\s+/g, "");
+			}
+
 			if(beautifyCSS) {
 				var srcCSS = "<style>\n" + src + "\n</style>";
 				indentScripts = "separate";
 				var syntax = { value: "css" };
-				var res = (beautify(srcCSS) || "")
+				res = (beautify(srcCSS) || "")
 					.replace(/^\s*<style>\n?/, "")
 					.replace(/\n?<\/style>\s*/, "");
 			}
 			else {
 				var syntax = { value: undefined };
-				var res = beautify(src, syntax);
+				res = beautify(src, syntax);
 			}
 
 			if(action == ACT_INSERT) {
@@ -3352,13 +3373,13 @@ if(hMainWnd && (typeof AkelPad.IsInclude == "undefined" || !AkelPad.IsInclude())
 					if(AkelPad.GetEditReadOnly(hWndEdit))
 						action = ACT_INSERT_NEW_DOC;
 					else
-						insertNoScroll(res, selectAll);
+						insertNoScroll(res, selectAll, getCaretPos(res, selStart));
 				}
 				if(action == ACT_INSERT_NEW_DOC) {
 					AkelPad.SendMessage(hMainWnd, 273 /*WM_COMMAND*/, 4101 /*IDM_FILE_NEW*/, 0);
 					setSyntax(syntax.value);
 					AkelPad.SetSel(0, 0);
-					insertNoScroll(res, true);
+					insertNoScroll(res, true, getCaretPos(res, selStart));
 				}
 				if(action == ACT_COPY && res != AkelPad.GetClipboardText())
 					AkelPad.SetClipboardText(res);
@@ -3483,6 +3504,20 @@ function selfUpdate() {
 }
 
 function setSyntax(ext) {
+	if(!setSyntaxMode)
+		return;
+	var alias = getCoderAlias().toLowerCase();
+	if(setSyntaxMode == 1) {
+		if(alias)
+			return;
+	}
+	else if(setSyntaxMode == 2) {
+		var curType = getSyntaxType(alias);
+		var newType = getSyntaxType("." + ext);
+		if(curType == newType)
+			return;
+	}
+
 	if(
 		ext && (
 			AkelPad.IsPluginRunning("Coder::HighLight")
@@ -3492,24 +3527,86 @@ function setSyntax(ext) {
 	)
 		AkelPad.Call("Coder::Settings", 1, ext);
 }
+function getSyntaxType(alias) {
+	if(alias == ".css")
+		return "css";
+	if(/\.([xs]?html?|mht(ml)?|hta|asp|xml|axl|dxl|fb2|kml|manifest|msc|ndl|rdf|rss|svg|user|wsdl|xaml|xmp|xsd|xslt?|xul|resx|v[cbd]proj|csproj|wx[ils]|wixobj|wixout|wixlib|wixpdb|wixmsp|wixmst)$/.test(alias))
+		return "html";
+	if(/\.(jsm?|json|php|c|cpp|h|java|as|cs)$/.test(alias))
+		return "js";
+	return "";
+}
+function getCoderAlias() {
+	// http://akelpad.sourceforge.net/forum/viewtopic.php?p=19363#19363
+	var hWndEdit = AkelPad.GetEditWnd();
+	var hDocEdit = AkelPad.GetEditDoc();
+	var pAlias = "";
+	if(hWndEdit && hDocEdit) {
+		var lpAlias = AkelPad.MemAlloc(256 * 2 /*sizeof(wchar_t)*/);
+		if(lpAlias) {
+			AkelPad.CallW("Coder::Settings", 18 /*DLLA_CODER_GETALIAS*/, hWndEdit, hDocEdit, lpAlias, 0);
+			pAlias = AkelPad.MemRead(lpAlias, 1 /*DT_UNICODE*/);
+			AkelPad.MemFree(lpAlias);
+		}
+	}
+	return pAlias;
+}
 
-function insertNoScroll(str, selectAll) {
-	var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
-	if(!lpPoint)
-		return;
+function getCaretPos(newStr, oldSelStart) {
+	if(oldSelStart == undefined)
+		return undefined;
+	if(!newStr || !oldSelStart)
+		//return 0;
+		return "1:1";
+	var pos = 0;
+	var posStop = oldSelStart.length;
+	var line = 1;
+	var col = 1;
+	for(var i = 0, l = newStr.length; i < l; ++i) {
+		var chr = newStr.charAt(i);
+		if(chr != "\n")
+			++col;
+		else {
+			++line;
+			col = 1;
+		}
+		if(/^\s$/.test(chr))
+			continue;
+		var oldChr = oldSelStart.charAt(pos++);
+		if(chr != oldChr)
+			break;
+		if(pos == posStop)
+			//return i + 1;
+			return line + ":" + col;
+	}
+	return undefined;
+}
+function insertNoScroll(str, selectAll, caretPos) {
 	var hWndEdit = AkelPad.GetEditWnd();
 	setRedraw(hWndEdit, false);
-	AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
 
-	selectAll && AkelPad.SetSel(0, -1);
-	//var ss = AkelPad.GetSelStart();
+	var saveScrollPos = caretPos == undefined;
+	if(saveScrollPos) {
+		var lpPoint = AkelPad.MemAlloc(8 /*sizeof(POINT)*/);
+		if(!lpPoint)
+			return;
+		AkelPad.SendMessage(hWndEdit, 1245 /*EM_GETSCROLLPOS*/, 0, lpPoint);
+	}
+
+	if(selectAll)
+		AkelPad.SetSel(0, -1);
 	AkelPad.ReplaceSel(str, true);
-	//if(ss != AkelPad.GetSelStart())
-	//	AkelPad.SetSel(ss, ss + str.length);
 
-	AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
-	setRedraw(hWndEdit, true);
-	AkelPad.MemFree(lpPoint);
+	if(saveScrollPos) {
+		AkelPad.SendMessage(hWndEdit, 1246 /*EM_SETSCROLLPOS*/, 0, lpPoint);
+		AkelPad.MemFree(lpPoint);
+		setRedraw(hWndEdit, true);
+	}
+	else {
+		setRedraw(hWndEdit, true); // Should be here, otherwise caret doesn't redraw
+		//AkelPad.SetSel(caretPos, caretPos);
+		AkelPad.SendMessage(hMainWnd, 1206 /*AKD_GOTOW*/, 0x1 /*GT_LINE*/, AkelPad.MemStrPtr(caretPos));
+	}
 }
 function setRedraw(hWnd, bRedraw) {
 	AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
