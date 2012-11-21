@@ -1,0 +1,42 @@
+/********************************
+FindFiles.js - ver. 2012-11-21
+Interface language
+Language:      English (1033)
+Translated by: KDJ
+*********************************/
+sTxtScriptName  = "Find Files";
+sTxtDir         = "&Directory";
+sTxtCurrent     = "&Current";
+sTxtBrowse      = "&Browse...";
+sTxtSubDirs     = "Subdirectories &level:";
+sTxtAll         = "All";
+sTxtFileName    = "&Name of file";
+sTxtWildcards   = "(wildcards can use: *?)";
+sTxtRegExp      = "Regular expression";
+sTxtTextInFile  = "&Text in file";
+sTxtNotName     = "Not matching names";
+sTxtMatchCase   = "Match case";
+sTxtMultiline   = "Multiline";
+sTxtNotContain  = "Not contain text";
+sTxtInStreams   = "Include NTFS streams";
+sTxtSkipBinary  = "Don't search in binary files";
+sTxtFiles       = "Files";
+sTxtSearch      = "Search";
+sTxtEdit        = "Edit";
+sTxtCopyList    = "Copy list";
+sTxtClearList   = "Clear list";
+sTxtSettings    = "Settings";
+sTxtClose       = "Close";
+sTxtChooseDir   = "Choose directory:";
+sTxtNoFiles     = "<no files>";
+sTxtSeparateWnd = "Run in separate window";
+sTxtKeepFiles   = "Keep files list";
+sTxtPathShow    = "Show full path on files list";
+sTxtDirNoExist  = "Directory does not exists.";
+sTxtFileNoExist = "Files does not exists.";
+sTxtErrorRE     = "Error in regular expression.";
+sTxtWait        = "Wait...";
+sTxtAnyChar     = "any single character";
+sTxtAnyString   = "any string of characters";
+sTxtSemicolQuot = "semicolon must be in double quotes";
+sTxtListSepar   = "list separator (semicolon)";
