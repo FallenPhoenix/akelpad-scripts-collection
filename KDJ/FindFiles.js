@@ -1,4 +1,4 @@
-// FindFiles.js - ver. 2012-11-21
+// FindFiles.js - ver. 2012-12-02
 //
 // Search files by name and content.
 //
@@ -12,7 +12,7 @@
 // Ctrl+C   - copy selected items from files list
 // Del      - remove selected items from files list (don't delete the files)
 // F4       - edit selected files
-// DblClick - edit file (or close it if is currently edited)
+// DblClick - open file for editing and select the found text (or close file if is currently edited)
 // F1       - help for regular expressions or wildcards
 // Alt+Del  - remove item from history list (Directory, Name of file, Text in file)
 
@@ -38,6 +38,7 @@ else
   var DT_UNICODE = 1;
   var DT_DWORD   = 3;
   var DT_WORD    = 4;
+  var hMainWnd   = AkelPad.GetMainWnd();
   var nBkColorRE = 0xA0FFFF;
   var hBrush     = oSys.Call("Gdi32::CreateSolidBrush", nBkColorRE);
   var nBufSize   = 1024;
@@ -48,7 +49,7 @@ else
   AkelPad.MemCopy(lpLVITEM + 20, lpBuffer, DT_DWORD); //pszText
   AkelPad.MemCopy(lpLVITEM + 24, nBufSize, DT_DWORD); //cchTextMax
 
-  var hWndParent   = AkelPad.GetMainWnd();
+  var hWndParent   = hMainWnd;
   var nMaxLenCBE   = 15;
   var nMaxLenCBL   = 27;
   var nNameSel1    = 0;
@@ -62,35 +63,41 @@ else
   var hWndContentList;
   var hWndFocus;
 
-  var oWndMin = {"W": 420,
+  var oWndMin = {"W": 445,
                  "H": 440};
   var oWndPos = {"X": 240,
                  "Y": 140,
                  "W": oWndMin.W,
                  "H": oWndMin.H,
                  "Max": 0};
-  var bSeparateWnd = 0;
-  var bKeepFiles   = 1;
-  var bPathShow    = 1;
-  var nPathLen     = 0;
-  var bSortDesc    = 0;
-  var bNameRE      = 0;
-  var bNotName     = 0;
-  var bContentRE   = 0;
-  var bMatchCase   = 0;
-  var bMultiline   = 0;
-  var bNotContain  = 0;
-  var bInStreams   = 0;
-  var bSkipBinary  = 1;
-  var nDirLevel    = -1;
-  var sDir         = "";
-  var sName        = "";
-  var sContent     = "";
-  var aDirs        = [];
-  var aNames       = [];
-  var aContents    = [];
-  var aFiles       = [];
-  var aFilesSel    = [0];
+  var bSeparateWnd    = 0;
+  var bKeepFiles      = 1;
+  var bPathShow       = 1;
+  var nPathLen        = 0;
+  var bSortDesc       = 0;
+  var nDirLevel       = -1;
+  var bNameRE         = 0;
+  var bNotName        = 0;
+  var bContentRE      = 0;
+  var bMatchCase      = 0;
+  var bMultiline      = 0;
+  var bNotContain     = 0;
+  var bInStreams      = 0;
+  var bSkipBinary     = 1;
+  var nMaxFileSize    = 0;
+  var sDir            = "";
+  var sName           = "";
+  var sContent        = "";
+  var sLastContent    = "";
+  var bLastContentRE  = 0;
+  var bLastMatchCase  = 0;
+  var bLastMultiline  = 0;
+  var bLastNotContain = 0;
+  var aDirs           = [];
+  var aNames          = [];
+  var aContents       = [];
+  var aFiles          = [];
+  var aFilesSel       = [0];
 
   ReadIni();
 
@@ -133,14 +140,17 @@ else
   var IDNOTCONTAIN = 2017;
   var IDINSTREAMS  = 2018;
   var IDSKIPBINARY = 2019;
-  var IDFILELV     = 2020;
-  var IDSEARCHB    = 2021;
-  var IDEDITB      = 2022;
-  var IDCOPYB      = 2023;
-  var IDCLEARB     = 2024;
-  var IDSETTINGSB  = 2025;
-  var IDCLOSEB     = 2026;
+  var IDSKIPLARGER = 2020;
+  var IDMAXSIZE    = 2021;
+  var IDFILELV     = 2022;
+  var IDSEARCHB    = 2023;
+  var IDEDITB      = 2024;
+  var IDCOPYB      = 2025;
+  var IDCLEARB     = 2026;
+  var IDSETTINGSB  = 2027;
+  var IDCLOSEB     = 2028;
 
+  //0x50000000 - WS_VISIBLE|WS_CHILD
   //0x50000002 - WS_VISIBLE|WS_CHILD|SS_RIGHT
   //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
   //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
@@ -148,6 +158,7 @@ else
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|CBS_DROPDOWNLIST
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
   //0x50810009 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|LVS_SHOWSELALWAYS|LVS_REPORT
+  //0x50812000 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_NUMBER
   //Windows           CLASS,        HWND,      STYLE, TXT
   aWnd[IDDIRG      ]=["BUTTON",        0, 0x50000007, sTxtDir];
   aWnd[IDDIRCB     ]=["COMBOBOX",      0, 0x50210042, ""];
@@ -169,6 +180,8 @@ else
   aWnd[IDNOTCONTAIN]=["BUTTON",        0, 0x50010003, sTxtNotContain];
   aWnd[IDINSTREAMS ]=["BUTTON",        0, 0x50010003, sTxtInStreams];
   aWnd[IDSKIPBINARY]=["BUTTON",        0, 0x50010003, sTxtSkipBinary];
+  aWnd[IDSKIPLARGER]=["STATIC",        0, 0x50000000, sTxtSkipLarger];
+  aWnd[IDMAXSIZE   ]=["EDIT",          0, 0x50812000, (nMaxFileSize > 0) ? nMaxFileSize.toString() : ""];
   aWnd[IDFILELV    ]=["SysListView32", 0, 0x50810009, ""];
   aWnd[IDSEARCHB   ]=["BUTTON",        0, 0x50010000, sTxtSearch];
   aWnd[IDEDITB     ]=["BUTTON",        0, 0x50010000, sTxtEdit];
@@ -526,6 +539,18 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       bInStreams = ! bInStreams;
     else if (nLowParam == IDSKIPBINARY)
       bSkipBinary = ! bSkipBinary;
+    else if (nLowParam == IDMAXSIZE)
+    {
+      if (nHiwParam == 0x0300 /*EN_CHANGE*/)
+      {
+        nMaxFileSize = parseInt(GetWindowText(lParam), 10);
+        if ((! isFinite(nMaxFileSize)) || (nMaxFileSize <= 0))
+        {
+          nMaxFileSize = 0;
+          SetWindowText(lParam, "");
+        }
+      }
+    }
     else if (nLowParam == IDSEARCHB)
       SearchFiles();
     else if (nLowParam == IDEDITB)
@@ -739,6 +764,20 @@ function ResizeWindow(hWnd)
               16,
               0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   }
+  oSys.Call("User32::SetWindowPos",
+            aWnd[IDSKIPLARGER][HWND], 0,
+            340,
+            192,
+            75,
+            26,
+            0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
+  oSys.Call("User32::SetWindowPos",
+            aWnd[IDMAXSIZE][HWND], 0,
+            340,
+            223,
+            75,
+            20,
+            0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDFILELV][HWND], 0,
             10,
@@ -1026,54 +1065,54 @@ function Help(nID, bKeyF1)
 
   if ((nID == IDHELP1B) && (! bNameRE))
     aMenu = [
-      [nString, "?",   sTxtAnyChar],
-      [nString, "*",   sTxtAnyString],
-      [nString, '";"', sTxtSemicolQuot],
+      [nString, "?",   sHlpAnyChar],
+      [nString, "*",   sHlpAnyString],
+      [nString, '";"', sHlpSemicolQuot],
       [nSepar,  0, 0],
-      [nString, ";",   sTxtListSepar]];
+      [nString, ";",   sHlpListSepar]];
   else
     aMenu = [
-      [nString, ".",       "any character, except \\n"],
-      [nString, "\\d",     "digit [0-9]"],
-      [nString, "\\D",     "non-digit [^0-9]"],
-      [nString, "\\s",     "whitespace [ \\f\\n\\r\\t\\v]"],
-      [nString, "\\S",     "non-whitespace"],
-      [nString, "\\w",     "word character [A-Za-z0-9_]"],
-      [nString, "\\W",     "non-word character"],
-      [nString, "\\0",     "NULL character"],
-      [nString, "\\f",     "form feed \\x0C"],
-      [nString, "\\n",     "new line \\x0A"],
-      [nString, "\\r",     "carriage return \\x0D"],
-      [nString, "\\t",     "tab \\x09"],
-      [nString, "\\v",     "vertical tab \\x0B"],
-      [nString, "\\xFF",   "character hex code FF"],
-      [nString, "\\u00FF", "Unicode char hex code 00FF"],
+      [nString, ".",       sHlpAnyChar_NL],
+      [nString, "\\d",     sHlpDigit],
+      [nString, "\\D",     sHlpNonDigit],
+      [nString, "\\s",     sHlpWhiteSp],
+      [nString, "\\S",     sHlpNonWhiteSp],
+      [nString, "\\w",     sHlpWordChar],
+      [nString, "\\W",     sHlpNonWordChar],
+      [nString, "\\0",     sHlpNULL],
+      [nString, "\\f",     sHlpFF],
+      [nString, "\\n",     sHlpNL],
+      [nString, "\\r",     sHlpCR],
+      [nString, "\\t",     sHlpTab],
+      [nString, "\\v",     sHlpVTab],
+      [nString, "\\xFF",   sHlpCharHex],
+      [nString, "\\u00FF", sHlpUniCharHex],
       [nSepar,  0, 0],
-      [nString, "^",       "beginning of string/line"],
-      [nString, "$",       "end of string/line"],
-      [nString, "\\b",     "word boundary"],
-      [nString, "\\B",     "non-word boundary"],
-      [nBreak,  "ab|xy",   "alternative ab or xy"],
-      [nString, "[abc]",   "character set, any specified"],
-      [nString, "[^abc]",  "negative character set"],
-      [nString, "[a-z]",   "range of chars from a to z"],
-      [nString, "[^a-z]",  "negative range of chars"],
+      [nString, "^",       sHlpBegin],
+      [nString, "$",       sHlpEnd],
+      [nString, "\\b",     sHlpWordBoun],
+      [nString, "\\B",     sHlpNonWordBoun],
+      [nBreak,  "ab|xy",   sHlpAlternative],
+      [nString, "[abc]",   sHlpCharSet],
+      [nString, "[^abc]",  sHlpNegCharSet],
+      [nString, "[a-z]",   sHlpRange],
+      [nString, "[^a-z]",  sHlpNegRange],
       [nSepar,  0, 0],
-      [nString, "(ab)",    "capture"],
-      [nString, "(?:ab)",  "not capture"],
-      [nString, "(?=ab)",  "followed by ab"],
-      [nString, "(?!ab)",  "not followed by ab"],
-      [nString, "\\9",     "backreference"],
-      [nString, "\\99",    "backreference"],
+      [nString, "(ab)",    sHlpCapture],
+      [nString, "(?:ab)",  sHlpNotCapture],
+      [nString, "(?=ab)",  sHlpFollow],
+      [nString, "(?!ab)",  sHlpNotFollow],
+      [nString, "\\9",     sHlpBackrefer],
+      [nString, "\\99",    sHlpBackrefer],
       [nSepar,  0, 0],
-      [nString, "?",       "zero or one times"],
-      [nString, "*",       "zero or more times"],
-      [nString, "+",       "one or more times"],
-      [nString, "{3}",     "exactly 3 times"],
-      [nString, "{3,}",    "at least 3 times"],
-      [nString, "{3,7}",   "from 3 to 7 times"],
+      [nString, "?",       sHlpZeroOrOne],
+      [nString, "*",       sHlpZeroOrMore],
+      [nString, "+",       sHlpOneOrMore],
+      [nString, "{3}",     sHlpexactly],
+      [nString, "{3,}",    sHlpAtLeast],
+      [nString, "{3,7}",   sHlpFromTo],
       [nSepar,  0, 0],
-      [nString, "\\(",     "()[]{}^$.?+*\| special chars"]];
+      [nString, "\\(",     sHlpSpecChars]];
 
   for (i = 0; i < aMenu.length; ++i)
     oSys.Call("User32::AppendMenuW", hMenu, aMenu[i][0], i + 1, aMenu[i][1] + "\t" + aMenu[i][2]);
@@ -1118,8 +1157,14 @@ function SearchFiles()
   var hFindFile;
   var sFileName;
   var sFullName;
-  var sFileContent;
   var nReadFlag;
+  var lpFile;
+  var lpDetectFile;
+  var nDetectFile;
+  var nSizeHi;
+  var nSizeLo;
+  var nSize;
+  var nMaxSize;
   var bNTFS;
   var aStreams;
   var lpRect;
@@ -1185,13 +1230,25 @@ function SearchFiles()
   SetWindowText(aWnd[IDSEARCHB][HWND], sTxtWait);
   InsertToCB();
 
-  aFiles    = [];
-  aFilesSel = [0];
-  aPath[0]  = sDir + ((sDir.slice(-1) != "\\") ? "\\" : "");
-  nPathLen  = aPath[0].length;
-  nMaxLevel = (nDirLevel < 0) ? Infinity : nDirLevel;
-  nReadFlag = bSkipBinary ? 0xD /*OD_ADT_BINARY_ERROR|OD_ADT_DETECT_CODEPAGE|OD_ADT_DETECT_BOM*/ : 0xC /*OD_ADT_DETECT_CODEPAGE|OD_ADT_DETECT_BOM*/;
-  bNTFS     = IsSupportStreams(sDir.substr(0, 3));
+  aFiles          = [];
+  aFilesSel       = [0];
+  aPath[0]        = sDir + ((sDir.slice(-1) != "\\") ? "\\" : "");
+  nPathLen        = aPath[0].length;
+  nMaxLevel       = (nDirLevel < 0) ? Infinity : nDirLevel;
+  nMaxSize        = (nMaxFileSize <= 0) ? Infinity : nMaxFileSize;
+  nReadFlag       = 0xC /*OD_ADT_DETECT_CODEPAGE|OD_ADT_DETECT_BOM*/;
+  bNTFS           = IsSupportStreams(sDir.substr(0, 3));
+  sLastContent    = sContent;
+  bLastContentRE  = bContentRE;
+  bLastMatchCase  = bMatchCase;
+  bLastMultiline  = bMultiline;
+  bLastNotContain = bNotContain;
+  lpFile          = AkelPad.MemAlloc((260 + 260 + 36) * 2);
+  lpDetectFile    = AkelPad.MemAlloc(20); //sizeof(DETECTFILEW)
+
+  AkelPad.MemCopy(lpDetectFile,     lpFile, DT_DWORD);
+  AkelPad.MemCopy(lpDetectFile + 4,   1024, DT_DWORD); //dwBytesToCheck
+  AkelPad.MemCopy(lpDetectFile + 8,   0x1D, DT_DWORD); //dwFlags=ADT_NOMESSAGES|ADT_DETECT_BOM|ADT_DETECT_CODEPAGE|ADT_BINARY_ERROR
 
   if (sName && (! bNameRE))
   {
@@ -1232,22 +1289,25 @@ function SearchFiles()
 
               for (n = 0; n < aStreams.length; ++n)
               {
-                if (aStreams[n][0])
-                  sFullName = aPath[i] + sFileName + ":" + aStreams[n][0];
+                sFullName = aPath[i] + sFileName + (aStreams[n][0] ? ":" + aStreams[n][0] : "");
 
                 if (sContent)
                 {
-                  sFileContent = AkelPad.ReadFile(sFullName, nReadFlag);
-    
-                  if (rContent.test(sFileContent))
+                  AkelPad.MemCopy(lpFile, sFullName, DT_UNICODE);
+                  nDetectFile = AkelPad.SendMessage(hMainWnd, 1177 /*AKD_DETECTFILEW*/, 0, lpDetectFile);
+
+                  if (((nDetectFile == 0 /*EDT_SUCCESS*/) || ((nDetectFile == -4 /*EDT_BINARY*/) && (! bSkipBinary))) && (aStreams[n][1] <= nMaxSize))
                   {
-                    if (! bNotContain)
-                      aFiles.push(sFullName);
-                  }
-                  else
-                  {
-                    if (bNotContain)
-                      aFiles.push(sFullName);
+                    if (rContent.test(AkelPad.ReadFile(sFullName, nReadFlag)))
+                    {
+                      if (! bNotContain)
+                        aFiles.push(sFullName);
+                    }
+                    else
+                    {
+                      if (bNotContain)
+                        aFiles.push(sFullName);
+                    }
                   }
                 }
                 else
@@ -1258,17 +1318,27 @@ function SearchFiles()
             {
               if (sContent)
               {
-                sFileContent = AkelPad.ReadFile(sFullName, nReadFlag);
-  
-                if (rContent.test(sFileContent))
+                AkelPad.MemCopy(lpFile, sFullName, DT_UNICODE);
+                nDetectFile = AkelPad.SendMessage(hMainWnd, 1177 /*AKD_DETECTFILEW*/, 0, lpDetectFile);
+
+                nSizeHi = AkelPad.MemRead(lpBuffer + 28 /*offsetof(WIN32_FIND_DATAW, nFileSizeHigh)*/, DT_DWORD);
+                nSizeLo = AkelPad.MemRead(lpBuffer + 32 /*offsetof(WIN32_FIND_DATAW, nFileSizeLow)*/,  DT_DWORD);
+                if (nSizeLo < 0)
+                  nSizeLo += 0xFFFFFFFF + 1;
+                nSize = nSizeHi * (0xFFFFFFFF + 1) + nSizeLo;
+
+                if (((nDetectFile == 0 /*EDT_SUCCESS*/) || ((nDetectFile == -4 /*EDT_BINARY*/) && (! bSkipBinary))) && (nSize <= nMaxSize))
                 {
-                  if (! bNotContain)
-                    aFiles.push(sFullName);
-                }
-                else
-                {
-                  if (bNotContain)
-                    aFiles.push(sFullName);
+                  if (rContent.test(AkelPad.ReadFile(sFullName, nReadFlag)))
+                  {
+                    if (! bNotContain)
+                      aFiles.push(sFullName);
+                  }
+                  else
+                  {
+                    if (bNotContain)
+                      aFiles.push(sFullName);
+                  }
                 }
               }
               else
@@ -1287,6 +1357,9 @@ function SearchFiles()
       oSys.Call("Kernel32::FindClose", hFindFile);
     }
   }
+
+  AkelPad.MemFree(lpFile);
+  AkelPad.MemFree(lpDetectFile);
 
   SortFiles();
   SetHeaderLV();
@@ -1347,6 +1420,7 @@ function OpenOrCloseFile()
   if (aFiles.length)
   {
     var nSel = GetNextSelLV(-1);
+    var rContent;
 
     if (nSel >= 0)
     {
@@ -1360,12 +1434,51 @@ function OpenOrCloseFile()
       else
       {
         if (IsFileExists(aFiles[nSel]))
+        {
           AkelPad.OpenFile(aFiles[nSel]);
+
+          if (sLastContent && (! bLastNotContain))
+          {
+            if (bLastContentRE)
+            {
+              rContent = new RegExp(sLastContent, (bLastMatchCase ? "" : "i") + (bLastMultiline ? "m" : ""));
+              if (rContent.test(AkelPad.GetTextRange(0, -1, 0 /*new line as is*/)))
+                AkelPad.SetSel(ByteOffsetToRichOffset(RegExp.index), ByteOffsetToRichOffset(RegExp.lastIndex));
+            }
+            else
+              AkelPad.TextFind(0, sLastContent, 0x00200001 /*FRF_BEGINNING|FRF_DOWN*/ | (bLastMatchCase ? 0x00000004 /*FRF_MATCHCASE*/ : 0));
+          }
+        }
         else
           WarningBox(aFiles[nSel] + "\n\n" + sTxtFileNoExist);
       }
     }
   }
+}
+
+function ByteOffsetToRichOffset(nByteOffset)
+{
+  var hEditWnd      = AkelPad.GetEditWnd();
+  var lpIndexOffset = AkelPad.MemAlloc(16 /*sizeof(AEINDEXOFFSET)*/);
+  var lpCharIndex1  = AkelPad.MemAlloc(12 /*sizeof(AECHARINDEX)*/);
+  var lpCharIndex2  = AkelPad.MemAlloc(12 /*sizeof(AECHARINDEX)*/);
+  var nRichOffset;
+
+  AkelPad.MemCopy(lpIndexOffset,      lpCharIndex1,    DT_DWORD);
+  AkelPad.MemCopy(lpIndexOffset +  4, lpCharIndex2,    DT_DWORD);
+  AkelPad.MemCopy(lpIndexOffset +  8, nByteOffset,     DT_DWORD);
+  AkelPad.MemCopy(lpIndexOffset + 12, 3 /*AELB_ASIS*/, DT_DWORD);
+
+  AkelPad.SendMessage(hEditWnd, 3130 /*AEM_GETINDEX*/, 1 /*AEGI_FIRSTCHAR*/, lpCharIndex1);
+  AkelPad.SendMessage(hEditWnd, 3135 /*AEM_INDEXOFFSET*/, 0, lpIndexOffset);
+
+  nRichOffset = AkelPad.SendMessage(hEditWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpCharIndex2);
+
+  AkelPad.MemFree(lpIndexOffset);
+  AkelPad.MemFree(lpCharIndex1);
+  AkelPad.MemFree(lpCharIndex2);
+
+  return nRichOffset;
 }
 
 function CopyList()
@@ -1491,7 +1604,7 @@ function ReadIni()
     sTxtAll         = "All";
     sTxtFileName    = "&Name of file";
     sTxtWildcards   = "(wildcards can use: *?)";
-    sTxtRegExp      = "Regular expression";
+    sTxtRegExp      = "&Regular expression";
     sTxtTextInFile  = "&Text in file";
     sTxtNotName     = "Not matching names";
     sTxtMatchCase   = "Match case";
@@ -1499,6 +1612,7 @@ function ReadIni()
     sTxtNotContain  = "Not contain text";
     sTxtInStreams   = "Include NTFS streams";
     sTxtSkipBinary  = "Don't search in binary files";
+    sTxtSkipLarger  = "Don't search\nin larger than:";
     sTxtFiles       = "Files";
     sTxtSearch      = "Search";
     sTxtEdit        = "Edit";
@@ -1515,10 +1629,46 @@ function ReadIni()
     sTxtFileNoExist = "Files does not exists.";
     sTxtErrorRE     = "Error in regular expression.";
     sTxtWait        = "Wait...";
-    sTxtAnyChar     = "any single character";
-    sTxtAnyString   = "any string of characters";
-    sTxtSemicolQuot = "semicolon must be in double quotes";
-    sTxtListSepar   = "list separator (semicolon)";
+    sHlpAnyChar     = "any single character";
+    sHlpAnyString   = "any string of characters";
+    sHlpSemicolQuot = "semicolon must be in double quotes";
+    sHlpListSepar   = "list separator (semicolon)";
+    sHlpAnyChar_NL  = "any character, except \\n";
+    sHlpDigit       = "digit [0-9]";
+    sHlpNonDigit    = "non-digit [^0-9]";
+    sHlpWhiteSp     = "whitespace [ \\f\\n\\r\\t\\v]";
+    sHlpNonWhiteSp  = "non-whitespace";
+    sHlpWordChar    = "word character [A-Za-z0-9_]";
+    sHlpNonWordChar = "non-word character";
+    sHlpNULL        = "NULL character";
+    sHlpFF          = "form feed \\x0C";
+    sHlpNL          = "new line \\x0A";
+    sHlpCR          = "carriage return \\x0D";
+    sHlpTab         = "tab \\x09";
+    sHlpVTab        = "vertical tab \\x0B";
+    sHlpCharHex     = "character hex code FF";
+    sHlpUniCharHex  = "Unicode char hex code 00FF";
+    sHlpBegin       = "beginning of string/line";
+    sHlpEnd         = "end of string/line";
+    sHlpWordBoun    = "word boundary";
+    sHlpNonWordBoun = "non-word boundary";
+    sHlpAlternative = "alternative ab or xy";
+    sHlpCharSet     = "character set, any specified";
+    sHlpNegCharSet  = "negative character set";
+    sHlpRange       = "range of chars from a to z";
+    sHlpNegRange    = "negative range of chars";
+    sHlpCapture     = "capture";
+    sHlpNotCapture  = "not capture";
+    sHlpFollow      = "followed by ab";
+    sHlpNotFollow   = "not followed by ab";
+    sHlpBackrefer   = "backreference";
+    sHlpZeroOrOne   = "zero or one times";
+    sHlpZeroOrMore  = "zero or more times";
+    sHlpOneOrMore   = "one or more times";
+    sHlpexactly     = "exactly 3 times";
+    sHlpAtLeast     = "at least 3 times";
+    sHlpFromTo      = "from 3 to 7 times";
+    sHlpSpecChars   = "()[]{}^$.?+*|\\ special chars";
   }
 
   if (IsFileExists(sIniFile))
@@ -1555,28 +1705,34 @@ function WriteIni()
   for (i in oWndPos)
     sIniTxt += 'oWndPos.' + i + '=' + oWndPos[i] + ';\r\n';
 
-  sIniTxt += 'bSeparateWnd=' + bSeparateWnd + ';\r\n' +
-             'bKeepFiles='   + bKeepFiles + ';\r\n' +
-             'bPathShow='    + bPathShow + ';\r\n' +
-             'nPathLen='     + nPathLen + ';\r\n' +
-             'bSortDesc='    + bSortDesc + ';\r\n' +
-             'bNameRE='      + bNameRE + ';\r\n' +
-             'bNotName='     + bNotName + ';\r\n' +
-             'bContentRE='   + bContentRE + ';\r\n' +
-             'bMatchCase='   + bMatchCase + ';\r\n' +
-             'bMultiline='   + bMultiline + ';\r\n' +
-             'bNotContain='  + bNotContain + ';\r\n' +
-             'bInStreams='   + bInStreams + ';\r\n' +
-             'bSkipBinary='  + bSkipBinary + ';\r\n' +
-             'nDirLevel='    + nDirLevel + ';\r\n' +
-             'sDir="'        + sDir.replace(/[\\"]/g, '\\$&') + '";\r\n' +
-             'sName="'       + sName.replace(/[\\"]/g, '\\$&') + '";\r\n' +
-             'sContent="'    + sContent.replace(/[\\"]/g, '\\$&') + '";\r\n' +
-             'aDirs=['       + aDirs.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
-             'aNames=['      + aNames.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
-             'aContents=['   + aContents.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
-             'aFilesSel=['   + aFilesSel +'];\r\n' +
-             'aFiles=['      + aFiles.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];';
+  sIniTxt += 'bSeparateWnd='    + bSeparateWnd + ';\r\n' +
+             'bKeepFiles='      + bKeepFiles + ';\r\n' +
+             'bPathShow='       + bPathShow + ';\r\n' +
+             'nPathLen='        + nPathLen + ';\r\n' +
+             'bSortDesc='       + bSortDesc + ';\r\n' +
+             'nDirLevel='       + nDirLevel + ';\r\n' +
+             'bNameRE='         + bNameRE + ';\r\n' +
+             'bNotName='        + bNotName + ';\r\n' +
+             'bContentRE='      + bContentRE + ';\r\n' +
+             'bMatchCase='      + bMatchCase + ';\r\n' +
+             'bMultiline='      + bMultiline + ';\r\n' +
+             'bNotContain='     + bNotContain + ';\r\n' +
+             'bInStreams='      + bInStreams + ';\r\n' +
+             'bSkipBinary='     + bSkipBinary + ';\r\n' +
+             'nMaxFileSize='    + nMaxFileSize + ';\r\n' +
+             'sDir="'           + sDir.replace(/[\\"]/g, '\\$&') + '";\r\n' +
+             'sName="'          + sName.replace(/[\\"]/g, '\\$&') + '";\r\n' +
+             'sContent="'       + sContent.replace(/[\\"]/g, '\\$&') + '";\r\n' +
+             'sLastContent="'   + sLastContent.replace(/[\\"]/g, '\\$&') + '";\r\n' +
+             'bLastContentRE='  + bLastContentRE + ';\r\n' +
+             'bLastMatchCase='  + bLastMatchCase + ';\r\n' +
+             'bLastMultiline='  + bLastMultiline + ';\r\n' +
+             'bLastNotContain=' + bLastNotContain + ';\r\n' +
+             'aDirs=['          + aDirs.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
+             'aNames=['         + aNames.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
+             'aContents=['      + aContents.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
+             'aFiles=['         + aFiles.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
+             'aFilesSel=['      + aFilesSel +'];';
 
   WriteFile(sIniFile, null, sIniTxt, 1);
 }

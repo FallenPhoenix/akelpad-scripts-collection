@@ -1,5 +1,5 @@
 /********************************
-FindFiles.js - ver. 2012-11-21
+FindFiles.js - ver. 2012-12-02
 Interface language
 Language:      English (1033)
 Translated by: KDJ
@@ -12,7 +12,7 @@ sTxtSubDirs     = "Subdirectories &level:";
 sTxtAll         = "All";
 sTxtFileName    = "&Name of file";
 sTxtWildcards   = "(wildcards can use: *?)";
-sTxtRegExp      = "Regular expression";
+sTxtRegExp      = "&Regular expression";
 sTxtTextInFile  = "&Text in file";
 sTxtNotName     = "Not matching names";
 sTxtMatchCase   = "Match case";
@@ -20,6 +20,7 @@ sTxtMultiline   = "Multiline";
 sTxtNotContain  = "Not contain text";
 sTxtInStreams   = "Include NTFS streams";
 sTxtSkipBinary  = "Don't search in binary files";
+sTxtSkipLarger  = "Don't search\nin larger than:";
 sTxtFiles       = "Files";
 sTxtSearch      = "Search";
 sTxtEdit        = "Edit";
@@ -36,7 +37,42 @@ sTxtDirNoExist  = "Directory does not exists.";
 sTxtFileNoExist = "Files does not exists.";
 sTxtErrorRE     = "Error in regular expression.";
 sTxtWait        = "Wait...";
-sTxtAnyChar     = "any single character";
-sTxtAnyString   = "any string of characters";
-sTxtSemicolQuot = "semicolon must be in double quotes";
-sTxtListSepar   = "list separator (semicolon)";
+sHlpAnyChar     = "any single character";
+sHlpAnyString   = "any string of characters";
+sHlpSemicolQuot = "semicolon must be in double quotes";
+sHlpListSepar   = "list separator (semicolon)";
+sHlpAnyChar_NL  = "any character, except \\n";
+sHlpDigit       = "digit [0-9]";
+sHlpNonDigit    = "non-digit [^0-9]";
+sHlpWhiteSp     = "whitespace [ \\f\\n\\r\\t\\v]";
+sHlpNonWhiteSp  = "non-whitespace";sHlpWordChar    = "word character [A-Za-z0-9_]";
+sHlpNonWordChar = "non-word character";
+sHlpNULL        = "NULL character";
+sHlpFF          = "form feed \\x0C";
+sHlpNL          = "new line \\x0A";
+sHlpCR          = "carriage return \\x0D";
+sHlpTab         = "tab \\x09";
+sHlpVTab        = "vertical tab \\x0B";
+sHlpCharHex     = "character hex code FF";
+sHlpUniCharHex  = "Unicode char hex code 00FF";
+sHlpBegin       = "beginning of string/line";
+sHlpEnd         = "end of string/line";
+sHlpWordBoun    = "word boundary";
+sHlpNonWordBoun = "non-word boundary";
+sHlpAlternative = "alternative ab or xy";
+sHlpCharSet     = "character set, any specified";
+sHlpNegCharSet  = "negative character set";
+sHlpRange       = "range of chars from a to z";
+sHlpNegRange    = "negative range of chars";
+sHlpCapture     = "capture";
+sHlpNotCapture  = "not capture";
+sHlpFollow      = "followed by ab";
+sHlpNotFollow   = "not followed by ab";
+sHlpBackrefer   = "backreference";
+sHlpZeroOrOne   = "zero or one times";
+sHlpZeroOrMore  = "zero or more times";
+sHlpOneOrMore   = "one or more times";
+sHlpexactly     = "exactly 3 times";
+sHlpAtLeast     = "at least 3 times";
+sHlpFromTo      = "from 3 to 7 times";
+sHlpSpecChars   = "()[]{}^$.?+*|\\ special chars";
