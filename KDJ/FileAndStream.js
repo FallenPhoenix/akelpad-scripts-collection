@@ -1,4 +1,4 @@
-// FileAndStream.js - ver. 2012-08-20
+// FileAndStream.js - ver. 2012-12-06
 //
 // Manager of files and NTFS streams.
 //
@@ -2073,55 +2073,31 @@ function QuickView(nPan)
   if (bQuickView)
   {
     var sText = "";
-    var lpNumBytes;
-    var hFile;
-    var nBytes;
-    var i;
 
     GetCurFile(nPan);
 
     if (aCurDir[nPan][aCurDrive[nPan]].File)
     {
-      lpNumBytes = AkelPad.MemAlloc(4);
+      var sFile        = aCurDir[nPan][aCurDrive[nPan]].Path + aCurDir[nPan][aCurDrive[nPan]].File;
+      var lpDetectFile = AkelPad.MemAlloc(20); //sizeof(DETECTFILEW)
+      var nDetectFile;
 
-      hFile = oSys.Call("kernel32::CreateFileW",
-                        ((aCurWnd[nPan] == 1) && aCurDir[nPan][aCurDrive[nPan]].Stream)
-                          ? aCurDir[nPan][aCurDrive[nPan]].Path + aCurDir[nPan][aCurDrive[nPan]].File + ":" + aCurDir[nPan][aCurDrive[nPan]].Stream
-                          : aCurDir[nPan][aCurDrive[nPan]].Path + aCurDir[nPan][aCurDrive[nPan]].File, //lpFileName
-                        0x80000000, //dwDesiredAccess = GENERIC_READ
-                        1,  //dwShareMode = FILE_SHARE_READ
-                        0,  //lpSecurityAttributes
-                        3,  //dwCreationDisposition = OPEN_EXISTING
-                        0,  //dwFlagsAndAttributes
-                        0); //hTemplateFile
+      if ((aCurWnd[nPan] == 1) && aCurDir[nPan][aCurDrive[nPan]].Stream)
+        sFile += ":" + aCurDir[nPan][aCurDrive[nPan]].Stream;
 
-      oSys.Call("kernel32::ReadFile", hFile, lpBuffer, nBufSize - 4, lpNumBytes, 0);
-      oSys.Call("kernel32::CloseHandle", hFile);
+      AkelPad.MemCopy(lpBuffer, sFile, 1 /*DT_UNICODE*/);
+      AkelPad.MemCopy(lpDetectFile,     lpBuffer, DT_DWORD);
+      AkelPad.MemCopy(lpDetectFile + 4,     1024, DT_DWORD); //dwBytesToCheck
+      AkelPad.MemCopy(lpDetectFile + 8,     0x1D, DT_DWORD); //dwFlags=ADT_NOMESSAGES|ADT_DETECT_BOM|ADT_DETECT_CODEPAGE|ADT_BINARY_ERROR
 
-      if (nBytes = AkelPad.MemRead(lpNumBytes, DT_DWORD))
-      {
-        if (AkelPad.MemRead(lpBuffer, DT_WORD) == 0xFEFF) //BOM UTF-16LE
-        {
-          AkelPad.MemCopy(lpBuffer + nBytes, 0, DT_DWORD);
-          sText = AkelPad.MemRead(lpBuffer + 2, 1 /*DT_UNICODE*/);
-        }
-        else
-        {
-          if (nBytes > nBufSize / 2)
-            nBytes = nBufSize / 2;
+      nDetectFile = AkelPad.SendMessage(AkelPad.GetMainWnd(), 1177 /*AKD_DETECTFILEW*/, 0, lpDetectFile);
 
-          AkelPad.MemCopy(lpBuffer + nBytes, 0, DT_BYTE);
+      if (nDetectFile == 0 /*EDT_SUCCESS*/)
+        sText = AkelPad.ReadFile(sFile, 0, AkelPad.MemRead(lpDetectFile + 12, DT_DWORD) /*nCodePage*/, AkelPad.MemRead(lpDetectFile + 16, DT_DWORD) /*bBOM*/, 2048);
+      else if (nDetectFile == -4 /*EDT_BINARY*/)
+        sText = AkelPad.ReadFile(sFile, 0, 0, 0, 2048).replace(/\0/g, "\x01");
 
-          for (i = 0; i < nBytes; ++i)
-          {
-            if (AkelPad.MemRead(lpBuffer + i, DT_BYTE) == 0)
-              AkelPad.MemCopy(lpBuffer + i, 1, DT_BYTE);
-          }
-          sText = AkelPad.MemRead(lpBuffer, 0 /*DT_ANSI*/);
-        }
-      }
-
-      AkelPad.MemFree(lpNumBytes);
+      AkelPad.MemFree(lpDetectFile);
     }
 
     SetWndText(aWnd[IDQUICKVIEWS0 + nPan][HWND], sText);
