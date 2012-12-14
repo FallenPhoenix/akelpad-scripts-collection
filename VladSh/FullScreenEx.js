@@ -1,27 +1,31 @@
 ﻿///Go to FullScreen-mode with additional options for display panels; a return to normal-mode
 ///Переход в полноэкранный режим с возможностью отображения определённого тулбара; возвращение в нормальный режим
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=18081#18081
-// Version: 2.3 (2012.10.18)
+// Version: 2.4 (2012.12.14)
 // 
 // Parameters:
-// 	• ToolBar - имя dll-файла плагина без расширения, "" или без параметра - плагин отображаться не будет
+// 	• ToolBar - ["имя dll-файла_1 плагина без расширения","номера рядов через запятую"],["имя dll-файла_2 плагина без расширения","номера рядов через запятую"];
+//				если в одном из плагинов нужно отобразить все ряды, то параметр с номерами рядов можно не записывать
 // 	• Explorer, CodeFold, Clipboard, Log, StatusBar, Menu: [0] - не отображать / 1 - отображать
 //		• TabBar: [0] - не отображать / 1 - отображать с автоопределением положения / 4301 - сверху / 4302 - снизу
 // 
 // Examples:
 // -"Обычный" Call("Scripts::Main", 1, "FullScreenEx.js")
-// -"С тулбаром по умолчанию" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar="ToolBar"`)
-// -"С панелями для работы с XML" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar="ToolBar-XML" -CodeFold=1`)
-// -"Псевдо-SDI" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar="ToolBar" -Menu=1 -StatusBar=1`)
+// -"С тулбаром по умолчанию" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar=["ToolBar"]`)
+// -"С дополнительной панелью для работы с XML" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar=["ToolBar","1,3"],["ToolBar-XML"] -CodeFold=1`)
+// -"Псевдо-SDI" Call("Scripts::Main", 1, "FullScreenEx.js", `-ToolBar=["ToolBar"] -Menu=1 -StatusBar=1`)
 
 var pFullScreen = "FullScreen::Main";
-var pToolBar = AkelPad.GetArgValue("ToolBar", "");
-if (pToolBar) 
-	pToolBar += "::Main";
+var Toolbars = AkelPad.GetArgValue("ToolBar", "");
+if (Toolbars) {
+	Toolbars = eval('[' + Toolbars + ']');
+	for (i = 0; i < Toolbars.length; i++) {
+		Toolbars[i] = getToolbar(Toolbars[i]);
+	}
+}
 
 //ПЕРЕХОД ИЗ ОБЫЧНОГО РЕЖИМА В ПОЛНОЭКРАННЫЙ
-if (!AkelPad.IsPluginRunning(pFullScreen))
-{
+if (!AkelPad.IsPluginRunning(pFullScreen)) {
 	var pExplorer = "Explorer::Main";
 	var pCodeFold = "Coder::CodeFold";
 	var pClipboard = "Clipboard::Capture";
@@ -32,14 +36,19 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 	var bCodeFold = AkelPad.GetArgValue("CodeFold", 0);
 	var bClipboard = AkelPad.GetArgValue("Clipboard", 0);
 	var bLog = AkelPad.GetArgValue("Log", 0);
+	var IDM_VIEW_SHOW_STATUSBAR = 4211;
 	var bStatusBar = AkelPad.GetArgValue("StatusBar", 0);
 	var bMenu = AkelPad.GetArgValue("Menu", 0);
 	var nTabBar = AkelPad.GetArgValue("TabBar", 0);
 	
 	//если панели перед запуском включены, - отключаем, т.к. без этого потом не запустятся
 	
-	if (pToolBar && AkelPad.IsPluginRunning(pToolBar))
-		AkelPad.Call(pToolBar);
+	if (Toolbars) {
+		for (i = Toolbars.length - 1; i >= 0; i--) {
+			if (AkelPad.IsPluginRunning(Toolbars[i].file))
+				AkelPad.Call(Toolbars[i].file);
+		}
+	}
 	
 	if (bExplorer && AkelPad.IsPluginRunning(pExplorer))
 		AkelPad.Call(pExplorer);
@@ -54,7 +63,7 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 		AkelPad.Call(pLog);
 	
 	if (bStatusBar && AkelPad.SendMessage(hWndMain, 1222 /*AKD_GETMAININFO*/, 142 /*MI_STATUSBAR*/, 0))
-		AkelPad.Command(4211 /*IDM_VIEW_SHOW_STATUSBAR*/);
+		AkelPad.Command(IDM_VIEW_SHOW_STATUSBAR);
 	
 	if (bMenu) {
 		var oSys = AkelPad.SystemFunction();
@@ -64,8 +73,11 @@ if (!AkelPad.IsPluginRunning(pFullScreen))
 	//ЗАПУСК ПОЛНОЭКРАННОГО РЕЖИМА
 	AkelPad.Call(pFullScreen);
 	
-	if (pToolBar)
-			AkelPad.Call(pToolBar);
+	if (Toolbars) {
+		for (i = Toolbars.length - 1; i >= 0; i--) {
+			AkelPad.Call(Toolbars[i].file, 1, Toolbars[i].rows);
+		}
+	}
 	
 	if (bExplorer)
 		AkelPad.Call(pExplorer);
@@ -106,6 +118,19 @@ else
 {
 	AkelPad.Call(pFullScreen);
 	
-	if (!AkelPad.IsPluginRunning(pToolBar))		//если тулбар отключён - включаем для нормального восстановления вида проги
-		AkelPad.Call(pToolBar);
+	//если тулбар отключён - включаем для нормального восстановления вида проги
+	if (Toolbars) {
+		for (i = Toolbars.length - 1; i >= 0; i--) {
+			if (!AkelPad.IsPluginRunning(Toolbars[i].file))
+				AkelPad.Call(Toolbars[i].file);
+		}
+	}
+}
+
+// преобразование отдельного тулбара из соотв. аргумента в определённую структуру
+function getToolbar(pToolbar) {
+	return {
+		file: pToolbar[0] + "::Main",
+		rows: (Toolbars.length > 1 && pToolbar[Toolbars.length-1]) ? pToolbar[1] : ""
+	}
 }
