@@ -1,4 +1,4 @@
-// ScreenView.js - ver. 2012-07-25
+// ScreenView.js - ver. 2012-12-17
 //
 // Switch between different views of AkelPad screen.
 //
@@ -125,6 +125,7 @@ var IDTOOLBAR        = 2039;
 //0x50004000 - WS_VISIBLE|WS_CHILD|BS_NOTIFY
 //0x50004006 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTO3STATE
 //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
+//0x50800080 - WS_VISIBLE|WS_CHILD|WS_BORDER|ES_AUTOHSCROLL
 //0x50A10103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_NOINTEGRALHEIGHT|LBS_SORT|LBS_NOTIFY
 //Windows               CLASS,    HWND,      STYLE, TXT,               LINK,            NAME (in oView, oPlug)
 aWnd[IDNAMES         ]=["STATIC",    0, 0x50000000, "View name",       0];
@@ -166,10 +167,13 @@ aWnd[IDSPEECH        ]=["BUTTON",    0, 0x50004006, "Speech",          0,       
 aWnd[IDSTATUSBAR     ]=["BUTTON",    0, 0x50004006, "StatusBar",       0,               "StatusBar"];
 aWnd[IDTABBAR        ]=["BUTTON",    0, 0x50004006, "TabBar",          0,               "TabBar"];
 aWnd[IDTABBARTOP     ]=["BUTTON",    0, 0x50004003, "Top",             0,               "TabBarTop"];
-aWnd[IDTOOLBAR       ]=["BUTTON",    0, 0x50004006, aTB[0],            0,               aTB[0]];
 
-for (i = 1; i < aTB.length; ++i)
-  aWnd[IDTOOLBAR + i]=["BUTTON", 0, 0x50004006, aTB[i], 0, aTB[i]];
+for (i = 0; i < aTB.length; ++i)
+{
+  aWnd[IDTOOLBAR + i                 ]=["BUTTON", 0, 0x50004006, aTB[i], 0, aTB[i]];
+  aWnd[IDTOOLBAR + aTB.length + i    ]=["EDIT",   0, 0x50800080, "",     0, aTB[i] + "Rows"];
+  aWnd[IDTOOLBAR + aTB.length * 2 + i]=["STATIC", 0, 0x50000000, "Rows", 0];
+}
 
 if (AkelPad.WindowRegisterClass(sClassName))
 {
@@ -234,6 +238,9 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       oSys.Call("User32::SetWindowTextW", aWnd[i][HWND], aWnd[i][TXT]);
     }
 
+    for (i = 0; i < aTB.length; ++i)
+      AkelPad.SendMessage(aWnd[IDTOOLBAR + aTB.length + i][HWND], 0x00C5 /*EM_SETLIMITTEXT*/, 23, 0);
+
     //fill list box
     for (i in oView)
       oSys.Call("User32::SendMessageW", aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, i);
@@ -284,7 +291,15 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
         oSys.Call("User32::SetFocus", hFocus1);
       }
       else
-        oSys.Call("User32::SetFocus", aWnd[IDNAMELB][HWND]);
+      {
+        var nID = oSys.Call("User32::GetDlgCtrlID", hFocus);
+        if (nID < IDTOOLBAR)
+          oSys.Call("User32::SetFocus", aWnd[IDNAMELB][HWND]);
+        else if (nID < IDTOOLBAR + aTB.length)
+          oSys.Call("User32::SetFocus", aWnd[nID + aTB.length][HWND]);
+        else
+          oSys.Call("User32::SetFocus", aWnd[IDNAMELB][HWND]);
+      }
     }
     else if (wParam == 0x2D /*VK_INSERT*/)
     {
@@ -300,7 +315,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     }
     else if (wParam == 0x2E /*VK_DELETE*/)
     {
-      if ((! Ctrl()) && (! Shift()))
+      if ((! Ctrl()) && (! Shift()) && (oSys.Call("User32::GetDlgCtrlID", hFocus) < IDTOOLBAR + aTB.length))
         DeleteView();
     }
     else if (wParam == 0x0D /*VK_RETURN*/)
@@ -380,7 +395,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
       oSys.Call("User32::SetFocus", hFocus);
     }
-    else if ((nLowParam >= IDFONT) && (nLowParam < IDTOOLBAR + aTB.length))
+    else if (nLowParam >= IDFONT)
     {
       if (nHiwParam == 6 /*BN_SETFOCUS*/)
       {
@@ -399,6 +414,11 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
           oSys.Call("User32::PostMessageW", lParam, 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
           oSys.Call("User32::PostMessageW", aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
         }
+      }
+      else if (nHiwParam == 0x0100 /*EN_SETFOCUS*/)
+      {
+        hFocus  = lParam;
+        hFocus1 = aWnd[nLowParam - aTB.length][HWND];
       }
       else
         GetButtonState(nLowParam);
@@ -517,21 +537,18 @@ function ResizeWindow(hWnd)
             100,
             13,
             0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   oSys.Call("User32::SetWindowPos", aWnd[IDNAMELB][HWND], 0,
             10,
             30,
             nW - 200 - 30,
             nH - 30 - 23 - 20,
             0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   oSys.Call("User32::SetWindowPos", aWnd[IDFULLSCREEN][HWND], 0,
             nW - 80,
             10,
             70,
             16,
             0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   for (i = IDNEW; i <= IDOK; ++i)
     oSys.Call("User32::SetWindowPos", aWnd[i][HWND], 0,
               10 + (i - IDNEW) * (nBW + 3),
@@ -539,7 +556,6 @@ function ResizeWindow(hWnd)
               nBW,
               23,
               0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   for (i = IDTHEMESET; i <= IDSPECCHARSET; ++i)
     oSys.Call("User32::SetWindowPos", aWnd[i][HWND], 0,
               nW - 35,
@@ -547,14 +563,12 @@ function ResizeWindow(hWnd)
               15,
               20,
               0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   oSys.Call("User32::SetWindowPos", aWnd[IDVIEWSET][HWND], 0,
             nW - 210,
             30,
             200,
             nH - 30 - 23 - 20,
             0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   for (i = IDFONT; i <= IDCODERTHEME; i += 2)
   {
     oSys.Call("User32::SetWindowPos", aWnd[i][HWND], 0,
@@ -570,7 +584,6 @@ function ResizeWindow(hWnd)
               20,
               0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
   }
-
   for (i = IDCLIPBOARD; i <= IDTABBAR; ++i)
     oSys.Call("User32::SetWindowPos", aWnd[i][HWND], 0,
               nW - 200,
@@ -578,21 +591,33 @@ function ResizeWindow(hWnd)
               100,
               20,
               0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
   oSys.Call("User32::SetWindowPos", aWnd[IDTABBARTOP][HWND], 0,
             nW - 100,
             170 + (IDTABBAR - IDCLIPBOARD) * 20,
             50,
             20,
             0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
-
-  for (i = IDTOOLBAR; i < IDTOOLBAR + aTB.length; ++i)
-    oSys.Call("User32::SetWindowPos", aWnd[i][HWND], 0,
+  for (i = 0; i < aTB.length; ++i)
+  {
+    oSys.Call("User32::SetWindowPos", aWnd[IDTOOLBAR + i][HWND], 0,
               nW - 200,
-              470 + (i - IDTOOLBAR) * 20,
-              180,
+              470 + i * 20,
+              100,
               20,
               0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
+    oSys.Call("User32::SetWindowPos", aWnd[IDTOOLBAR + aTB.length + i][HWND], 0,
+              nW - 100,
+              470 + i * 20,
+              50,
+              18,
+              0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
+    oSys.Call("User32::SetWindowPos", aWnd[IDTOOLBAR + aTB.length * 2 + i][HWND], 0,
+              nW - 47,
+              470 + i * 20,
+              30,
+              13,
+              0x14 /*SWP_NOZORDER|SWP_NOACTIVATE*/);
+  }
 }
 
 function GetToolBarsArray()
@@ -645,7 +670,7 @@ function GetPluginsObject()
     };
 
   for (var i = 0; i < aTB.length; ++i)
-    oPlug[aTB[i]] = {State: 0, Name: aTB[i], IsRunning: function(){return AkelPad.IsPluginRunning(this.Name + "::Main");}, Switch: function(){AkelPad.CallEx(0x14, this.Name + "::Main");}};
+    oPlug[aTB[i]] = {State: 0, Name: aTB[i], IsRunning: function(){return AkelPad.IsPluginRunning(this.Name + "::Main");}};
 
   return oPlug;
 }
@@ -674,6 +699,9 @@ function CheckViewObject()
     oTemp[i] = 2;
 
   oTemp.CoderTheme = 0;
+
+  for (i = 0; i < aTB.length; ++i)
+    oTemp[aTB[i] + "Rows"] = "";
 
   for (i in oView)
   {
@@ -714,6 +742,12 @@ function EnablePluginButtons()
       oSys.Call("User32::EnableWindow", aWnd[i][HWND], IsPluginExists(oPlug[aWnd[i][NAME]].Name));
   }
 
+  for (i = 0; i < aTB.length; ++i)
+  {
+    oSys.Call("User32::EnableWindow", aWnd[IDTOOLBAR + aTB.length + i    ][HWND], IsPluginExists(oPlug[aWnd[IDTOOLBAR + i][NAME]].Name));
+    oSys.Call("User32::EnableWindow", aWnd[IDTOOLBAR + aTB.length * 2 + i][HWND], IsPluginExists(oPlug[aWnd[IDTOOLBAR + i][NAME]].Name));
+  }
+
   for (i = IDCODERTHEMESET; i <= IDSPECCHARSET; ++i)
     oSys.Call("User32::EnableWindow", aWnd[i][HWND], IsPluginExists(oPlug[aWnd[aWnd[i][LINK]][NAME]].Name));
 }
@@ -738,6 +772,9 @@ function CheckButtons()
   for (i = IDCLIPBOARD; i < IDTOOLBAR + aTB.length; ++i)
     AkelPad.SendMessage(aWnd[i][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName][aWnd[i][NAME]], 0);
 
+  for (i = 0; i < aTB.length; ++i)
+    oSys.Call("User32::SetWindowTextW", aWnd[IDTOOLBAR + aTB.length + i][HWND], oView[sName][aWnd[IDTOOLBAR + aTB.length + i][NAME]]);
+
   oSys.Call("User32::EnableWindow", aWnd[IDCODELIST ][HWND], oView[sName].CodeFold && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODEFOLD][HWND]));
   oSys.Call("User32::EnableWindow", aWnd[IDTABBAR   ][HWND], AkelPad.IsMDI());
   oSys.Call("User32::EnableWindow", aWnd[IDTABBARTOP][HWND], (oView[sName].TabBar == 1) && AkelPad.IsMDI());
@@ -748,6 +785,10 @@ function CheckButtons()
 function GetButtonState(nID)
 {
   var sName = GetCurTextLB();
+  var lpText;
+
+  if (! sName)
+    return;
 
   if (nID == IDFONTSET)
   {
@@ -764,6 +805,13 @@ function GetButtonState(nID)
     SetThemeName(sName);
   else if (nID == IDCODERTHEMENAME)
     SetCoderThemeName(sName);
+  else if ((nID >= IDTOOLBAR + aTB.length) && (nID < IDTOOLBAR + aTB.length * 2))
+  {
+    lpText = AkelPad.MemAlloc(48);
+    oSys.Call("User32::GetWindowTextW", aWnd[nID][HWND], lpText, 24);
+    oView[sName][aWnd[nID][NAME]] = AkelPad.MemRead(lpText, DT_UNICODE);
+    AkelPad.MemFree(lpText);
+  }
   else
   {
     oView[sName][aWnd[nID][NAME]] = AkelPad.SendMessage(aWnd[nID][HWND], 0x00F0 /*BM_GETCHECK*/, 0, 0);
@@ -833,7 +881,7 @@ function CheckInputName(hWnd, aNames)
 
   if (aNames[0] in oView)
   {
-    AkelPad.MessageBox(hWnd, '"' + aNames[0] + '" already is.', sScriptName, 0x00000030 /*MB_ICONWARNING*/);
+    WarningBox(hWnd, '"' + aNames[0] + '" already exists.');
     return 0;
   }
 
@@ -873,7 +921,7 @@ function CheckInputRename(hWnd, aNames, sCurName)
 
   if ((aNames[0] != sCurName) && (aNames[0] in oView))
   {
-    AkelPad.MessageBox(hWnd, '"' + aNames[0] + '" already is.', sScriptName, 0x00000030 /*MB_ICONWARNING*/);
+    WarningBox(hWnd, '"' + aNames[0] + '" already exists.');
     return 0;
   }
 
@@ -905,14 +953,22 @@ function ApplyView(sViewName, nFullScrAction)
 {
   if (! (sViewName in oView))
   {
-    AkelPad.MessageBox(hMainWnd, '"' + sViewName + '" does not exists.', sScriptName, 0x00000030 /*MB_ICONWARNING*/);
+    WarningBox(hMainWnd, '"' + sViewName + '" does not exists.');
     return 0;
   }
 
   var hMenu = oSys.Call("User32::GetMenu", hMainWnd);
   var bCodeList;
   var bStatBar;
-  var n;
+  var i;
+
+  for (i = 0; i < aTB.length; ++i)
+    oPlug[aTB[i]].Switch = function(){
+      if (this.IsRunning())
+        AkelPad.CallEx(0x14, this.Name + "::Main");
+      else
+        AkelPad.CallEx(0x14, this.Name + "::Main", 1, oView[sViewName][this.Name + "Rows"]);
+      };
 
   //full screen
   if (IsPluginExists(sFullScr) &&
@@ -923,12 +979,12 @@ function ApplyView(sViewName, nFullScrAction)
     bCodeList = ShowCodeList(0);
     bStatBar  = ShowStatusBar(0);
 
-    for (n in oPlug)
+    for (i in oPlug)
     {
-      if ((oPlug[n].State == 0) || (oPlug[n].State == 1))
+      if ((oPlug[i].State == 0) || (oPlug[i].State == 1))
       {
-        if (oPlug[n].State = oPlug[n].IsRunning())
-          oPlug[n].Switch();
+        if (oPlug[i].State = oPlug[i].IsRunning())
+          oPlug[i].Switch();
       }
     }
   }
@@ -938,10 +994,16 @@ function ApplyView(sViewName, nFullScrAction)
     bCodeList = ShowCodeList(2);
     bStatBar  = ShowStatusBar(2);
 
-    for (n in oPlug)
+    for (i in oPlug)
     {
-      if ((oPlug[n].State == 0) || (oPlug[n].State == 1))
-        oPlug[n].State = oPlug[n].IsRunning();
+      if ((oPlug[i].State == 0) || (oPlug[i].State == 1))
+        oPlug[i].State = oPlug[i].IsRunning();
+    }
+
+    for (i = 0; i < aTB.length; ++i)
+    {
+      if (oPlug[aTB[i]].State == 1)
+        oPlug[aTB[i]].Switch();
     }
   }
 
@@ -951,14 +1013,14 @@ function ApplyView(sViewName, nFullScrAction)
     WScript.Sleep(80);
   }
 
-  for (n in oPlug)
+  for (i in oPlug)
   {
-    if ((oPlug[n].State >= 0) && IsPluginExists(oPlug[n].Name))
+    if ((oPlug[i].State >= 0) && IsPluginExists(oPlug[i].Name))
     {
-      if (((oView[sViewName][n] == 0) && oPlug[n].IsRunning()) ||
-          ((oView[sViewName][n] == 1) && (! oPlug[n].IsRunning())) ||
-          ((oView[sViewName][n] == 2) && (oPlug[n].State < 2) && (oPlug[n].State != oPlug[n].IsRunning())))
-        oPlug[n].Switch();
+      if (((oView[sViewName][i] == 0) && oPlug[i].IsRunning()) ||
+          ((oView[sViewName][i] == 1) && (! oPlug[i].IsRunning())) ||
+          ((oView[sViewName][i] == 2) && (oPlug[i].State < 2) && (oPlug[i].State != oPlug[i].IsRunning())))
+        oPlug[i].Switch();
     }
   }
 
@@ -982,24 +1044,27 @@ function FullScreenSwitch()
     var hMenu     = oSys.Call("User32::GetMenu", hMainWnd);
     var bCodeList = ShowCodeList(0);
     var bStatBar  = ShowStatusBar(0);
-    var n;
+    var i;
 
-    for (n in oPlug)
+    for (i = 0; i < aTB.length; ++i)
+      oPlug[aTB[i]].Switch = function(){AkelPad.CallEx(0x14, this.Name + "::Main");};
+
+    for (i in oPlug)
     {
-      if ((oPlug[n].State == 0) || (oPlug[n].State == 1))
+      if ((oPlug[i].State == 0) || (oPlug[i].State == 1))
       {
-        if (oPlug[n].State = oPlug[n].IsRunning())
-          oPlug[n].Switch();
+        if (oPlug[i].State = oPlug[i].IsRunning())
+          oPlug[i].Switch();
       }
     }
 
     AkelPad.Call(sFullScrFunc);
     WScript.Sleep(80);
 
-    for (n in oPlug)
+    for (i in oPlug)
     {
-      if (oPlug[n].State == 1)
-        oPlug[n].Switch();
+      if (oPlug[i].State == 1)
+        oPlug[i].Switch();
     }
 
     oSys.Call("User32::SetMenu", hMainWnd, hMenu);
@@ -1376,6 +1441,11 @@ function GetRegKeyHandle(hParentKey, sSubKey, nAccess)
   AkelPad.MemFree(lpKey);
 
   return hKey;
+}
+
+function WarningBox(hWnd, sText)
+{
+  AkelPad.MessageBox(hWnd, sText, sScriptName, 0x00000030 /*MB_ICONWARNING*/);
 }
 
 function ReadWriteIni(bWrite)
