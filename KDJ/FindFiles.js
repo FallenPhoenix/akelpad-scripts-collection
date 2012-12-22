@@ -1,4 +1,4 @@
-// FindFiles.js - ver. 2012-12-02
+// FindFiles.js - ver. 2012-12-22
 //
 // Search files by name and content.
 //
@@ -7,14 +7,16 @@
 // Required to include: BrowseForFolder_function.js, FileAndStream_functions.js
 //
 // Keys and mouse:
-// Alt+F    - focus to Files list
-// Ctrl+A   - select all items on files list
-// Ctrl+C   - copy selected items from files list
-// Del      - remove selected items from files list (don't delete the files)
-// F4       - edit selected files
-// DblClick - open file for editing and select the found text (or close file if is currently edited)
-// F1       - help for regular expressions or wildcards
-// Alt+Del  - remove item from history list (Directory, Name of file, Text in file)
+// Alt+F       - focus to Files list
+// Ctrl+A      - select all items on files list
+// Ctrl+C      - copy selected items from files list
+// Del         - remove selected items from files list (don't delete the files)
+// F4          - open all selected files for editing
+// DblClick    - open selected file for editing and select the found text (or close file if is currently edited)
+// Ctrl+Enter
+// Shift+Enter - open focused file for editing and select the found text (or close file if is currently edited)
+// F1          - help for regular expressions or wildcards
+// Alt+Del     - remove item from history list (Directory, Name of file, Text in file)
 
 var oSys         = AkelPad.SystemFunction();
 var hInstanceDLL = AkelPad.GetInstanceDll();
@@ -63,8 +65,8 @@ else
   var hWndContentList;
   var hWndFocus;
 
-  var oWndMin = {"W": 445,
-                 "H": 440};
+  var oWndMin = {"W": 435,
+                 "H": 442};
   var oWndPos = {"X": 240,
                  "Y": 140,
                  "W": oWndMin.W,
@@ -98,6 +100,7 @@ else
   var aContents       = [];
   var aFiles          = [];
   var aFilesSel       = [0];
+  var nFilesFoc       = 0;
 
   ReadIni();
 
@@ -149,46 +152,49 @@ else
   var IDCLEARB     = 2026;
   var IDSETTINGSB  = 2027;
   var IDCLOSEB     = 2028;
+  var IDSTATUS     = 2029;
 
   //0x50000000 - WS_VISIBLE|WS_CHILD
   //0x50000002 - WS_VISIBLE|WS_CHILD|SS_RIGHT
   //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
+  //0x50000100 - WS_VISIBLE|WS_CHILD|SBARS_SIZEGRIP
   //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
   //0x50010042 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|CBS_AUTOHSCROLL|CBS_DROPDOWN
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|CBS_DROPDOWNLIST
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
   //0x50810009 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|LVS_SHOWSELALWAYS|LVS_REPORT
   //0x50812000 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_NUMBER
-  //Windows           CLASS,        HWND,      STYLE, TXT
-  aWnd[IDDIRG      ]=["BUTTON",        0, 0x50000007, sTxtDir];
-  aWnd[IDDIRCB     ]=["COMBOBOX",      0, 0x50210042, ""];
-  aWnd[IDCURRENTB  ]=["BUTTON",        0, 0x50010000, sTxtCurrent];
-  aWnd[IDBROWSEB   ]=["BUTTON",        0, 0x50010000, sTxtBrowse];
-  aWnd[IDSUBDIRS   ]=["STATIC",        0, 0x50000002, sTxtSubDirs];
-  aWnd[IDLEVELCB   ]=["COMBOBOX",      0, 0x50010003, ""];
-  aWnd[IDNAMEG     ]=["BUTTON",        0, 0x50000007, sTxtFileName + (bNameRE ? "" : " " + sTxtWildcards)];
-  aWnd[IDNAMECB    ]=["COMBOBOX",      0, 0x50210042, ""];
-  aWnd[IDHELP1B    ]=["BUTTON",        0, 0x50010000, "?"];
-  aWnd[IDNAMERE    ]=["BUTTON",        0, 0x50010003, sTxtRegExp];
-  aWnd[IDNOTNAME   ]=["BUTTON",        0, 0x50010003, sTxtNotName];
-  aWnd[IDCONTENTG  ]=["BUTTON",        0, 0x50000007, sTxtTextInFile];
-  aWnd[IDCONTENTCB ]=["COMBOBOX",      0, 0x50210042, ""];
-  aWnd[IDHELP2B    ]=["BUTTON",        0, 0x50010000, "?"];
-  aWnd[IDMATCHCASE ]=["BUTTON",        0, 0x50010003, sTxtMatchCase];
-  aWnd[IDCONTENTRE ]=["BUTTON",        0, 0x50010003, sTxtRegExp];
-  aWnd[IDMULTILINE ]=["BUTTON",        0, 0x50010003, sTxtMultiline];
-  aWnd[IDNOTCONTAIN]=["BUTTON",        0, 0x50010003, sTxtNotContain];
-  aWnd[IDINSTREAMS ]=["BUTTON",        0, 0x50010003, sTxtInStreams];
-  aWnd[IDSKIPBINARY]=["BUTTON",        0, 0x50010003, sTxtSkipBinary];
-  aWnd[IDSKIPLARGER]=["STATIC",        0, 0x50000000, sTxtSkipLarger];
-  aWnd[IDMAXSIZE   ]=["EDIT",          0, 0x50812000, (nMaxFileSize > 0) ? nMaxFileSize.toString() : ""];
-  aWnd[IDFILELV    ]=["SysListView32", 0, 0x50810009, ""];
-  aWnd[IDSEARCHB   ]=["BUTTON",        0, 0x50010000, sTxtSearch];
-  aWnd[IDEDITB     ]=["BUTTON",        0, 0x50010000, sTxtEdit];
-  aWnd[IDCOPYB     ]=["BUTTON",        0, 0x50010000, sTxtCopyList];
-  aWnd[IDCLEARB    ]=["BUTTON",        0, 0x50010000, sTxtClearList];
-  aWnd[IDSETTINGSB ]=["BUTTON",        0, 0x50010000, sTxtSettings];
-  aWnd[IDCLOSEB    ]=["BUTTON",        0, 0x50010000, sTxtClose];
+  //Windows           CLASS,             HWND,      STYLE, TXT
+  aWnd[IDDIRG      ]=["BUTTON",             0, 0x50000007, sTxtDir];
+  aWnd[IDDIRCB     ]=["COMBOBOX",           0, 0x50210042, ""];
+  aWnd[IDCURRENTB  ]=["BUTTON",             0, 0x50010000, sTxtCurrent];
+  aWnd[IDBROWSEB   ]=["BUTTON",             0, 0x50010000, sTxtBrowse];
+  aWnd[IDSUBDIRS   ]=["STATIC",             0, 0x50000002, sTxtSubDirs];
+  aWnd[IDLEVELCB   ]=["COMBOBOX",           0, 0x50010003, ""];
+  aWnd[IDNAMEG     ]=["BUTTON",             0, 0x50000007, sTxtFileName + (bNameRE ? "" : " " + sTxtWildcards)];
+  aWnd[IDNAMECB    ]=["COMBOBOX",           0, 0x50210042, ""];
+  aWnd[IDHELP1B    ]=["BUTTON",             0, 0x50010000, "?"];
+  aWnd[IDNAMERE    ]=["BUTTON",             0, 0x50010003, sTxtRegExp];
+  aWnd[IDNOTNAME   ]=["BUTTON",             0, 0x50010003, sTxtNotName];
+  aWnd[IDCONTENTG  ]=["BUTTON",             0, 0x50000007, sTxtTextInFile];
+  aWnd[IDCONTENTCB ]=["COMBOBOX",           0, 0x50210042, ""];
+  aWnd[IDHELP2B    ]=["BUTTON",             0, 0x50010000, "?"];
+  aWnd[IDMATCHCASE ]=["BUTTON",             0, 0x50010003, sTxtMatchCase];
+  aWnd[IDCONTENTRE ]=["BUTTON",             0, 0x50010003, sTxtRegExp];
+  aWnd[IDMULTILINE ]=["BUTTON",             0, 0x50010003, sTxtMultiline];
+  aWnd[IDNOTCONTAIN]=["BUTTON",             0, 0x50010003, sTxtNotContain];
+  aWnd[IDINSTREAMS ]=["BUTTON",             0, 0x50010003, sTxtInStreams];
+  aWnd[IDSKIPBINARY]=["BUTTON",             0, 0x50010003, sTxtSkipBinary];
+  aWnd[IDSKIPLARGER]=["STATIC",             0, 0x50000000, sTxtSkipLarger];
+  aWnd[IDMAXSIZE   ]=["EDIT",               0, 0x50812000, (nMaxFileSize > 0) ? nMaxFileSize.toString() : ""];
+  aWnd[IDFILELV    ]=["SysListView32",      0, 0x50810009, ""];
+  aWnd[IDSEARCHB   ]=["BUTTON",             0, 0x50010000, sTxtSearch];
+  aWnd[IDEDITB     ]=["BUTTON",             0, 0x50010000, sTxtEdit];
+  aWnd[IDCOPYB     ]=["BUTTON",             0, 0x50010000, sTxtCopyList];
+  aWnd[IDCLEARB    ]=["BUTTON",             0, 0x50010000, sTxtClearList];
+  aWnd[IDSETTINGSB ]=["BUTTON",             0, 0x50010000, sTxtSettings];
+  aWnd[IDCLOSEB    ]=["BUTTON",             0, 0x50010000, sTxtClose];
+  aWnd[IDSTATUS    ]=["msctls_statusbar32", 0, 0x50000100, ""];
 
   AkelPad.WindowRegisterClass(sClassName);
 
@@ -279,6 +285,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     oSys.Call("User32::PostMessageW", hWnd, 0x8000 /*WM_APP*/, 0, 0);
     FillCB();
 
+    SetPartsSB();
+
     AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1036 /*LVM_SETEXTENDEDLISTVIEWSTYLE*/, 0x0020 /*LVS_EX_FULLROWSELECT*/, 0x0020);
     SetColumnLV();
     SetHeaderLV();
@@ -322,9 +330,6 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     ResizeWindow(hWnd);
   }
 
-  else if (uMsg == 15) //WM_PAINT
-    PaintSizeGrip(hWnd);
-
   else if (uMsg == 0x0133) //WM_CTLCOLOREDIT
   {
     if ((lParam == hWndNameEdit) || (lParam == hWndContentEdit))
@@ -363,9 +368,14 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   {
     if (wParam == 0x0D /*VK_RETURN*/)
     {
-      if ((! Ctrl()) && (! Shift()))
+      hWndFocus = oSys.Call("User32::GetFocus");
+      if (Ctrl() || Shift())
       {
-        hWndFocus = oSys.Call("User32::GetFocus");
+        if (hWndFocus == aWnd[IDFILELV][HWND])
+          OpenOrCloseFile(1);
+      }
+      else
+      {
         if (hWndFocus == aWnd[IDFILELV][HWND])
           oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDEDITB, 0);
         else if (IsCloseCB() &&
@@ -426,17 +436,22 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   {
     switch (AkelPad.MemRead(lParam + 8, DT_DWORD))
     {
+      case -101 : //LVN_ITEMCHANGED
+        if (AkelPad.MemRead(lParam + 20 /*uNewState*/, DT_DWORD) & 0x1 /*LVIS_FOCUSED*/)
+          SetTextSB(AkelPad.MemRead(lParam + 12 /*NMITEMACTIVATE.iItem*/, DT_DWORD));
+        break;
+
       case -3 : //NM_DBLCLK
-        if (AkelPad.MemRead(lParam + 12, DT_DWORD) == -1) //NMITEMACTIVATE.iItem
+        if (AkelPad.MemRead(lParam + 12 /*NMITEMACTIVATE.iItem*/, DT_DWORD) == -1)
           SetSelLV(GetCurFocLV());
         else
-          OpenOrCloseFile();
+          OpenOrCloseFile(1);
         break;
 
       case -2 : //NM_CLICK
       case -5 : //NM_RCLICK
       case -6 : //NM_RDBLCLK
-        if (AkelPad.MemRead(lParam + 12, DT_DWORD) == -1) //NMITEMACTIVATE.iItem
+        if (AkelPad.MemRead(lParam + 12 /*NMITEMACTIVATE.iItem*/, DT_DWORD) == -1)
           SetSelLV(GetCurFocLV());
         break;
 
@@ -461,12 +476,15 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
       case -108 : //LVN_COLUMNCLICK
         bSortDesc = ! bSortDesc;
-        aFilesSel = GetSelArrayLV().reverse();
+        nFilesFoc = aFiles.length - GetCurFocLV() - 1;
+
+        GetSelArrayLV();
+        aFiles.reverse();
+        aFilesSel.reverse();
 
         for (var i = 0; i < aFilesSel.length; ++i)
           aFilesSel[i] = aFiles.length - aFilesSel[i] - 1;
 
-        aFiles.reverse();
         SetHeaderLV();
         FillLV();
     }
@@ -651,28 +669,28 @@ function ResizeWindow(hWnd)
   oSys.Call("User32::GetClientRect", hWnd, lpRect);
   nW  = AkelPad.MemRead(lpRect +  8, DT_DWORD);
   nH  = AkelPad.MemRead(lpRect + 12, DT_DWORD);
-  nBW = (nW - (IDCLOSEB - IDSEARCHB) * 5 - 2 * 10) / (IDCLOSEB - IDSEARCHB + 1);
+  nBW = (nW - (IDCLOSEB - IDSEARCHB) * 5 - 2 * 5) / (IDCLOSEB - IDSEARCHB + 1);
   AkelPad.MemFree(lpRect);
 
   oSys.Call("User32::SetWindowPos",
             aWnd[IDDIRG][HWND], 0,
-            10,
             5,
-            nW - 20,
+            5,
+            nW - 10,
             70,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDDIRCB][HWND], 0,
-            20,
+            15,
             22,
-            nW - 40,
+            nW - 30,
             21,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   for (i = IDCURRENTB; i <= IDBROWSEB; ++i)
   {
     oSys.Call("User32::SetWindowPos",
               aWnd[i][HWND], 0,
-              20 + (i - IDCURRENTB) * (80 + 5),
+              15 + (i - IDCURRENTB) * (80 + 5),
               46,
               80,
               21,
@@ -680,35 +698,35 @@ function ResizeWindow(hWnd)
   }
   oSys.Call("User32::SetWindowPos",
             aWnd[IDSUBDIRS][HWND], 0,
-            nW - 110 - 5 - 75 - 20,
+            nW - 110 - 5 - 75 - 15,
             51,
             110,
             13,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDLEVELCB][HWND], 0,
-            nW - 75 - 20,
+            nW - 75 - 15,
             46,
             75,
             21,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDNAMEG][HWND], 0,
-            10,
+            5,
             80,
-            nW - 20,
+            nW - 10,
             65,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDNAMECB][HWND], 0,
-            20,
+            15,
             97,
-            nW - 60,
+            nW - 50,
             21,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDHELP1B][HWND], 0,
-            nW - 40,
+            nW - 35,
             97,
             20,
             21,
@@ -717,7 +735,7 @@ function ResizeWindow(hWnd)
   {
     oSys.Call("User32::SetWindowPos",
               aWnd[i][HWND], 0,
-              20 + (i - IDNAMERE) * 160,
+              15 + (i - IDNAMERE) * 160,
               122,
               150,
               16,
@@ -725,21 +743,21 @@ function ResizeWindow(hWnd)
   }
   oSys.Call("User32::SetWindowPos",
             aWnd[IDCONTENTG][HWND], 0,
-            10,
+            5,
             150,
-            nW - 20,
+            nW - 10,
             105,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDCONTENTCB][HWND], 0,
-            20,
+            15,
             167,
-            nW - 60,
+            nW - 50,
             21,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDHELP2B][HWND], 0,
-            nW - 40,
+            nW - 35,
             167,
             20,
             21,
@@ -748,7 +766,7 @@ function ResizeWindow(hWnd)
   {
     oSys.Call("User32::SetWindowPos",
               aWnd[i][HWND], 0,
-              20,
+              15,
               192 + (i - IDMATCHCASE) * 20,
               150,
               16,
@@ -758,7 +776,7 @@ function ResizeWindow(hWnd)
   {
     oSys.Call("User32::SetWindowPos",
               aWnd[i][HWND], 0,
-              180,
+              175,
               192 + (i - IDNOTCONTAIN) * 20,
               150,
               16,
@@ -766,59 +784,39 @@ function ResizeWindow(hWnd)
   }
   oSys.Call("User32::SetWindowPos",
             aWnd[IDSKIPLARGER][HWND], 0,
-            340,
+            335,
             192,
             75,
             26,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDMAXSIZE][HWND], 0,
-            340,
+            335,
             223,
             75,
             20,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDFILELV][HWND], 0,
-            10,
+            5,
             265,
-            nW - 20,
-            nH - 265 - 10 - 23 - 10,
+            nW - 10,
+            nH - 265 - 3 - 21 - 26,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   for (i = IDSEARCHB; i <= IDCLOSEB; ++i)
   {
     oSys.Call("User32::SetWindowPos",
               aWnd[i][HWND], 0,
-              10 + (i - IDSEARCHB) * (nBW + 5),
-              nH - 23 - 10,
+              5 + (i - IDSEARCHB) * (nBW + 5),
+              nH - 21 - 26,
               nBW,
-              23,
+              21,
               0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   }
 
   AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x101E /*LVM_SETCOLUMNWIDTH*/, 0, -2 /*LVSCW_AUTOSIZE_USEHEADER*/);
-  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1013 /*LVM_ENSUREVISIBLE*/, GetNextSelLV(-1), false);
-}
-
-function PaintSizeGrip(hWnd)
-{
-  var lpPaint = AkelPad.MemAlloc(64); //sizeof(PAINTSTRUCT)
-  var lpRect  = AkelPad.MemAlloc(16); //sizeof(RECT)
-  var hDC;
-
-  if (hDC = oSys.Call("User32::BeginPaint", hWnd, lpPaint))
-  {
-    oSys.Call("User32::GetClientRect", hWnd, lpRect);
-
-    AkelPad.MemCopy(lpRect,     AkelPad.MemRead(lpRect +  8, DT_DWORD) - oSys.Call("User32::GetSystemMetrics",  2 /*SM_CXVSCROLL*/), DT_DWORD);
-    AkelPad.MemCopy(lpRect + 4, AkelPad.MemRead(lpRect + 12, DT_DWORD) - oSys.Call("User32::GetSystemMetrics", 20 /*SM_CYVSCROLL*/), DT_DWORD);
-
-    oSys.Call("User32::DrawFrameControl", hDC, lpRect, 3 /*DFC_SCROLL*/, 0x8 /*DFCS_SCROLLSIZEGRIP*/);
-    oSys.Call("User32::EndPaint", hWnd, lpPaint);
-  }
-
-  AkelPad.MemFree(lpPaint);
-  AkelPad.MemFree(lpRect);
+  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1013 /*LVM_ENSUREVISIBLE*/, GetCurFocLV(), false);
+  AkelPad.SendMessage(aWnd[IDSTATUS][HWND], 5 /*WM_SIZE*/, 0, 0);
 }
 
 function EnableButtons()
@@ -937,32 +935,47 @@ function GetNextSelLV(nItem)
 
 function GetSelArrayLV()
 {
-  var aSel  = [];
   var nItem = -1;
+  aFilesSel = [];
 
   while ((nItem = GetNextSelLV(nItem)) >= 0)
-    aSel.push(nItem);
+    aFilesSel.push(nItem);
 
-  return aSel;
+  if (! aFilesSel.length)
+    aFilesSel = [GetCurFocLV()];
 }
 
 function SetSelLV(nItem)
 {
   AkelPad.MemCopy(lpLVITEM + 12, 0x0003 /*LVIS_SELECTED|LVIS_FOCUSED*/, DT_DWORD);
   AkelPad.MemCopy(lpLVITEM + 16, 0x0003 /*LVIS_SELECTED|LVIS_FOCUSED*/, DT_DWORD);
+
   AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x102B /*LVM_SETITEMSTATE*/, nItem, lpLVITEM);
   AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1013 /*LVM_ENSUREVISIBLE*/, nItem, true);
 }
 
+function SetSelArrayLV()
+{
+  AkelPad.MemCopy(lpLVITEM + 12, 0x0002 /*LVIS_SELECTED*/, DT_DWORD);
+  AkelPad.MemCopy(lpLVITEM + 16, 0x0002 /*LVIS_SELECTED*/, DT_DWORD);
+
+  for (var i = 0; i < aFilesSel.length; ++i)
+    AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x102B /*LVM_SETITEMSTATE*/, aFilesSel[i], lpLVITEM);
+
+  AkelPad.MemCopy(lpLVITEM + 12, 0x0001 /*LVIS_FOCUSED*/, DT_DWORD);
+  AkelPad.MemCopy(lpLVITEM + 16, 0x0001 /*LVIS_FOCUSED*/, DT_DWORD);
+
+  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x102B /*LVM_SETITEMSTATE*/, nFilesFoc, lpLVITEM);
+  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1013 /*LVM_ENSUREVISIBLE*/, nFilesFoc, true);
+}
+
 function SetSelAllLV()
 {
-  AkelPad.MemCopy(lpLVITEM + 12, 0x0003 /*LVIS_SELECTED|LVIS_FOCUSED*/, DT_DWORD);
-  AkelPad.MemCopy(lpLVITEM + 16, 0x0003 /*LVIS_SELECTED|LVIS_FOCUSED*/, DT_DWORD);
+  AkelPad.MemCopy(lpLVITEM + 12, 0x0002 /*LVIS_SELECTED*/, DT_DWORD);
+  AkelPad.MemCopy(lpLVITEM + 16, 0x0002 /*LVIS_SELECTED*/, DT_DWORD);
 
   for (var i = 0; i < aFiles.length; ++i)
     AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x102B /*LVM_SETITEMSTATE*/, i, lpLVITEM);
-
-  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1013 /*LVM_ENSUREVISIBLE*/, aFiles.length - 1, true);
 }
 
 function InsertItemLV(nItem, sText)
@@ -988,7 +1001,7 @@ function SetHeaderLV()
   var nFmt     = 0x4000 /*HDF_STRING*/ | (bSortDesc ? 0x0200 /*HDF_SORTDOWN*/ : 0x0400 /*HDF_SORTUP*/);
   var hHeader  = AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x101F /*LVM_GETHEADER*/, 0, 0);
 
-  AkelPad.MemCopy(lpBuffer, sTxtFiles + ": " + aFiles.length, DT_UNICODE);
+  AkelPad.MemCopy(lpBuffer, sTxtFiles, DT_UNICODE);
 
   AkelPad.MemCopy(lpHDITEM,      0x06,     DT_DWORD); //mask=HDI_FORMAT|HDI_TEXT
   AkelPad.MemCopy(lpHDITEM +  8, lpBuffer, DT_DWORD); //pszText
@@ -998,6 +1011,135 @@ function SetHeaderLV()
   AkelPad.SendMessage(hHeader, 0x120C /*HDM_SETITEMW*/, 0, lpHDITEM);
 
   AkelPad.MemFree(lpHDITEM);
+}
+
+function SetPartsSB()
+{
+  var lpParts = AkelPad.MemAlloc(5 * 4);
+
+  AkelPad.MemCopy(lpParts,       90, DT_DWORD);
+  AkelPad.MemCopy(lpParts +  4, 190, DT_DWORD);
+  AkelPad.MemCopy(lpParts +  8, 310, DT_DWORD);
+  AkelPad.MemCopy(lpParts + 12, 350, DT_DWORD);
+  AkelPad.MemCopy(lpParts + 16,  -1, DT_DWORD);
+
+  AkelPad.SendMessage(aWnd[IDSTATUS][HWND], 0x0404 /*SB_SETPARTS*/, 5, lpParts);
+
+  AkelPad.MemFree(lpParts);
+}
+
+function SetTextSB(nItem)
+{
+  var sText0 = "";
+  var sText1 = "";
+  var sText2 = "";
+  var sText3 = "";
+  var sText4 = "";
+  var hFile;
+  var lpFileInfo;
+  var lpDecimalSep;
+  var lpThousandSep;
+  var lpNUMBERFMT;
+  var lpLocalFileTime;
+  var lpSysTime;
+  var nSizeHi;
+  var nSizeLo;
+
+  if ((nItem > -1) && aFiles.length)
+  {
+    sText0 = "\t\t" + (nItem + 1) + "/" + aFiles.length + " ";
+    hFile  = oSys.Call("Kernel32::CreateFileW",
+                       aFiles[nItem], //lpFileName
+                       0,  //dwDesiredAccess
+                       3,  //dwShareMode = FILE_SHARE_READ|FILE_SHARE_WRITE
+                       0,  //lpSecurityAttributes
+                       3,  //dwCreationDisposition = OPEN_EXISTING
+                       0,  //dwFlagsAndAttributes
+                       0); //hTemplateFile
+    lpFileInfo = AkelPad.MemAlloc(52); //sizeof(BY_HANDLE_FILE_INFORMATION)
+
+    if (hFile && oSys.Call("Kernel32::GetFileInformationByHandle", hFile, lpFileInfo))
+    {
+      //file size
+      nSizeHi = AkelPad.MemRead(lpFileInfo + 32, DT_DWORD);
+      nSizeLo = AkelPad.MemRead(lpFileInfo + 36, DT_DWORD);
+      if (nSizeLo < 0)
+        nSizeLo += 0xFFFFFFFF + 1;
+
+      lpDecimalSep  = AkelPad.MemAlloc(4 * 2);
+      lpThousandSep = AkelPad.MemAlloc(4 * 2);
+      lpNUMBERFMT   = AkelPad.MemAlloc(24); //sizeof(NUMBERFMT)
+      AkelPad.MemCopy(lpNUMBERFMT +  8, 3, DT_DWORD); //Grouping
+      AkelPad.MemCopy(lpNUMBERFMT + 12, lpDecimalSep,  DT_DWORD);
+      AkelPad.MemCopy(lpNUMBERFMT + 16, lpThousandSep, DT_DWORD);
+
+      oSys.Call("Kernel32::GetLocaleInfoW", 0x400 /*LOCALE_USER_DEFAULT*/,  0xE /*LOCALE_SDECIMAL*/,  lpDecimalSep,  4);
+      oSys.Call("Kernel32::GetLocaleInfoW", 0x400 /*LOCALE_USER_DEFAULT*/,  0xF /*LOCALE_STHOUSAND*/, lpThousandSep, 4);
+      oSys.Call("Kernel32::GetNumberFormatW",
+                0x400, //LOCALE_USER_DEFAULT
+                0,
+                (nSizeHi * (0xFFFFFFFF + 1) + nSizeLo).toString(),
+                lpNUMBERFMT,
+                lpBuffer,
+                nBufSize / 2);
+
+      AkelPad.MemFree(lpDecimalSep);
+      AkelPad.MemFree(lpThousandSep);
+      AkelPad.MemFree(lpNUMBERFMT);
+
+      sText1 = "\t\t" + AkelPad.MemRead(lpBuffer, DT_UNICODE) + " B ";
+
+      //file date and time
+      lpLocalFileTime = AkelPad.MemAlloc(8);  //FILETIME
+      lpSysTime       = AkelPad.MemAlloc(16); //SYSTEMTIME
+
+      oSys.Call("Kernel32::FileTimeToLocalFileTime", lpFileInfo + 20, lpLocalFileTime);
+      oSys.Call("Kernel32::FileTimeToSystemTime", lpLocalFileTime, lpSysTime);
+      oSys.Call("Kernel32::GetDateFormatW",
+                0x400, //LOCALE_USER_DEFAULT
+                0x1,   //DATE_SHORTDATE
+                lpSysTime,
+                0,
+                lpBuffer,
+                64);
+      oSys.Call("Kernel32::GetTimeFormatW",
+                0x400, //LOCALE_USER_DEFAULT
+                0x8,   //TIME_FORCE24HOURFORMAT
+                lpSysTime,
+                0,
+                lpBuffer + 128,
+                64);
+
+      AkelPad.MemFree(lpLocalFileTime);
+      AkelPad.MemFree(lpSysTime);
+
+      sText2 = "\t" + AkelPad.MemRead(lpBuffer, DT_UNICODE) + "  " + AkelPad.MemRead(lpBuffer + 128, DT_UNICODE);
+
+      //file attributes
+      if (AkelPad.MemRead(lpFileInfo, DT_DWORD) & 32 /*FILE_ATTRIBUTE_ARCHIVE*/)
+        sText3 += "A";
+      if (AkelPad.MemRead(lpFileInfo, DT_DWORD) & 2 /*FILE_ATTRIBUTE_HIDDEN*/)
+        sText3 += "H";
+      if (AkelPad.MemRead(lpFileInfo, DT_DWORD) & 1 /*FILE_ATTRIBUTE_READONLY*/)
+        sText3 += "R";
+      if (AkelPad.MemRead(lpFileInfo, DT_DWORD) & 4 /*FILE_ATTRIBUTE_SYSTEM*/)
+        sText3 += "S";
+
+      if (aFiles[nItem].lastIndexOf(":") > 2)
+        sText4 = sTxtNTFSStream;
+    }
+
+    oSys.Call("Kernel32::CloseHandle", hFile);
+    AkelPad.MemFree(lpFileInfo);
+  }
+  else if (nItem == -2)
+    sText0 = "\t" + sTxtWait;
+
+  oSys.Call("User32::SendMessageW", aWnd[IDSTATUS][HWND], 0x040B /*SB_SETTEXTW*/, 0, sText0);
+  oSys.Call("User32::SendMessageW", aWnd[IDSTATUS][HWND], 0x040B /*SB_SETTEXTW*/, 1, sText1);
+  oSys.Call("User32::SendMessageW", aWnd[IDSTATUS][HWND], 0x040B /*SB_SETTEXTW*/, 2, sText2);
+  oSys.Call("User32::SendMessageW", aWnd[IDSTATUS][HWND], 0x040B /*SB_SETTEXTW*/, 3, sText3);
+  oSys.Call("User32::SendMessageW", aWnd[IDSTATUS][HWND], 0x040B /*SB_SETTEXTW*/, 4, sText4);
 }
 
 function FillLV()
@@ -1016,8 +1158,7 @@ function FillLV()
     for (i = 0; i < aFiles.length; ++i)
       InsertItemLV(i, aFiles[i].substr(nNameBegin));
 
-    for (i = 0; i < aFilesSel.length; ++i)
-      SetSelLV(aFilesSel[i]);
+    SetSelArrayLV();
   }
   else
     InsertItemLV(0, sTxtNoFiles);
@@ -1025,6 +1166,7 @@ function FillLV()
   if (GetNextSelLV(-1) < 0)
     SetSelLV(0);
 
+  AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x101E /*LVM_SETCOLUMNWIDTH*/, 0, -2 /*LVSCW_AUTOSIZE_USEHEADER*/);
   AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x000B /*WM_SETREDRAW*/, 1, 0);
 }
 
@@ -1038,16 +1180,17 @@ function CurrentDir()
     sDir = AkelPad.GetAkelDir();
 
   SetWindowText(aWnd[IDDIRCB][HWND], sDir);
+  AkelPad.SendMessage(aWnd[IDDIRCB][HWND], 0x0142 /*CB_SETEDITSEL*/, 0, MkLong(0, -1));
 }
 
 function BrowseDirs()
 {
-  var sSelDir = BrowseForFolder(hWndDlg, sTxtChooseDir, sDir);
+  var sSelDir = BrowseForFolder(hWndDlg, sTxtChooseDir, GetWindowText(aWnd[IDDIRCB][HWND]).replace(/(^ +)|( +$)/g, ""));
 
   if (sSelDir)
   {
-    sDir = sSelDir;
-    SetWindowText(aWnd[IDDIRCB][HWND], sDir);
+    SetWindowText(aWnd[IDDIRCB][HWND], sSelDir);
+    AkelPad.SendMessage(aWnd[IDDIRCB][HWND], 0x0142 /*CB_SETEDITSEL*/, 0, MkLong(0, -1));
   }
 }
 
@@ -1167,8 +1310,6 @@ function SearchFiles()
   var nMaxSize;
   var bNTFS;
   var aStreams;
-  var lpRect;
-  var nW, nH, nW1;
   var i, n;
 
   sDir     = GetWindowText(aWnd[IDDIRCB][HWND]).replace(/(^ +)|( +$)/g, "");
@@ -1215,23 +1356,12 @@ function SearchFiles()
     }
   }
 
-  lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
-
-  oSys.Call("User32::GetClientRect", aWnd[IDSEARCHB][HWND], lpRect);
-  nW = AkelPad.MemRead(lpRect +  8, DT_DWORD);
-  nH = AkelPad.MemRead(lpRect + 12, DT_DWORD);
-
-  oSys.Call("User32::GetClientRect", hWndDlg, lpRect);
-  nW1 = AkelPad.MemRead(lpRect +  8, DT_DWORD) - 2 * 10;
-
-  AkelPad.MemFree(lpRect);
-
-  oSys.Call("User32::SetWindowPos", aWnd[IDSEARCHB][HWND], 0, 0, 0, nW1, nH, 0x16 /*SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE*/);
-  SetWindowText(aWnd[IDSEARCHB][HWND], sTxtWait);
+  SetTextSB(-2);
   InsertToCB();
 
   aFiles          = [];
   aFilesSel       = [0];
+  nFilesFoc       = 0;
   aPath[0]        = sDir + ((sDir.slice(-1) != "\\") ? "\\" : "");
   nPathLen        = aPath[0].length;
   nMaxLevel       = (nDirLevel < 0) ? Infinity : nDirLevel;
@@ -1252,14 +1382,9 @@ function SearchFiles()
 
   if (sName && (! bNameRE))
   {
-    sPattern = sName.replace(/"(([^;"]*;+[^;"]*)+)"/g,
-                             function(sMatched0, sMatched1)
-                             {
-                               return sMatched1.replace(/;/g, "\0");
-                             });
+    sPattern = sName.replace(/"(([^;"]*;+[^;"]*)+)"/g, function(){return arguments[1].replace(/;/g, "\0");});
     sPattern = sPattern.replace(/[\\\/.^$+|()\[\]{}]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/ *; */g, "|").replace(/\0/g, ";");
-
-    rName = new RegExp("^(" + sPattern + ")$", "i");
+    rName    = new RegExp("^(" + sPattern + ")$", "i");
   }
 
   if (sContent && (! bContentRE))
@@ -1362,12 +1487,9 @@ function SearchFiles()
   AkelPad.MemFree(lpDetectFile);
 
   SortFiles();
-  SetHeaderLV();
   FillLV();
   EnableButtons();
 
-  oSys.Call("User32::SetWindowPos", aWnd[IDSEARCHB][HWND], 0, 0, 0, nW, nH, 0x16 /*SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE*/);
-  SetWindowText(aWnd[IDSEARCHB][HWND], sTxtSearch);
   oSys.Call("User32::PostMessageW", hWndDlg, 0x8001 /*WM_APP+1*/, aWnd[IDFILELV][HWND], 0);
 }
 
@@ -1395,8 +1517,11 @@ function OpenFiles()
     var sFiles = "";
     var i;
 
-    aFilesSel = GetSelArrayLV();
+    GetSelArrayLV();
 
+    if (! aFilesSel.length)
+      aFilesSel = [GetCurFocLV()];
+  
     for (i = 0; i < aFilesSel.length; ++i)
     {
       if (IsFileExists(aFiles[aFilesSel[i]]))
@@ -1415,16 +1540,16 @@ function OpenFiles()
   }
 }
 
-function OpenOrCloseFile()
+function OpenOrCloseFile(bSelect)
 {
   if (aFiles.length)
   {
-    var nSel = GetNextSelLV(-1);
+    var nItem = GetCurFocLV();
     var rContent;
 
-    if (nSel >= 0)
+    if (nItem >= 0)
     {
-      if (aFiles[nSel].toUpperCase() == AkelPad.GetEditFile(0).toUpperCase())
+      if (aFiles[nItem].toUpperCase() == AkelPad.GetEditFile(0).toUpperCase())
       {
         if (AkelPad.IsMDI())
           AkelPad.Command(4318 /*IDM_WINDOW_FRAMECLOSE*/);
@@ -1433,11 +1558,11 @@ function OpenOrCloseFile()
       }
       else
       {
-        if (IsFileExists(aFiles[nSel]))
+        if (IsFileExists(aFiles[nItem]))
         {
-          AkelPad.OpenFile(aFiles[nSel]);
+          AkelPad.OpenFile(aFiles[nItem]);
 
-          if (sLastContent && (! bLastNotContain))
+          if (bSelect && sLastContent && (! bLastNotContain))
           {
             if (bLastContentRE)
             {
@@ -1450,7 +1575,7 @@ function OpenOrCloseFile()
           }
         }
         else
-          WarningBox(aFiles[nSel] + "\n\n" + sTxtFileNoExist);
+          WarningBox(aFiles[nItem] + "\n\n" + sTxtFileNoExist);
       }
     }
   }
@@ -1492,7 +1617,11 @@ function CopySelected()
   if (aFiles.length)
   {
     var sText = "";
-    aFilesSel = GetSelArrayLV();
+
+    GetSelArrayLV();
+
+    if (! aFilesSel.length)
+      aFilesSel = [GetCurFocLV()];
 
     for (i = 0; i < aFilesSel.length; ++i)
       sText += aFiles[aFilesSel[i]] + "\r\n";
@@ -1508,7 +1637,6 @@ function ClearList()
     aFiles    = [];
     aFilesSel = [0];
 
-    SetHeaderLV();
     FillLV();
     EnableButtons();
     oSys.Call("User32::SetFocus", aWnd[IDFILELV][HWND]);
@@ -1519,13 +1647,19 @@ function RemoveFromList()
 {
   if (aFiles.length)
   {
-    aFilesSel = GetSelArrayLV();
+    AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x000B /*WM_SETREDRAW*/, 0, 0);
+    GetSelArrayLV();
+
+    if (! aFilesSel.length)
+      aFilesSel = [GetCurFocLV()];
 
     for (i = aFilesSel.length - 1; i >= 0; --i)
     {
       aFiles.splice(aFilesSel[i], 1);
       AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x1008 /*LVM_DELETEITEM*/, aFilesSel[i], 0);
     }
+
+    AkelPad.SendMessage(aWnd[IDFILELV][HWND], 0x000B /*WM_SETREDRAW*/, 1, 0);
 
     if (aFiles.length)
     {
@@ -1538,8 +1672,6 @@ function RemoveFromList()
       FillLV();
       EnableButtons();
     }
-
-    SetHeaderLV();
   }
 }
 
@@ -1568,7 +1700,8 @@ function Settings()
   else if (nCmd == 3)
   {
     bPathShow = ! bPathShow;
-    aFilesSel = GetSelArrayLV();
+    nFilesFoc = GetCurFocLV();
+    GetSelArrayLV();
     FillLV();
   }
 }
@@ -1628,6 +1761,7 @@ function ReadIni()
     sTxtDirNoExist  = "Directory does not exists.";
     sTxtFileNoExist = "Files does not exists.";
     sTxtErrorRE     = "Error in regular expression.";
+    sTxtNTFSStream  = "NTFS stream";
     sTxtWait        = "Wait...";
     sHlpAnyChar     = "any single character";
     sHlpAnyString   = "any string of characters";
@@ -1695,11 +1829,15 @@ function WriteIni()
   sContent    = GetWindowText(aWnd[IDCONTENTCB][HWND]);
 
   if (bKeepFiles)
-    aFilesSel = GetSelArrayLV();
+  {
+    GetSelArrayLV();
+    nFilesFoc = GetCurFocLV();
+  }
   else
   {
     aFiles    = [];
     aFilesSel = [0];
+    nFilesFoc = 0;
   }
 
   for (i in oWndPos)
@@ -1732,7 +1870,7 @@ function WriteIni()
              'aNames=['         + aNames.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
              'aContents=['      + aContents.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
              'aFiles=['         + aFiles.join('\t').replace(/[\\"]/g, '\\$&').replace(/\t/g, '","').replace(/.+/, '"$&"') +'];\r\n' +
-             'aFilesSel=['      + aFilesSel +'];';
-
+             'aFilesSel=['      + aFilesSel +'];\r\n' +
+             'nFilesFoc='       + nFilesFoc +';';
   WriteFile(sIniFile, null, sIniTxt, 1);
 }
