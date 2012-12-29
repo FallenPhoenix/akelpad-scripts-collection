@@ -2,7 +2,7 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
 
 // (c) Infocatcher 2011-2012
-// version 0.2.4 - 2012-05-05
+// version 0.2.5 - 2012-12-29
 
 //===================
 // Convert measures (internal) and currency (used data from exchange-rates.org and Google API, but with caching)
@@ -137,7 +137,7 @@ var measures = {
 		"Gram (g)":       1e-3,
 		"Kilogram (kg)": 1,
 		"Tonne": 1e3,
-		"Atomic mass unit": 1.660538782838383e-27,
+		"Atomic mass unit (u, Da)": 1.660538782838383e-27,
 		"Carat (ct)": 200e-6,
 		"Grain": 64.79891e-6,
 		"Ounce (oz)": 0.45359237/16,
@@ -154,15 +154,15 @@ var measures = {
 		"Kilometer (km)":  1e+3,
 		"Angstrom (Å)":    1e-10,
 		"Astronomical unit (a.u.)": 149597871464,
-		"Light-year":   9460730472580820,
+		"Light-year (ly)":   9460730472580820,
 		"Light-day":    9460730472580820/365.25, // Julian year!
 		"Light-hour":   9460730472580820/365.25/24,
 		"Light-minute": 9460730472580820/365.25/24/60,
 		"Light-second": 9460730472580820/365.25/24/60/60,
-		"Parsec": 3.08567782e+16,
-		"Inch": 0.0254,
-		"Foot": 0.0254*12,
-		"Yard": 0.0254*12*3,
+		"Parsec (pc)": 3.08567782e+16,
+		"Inch (in)": 0.0254,
+		"Foot (ft)": 0.0254*12,
+		"Yard (yd)": 0.0254*12*3,
 		"Mile": 1.609344e+3, // 0.0254*12*3*1760
 		"Nautical mile": 1852,
 		"Cable": 1852/10
@@ -177,10 +177,10 @@ var measures = {
 		"Square meter (m²)": 1,
 		"Square kilometer (km²)":  Math.pow(1e+3, 2),
 		"Are": 1e2,
-		"Hectare": 1e4,
-		"Square inch": Math.pow(0.0254, 2),
-		"Square foot": Math.pow(0.0254*12, 2),
-		"Square yard": Math.pow(0.0254*12*3, 2),
+		"Hectare (ha)": 1e4,
+		"Square inch (in²)": Math.pow(0.0254, 2),
+		"Square foot (ft²)": Math.pow(0.0254*12, 2),
+		"Square yard (yd²)": Math.pow(0.0254*12*3, 2),
 		"Square mile": Math.pow(0.0254*12*3*1760, 2), // 1609.344
 		"Square nautical mile": Math.pow(1852, 2),
 		"Acre": Math.pow(0.0254*12*3, 2)*4840
@@ -196,9 +196,9 @@ var measures = {
 		"Cubic kilometer (km³)":  Math.pow(1e+3, 3),
 		"Litre (l)":              Math.pow(1e-1, 3),
 		"Millilitre (ml)":        Math.pow(1e-1, 3)/1e3,
-		"Cubic inch": Math.pow(0.0254, 3),
-		"Cubic foot": Math.pow(0.0254*12, 3),
-		"Cubic yard": Math.pow(0.0254*12*3, 3),
+		"Cubic inch (in³)": Math.pow(0.0254, 3),
+		"Cubic foot (ft³)": Math.pow(0.0254*12, 3),
+		"Cubic yard (yd³)": Math.pow(0.0254*12*3, 3),
 		"Cubic mile": Math.pow(0.0254*12*3*1760, 3), // Math.pow(1609.344, 2)
 		"Cubic nautical mile": Math.pow(1852, 3),
 		"Gallon (USA)": Math.pow(1e-1, 3)*3.785411784,
@@ -472,95 +472,95 @@ function _localize(s) {
 			ru: "Пристав&ки"
 		},
 		"Yocto (y)": {
-			ru: "Йокто (и)"
+			ru: "Йокто (и, y)"
 		},
 		"Zepto (z)": {
-			ru: "Зепто (з)"
+			ru: "Зепто (з, z)"
 		},
 		"Atto (a)": {
 			ru: "Атто (а)"
 		},
 		"Femto (f)": {
-			ru: "Фемто (ф)"
+			ru: "Фемто (ф, f)"
 		},
 		"Pico (p)": {
-			ru: "Пико (п)"
+			ru: "Пико (п, p)"
 		},
 		"Nano (n)": {
-			ru: "Нано (н)"
+			ru: "Нано (н, n)"
 		},
 		"Micro (μ)": {
-			ru: "Микро (мк)"
+			ru: "Микро (мк, μ)"
 		},
 		"Milli (m)": {
-			ru: "Милли (м)"
+			ru: "Милли (м, m)"
 		},
 		"Centi (c)": {
 			ru: "Санти (с)"
 		},
 		"Deci (d)": {
-			ru: "Деци (д)"
+			ru: "Деци (д, d)"
 		},
 		"(W/o)": {
 			ru: "(Без приставки)"
 		},
 		"Deсa (da)": {
-			ru: "Дека (да)"
+			ru: "Дека (да, da)"
 		},
 		"Hecto (h)": {
-			ru: "Гекто (г)"
+			ru: "Гекто (г, h)"
 		},
 		"Kilo (k)": {
-			ru: "Кило (к)"
+			ru: "Кило (к, k)"
 		},
 		"Mega (M)": {
 			ru: "Мега (М)"
 		},
 		"Giga (G)": {
-			ru: "Гига (Г)"
+			ru: "Гига (Г, G)"
 		},
 		"Tera (T)": {
 			ru: "Тера (Т)"
 		},
 		"Peta (P)": {
-			ru: "Пета (П)"
+			ru: "Пета (П, P)"
 		},
 		"Exa (E)": {
-			ru: "Экса (Э)"
+			ru: "Экса (Э, E)"
 		},
 		"Zetta (Z)": {
-			ru: "Зетта (З)"
+			ru: "Зетта (З, Z)"
 		},
 		"Yotta (Y)": {
-			ru: "Йотта (И)"
+			ru: "Йотта (И, Y)"
 		},
 
 		"&Binary prefixes": {
 			ru: "Двои&чные приставки"
 		},
 		"Kibi (Ki)": {
-			ru: "Киби (Ки)"
+			ru: "Киби (Ки, Ki)"
 		},
 		"Mebi (Mi)": {
-			ru: "Меби (Ми)"
+			ru: "Меби (Ми, Mi)"
 		},
 		"Gibi (Gi)": {
-			ru: "Гиби (Ги)"
+			ru: "Гиби (Ги, Gi)"
 		},
 		"Tebi (Ti)": {
-			ru: "Теби (Ти)"
+			ru: "Теби (Ти, Ti)"
 		},
 		"Pebi (Pi)": {
-			ru: "Пеби (Пи)"
+			ru: "Пеби (Пи, Pi)"
 		},
 		"Exbi (Ei)": {
-			ru: "Эксби (Эи)"
+			ru: "Эксби (Эи, Ei)"
 		},
 		"Zebi (Zi)": {
-			ru: "Зеби (Зи)"
+			ru: "Зеби (Зи, Zi)"
 		},
 		"Yobi (Yi)": {
-			ru: "Йоби (Йи)"
+			ru: "Йоби (Йи, Yi)"
 		},
 
 		"&Information": {
@@ -571,53 +571,53 @@ function _localize(s) {
 		},
 
 		"Kibibit (Kibit)": {
-			ru: "Кибибит (Кибит)"
+			ru: "Кибибит (Кибит, Kibit)"
 		},
 		"Mebibit (Mibit)": {
-			ru: "Мебибит (Мибит)"
+			ru: "Мебибит (Мибит, Mibit)"
 		},
 		"Gibibit (Gibit)": {
-			ru: "Гибибит (Гибит)"
+			ru: "Гибибит (Гибит, Gibit)"
 		},
 		"Tebibit (Tibit)": {
-			ru: "Тебибит (Тибит)"
+			ru: "Тебибит (Тибит, Tibit)"
 		},
 		"Pebibit (Pibit)": {
-			ru: "Пебибит (Пибит)"
+			ru: "Пебибит (Пибит, Pibit)"
 		},
 		"Exbibit (Eibit)": {
-			ru: "Эксибит (Эибит)"
+			ru: "Эксибит (Эибит, Eibit)"
 		},
 		"Zebibit (Zibit)": {
-			ru: "Зебибит (Зибит)"
+			ru: "Зебибит (Зибит, Zibit)"
 		},
 		"Yobibit (Yibit)": {
-			ru: "Йобибит (Йибит)"
+			ru: "Йобибит (Йибит, Yibit)"
 		},
 
 		"Kilobit (kbit)": {
-			ru: "Килобит (кбит)"
+			ru: "Килобит (кбит, kbit)"
 		},
 		"Megabit (Mbit)": {
-			ru: "Магабит (Мбит)"
+			ru: "Мегабит (Мбит, Mbit)"
 		},
 		"Gigabit (Gbit)": {
-			ru: "Гигабит (Гбит)"
+			ru: "Гигабит (Гбит, Gbit)"
 		},
 		"Terabit (Tbit)": {
-			ru: "Терабит (Тбит)"
+			ru: "Терабит (Тбит, Tbit)"
 		},
 		"Petabit (Pbit)": {
-			ru: "Петабит (Пбит)"
+			ru: "Петабит (Пбит, Pbit)"
 		},
 		"Exabit (Ebit)": {
-			ru: "Эксабит (Эбит)"
+			ru: "Эксабит (Эбит, Ebit)"
 		},
 		"Zettabit (Zbit)": {
-			ru: "Зеттабит (Збит)"
+			ru: "Зеттабит (Збит, Zbit)"
 		},
 		"Yottabit (Ybit)": {
-			ru: "Йоттабит (Ибит)"
+			ru: "Йоттабит (Ибит, Ybit)"
 		},
 
 		"Byte": {
@@ -625,121 +625,121 @@ function _localize(s) {
 		},
 
 		"Kibibyte (KiB)": {
-			ru: "Кибибайт (Кбайт)"
+			ru: "Кибибайт (Кбайт, KiB)"
 		},
 		"Mebibyte (MiB)": {
-			ru: "Мебибайт (Мбайт)"
+			ru: "Мебибайт (Мбайт, MiB)"
 		},
 		"Gibibyte (GiB)": {
-			ru: "Гибибайт (Гбайт)"
+			ru: "Гибибайт (Гбайт, GiB)"
 		},
 		"Tebibyte (TiB)": {
-			ru: "Тебибайт (Тбайт)"
+			ru: "Тебибайт (Тбайт, TiB)"
 		},
 		"Pebibyte (PiB)": {
-			ru: "Пебибайт (Пбайт)"
+			ru: "Пебибайт (Пбайт, PiB)"
 		},
 		"Exbibyte (EiB)": {
-			ru: "Эксибайт (Эбайт)"
+			ru: "Эксибайт (Эбайт, EiB)"
 		},
 		"Zebibyte (ZiB)": {
-			ru: "Зебибайт (Збайт)"
+			ru: "Зебибайт (Збайт, ZiB)"
 		},
 		"Yobibyte (YiB)": {
-			ru: "Йобибайт (Йбайт)"
+			ru: "Йобибайт (Йбайт, YiB)"
 		},
 
 		"Kilobyte (kB)": {
-			ru: "Килобайт (КБ)"
+			ru: "Килобайт (КБ, kB)"
 		},
 		"Megabyte (MB)": {
-			ru: "Мегабайт (МБ)"
+			ru: "Мегабайт (МБ, MB)"
 		},
 		"Gigabyte (GB)": {
-			ru: "Гигабайт (ГБ)"
+			ru: "Гигабайт (ГБ, GB)"
 		},
 		"Terabyte (TB)": {
-			ru: "Терабайт (ТБ)"
+			ru: "Терабайт (ТБ, TB)"
 		},
 		"Petabyte (PB)": {
-			ru: "Петабайт (ПБ)"
+			ru: "Петабайт (ПБ, PB)"
 		},
 		"Exabyte (EB)": {
-			ru: "Эксабайт (ЭБ)"
+			ru: "Эксабайт (ЭБ, EB)"
 		},
 		"Zettabyte (ZB)": {
-			ru: "Зеттабайт (ЗБ)"
+			ru: "Зеттабайт (ЗБ, ZB)"
 		},
 		"Yottabyte (YB)": {
-			ru: "Йоттабайт (ИБ)"
+			ru: "Йоттабайт (ИБ, YB)"
 		},
 
 		"&Mass": {
 			ru: "&Масса"
 		},
 		"Milligram (mg)": {
-			ru: "Миллиграмм (мг)"
+			ru: "Миллиграмм (мг, mg)"
 		},
 		"Gram (g)": {
-			ru: "Грамм (г)"
+			ru: "Грамм (г, g)"
 		},
 		"Kilogram (kg)": {
-			ru: "Килограмм (кг)"
+			ru: "Килограмм (кг, kg)"
 		},
 		"Tonne": {
 			ru: "Тонна"
 		},
-		"Atomic mass unit": {
-			ru: "Атомная единица массы (а. е. м.)"
+		"Atomic mass unit (u, Da)": {
+			ru: "Атомная единица массы (а.е.м., u, Da)"
 		},
 		"Carat (ct)": {
-			ru: "Карат"
+			ru: "Карат (кар, ct)"
 		},
 		"Grain": {
 			ru: "Гран"
 		},
 		"Ounce (oz)": {
-			ru: "Унция"
+			ru: "Унция (oz)"
 		},
 		"Pound (lb)": {
-			ru: "Фунт"
+			ru: "Фунт (lb)"
 		},
 
 		"&Length": {
 			ru: "&Длина"
 		},
 		"Picometer (pm)": {
-			ru: "Пикометр (пм)"
+			ru: "Пикометр (пм, pm)"
 		},
 		"Nanometer (nm)": {
-			ru: "Нанометр (нм)"
+			ru: "Нанометр (нм, nm)"
 		},
 		"Micrometer (µm)": {
-			ru: "Микрометр (мкм)"
+			ru: "Микрометр (мкм, µm)"
 		},
 		"Millimeter (mm)": {
-			ru: "Миллиметр (мм)"
+			ru: "Миллиметр (мм, mm)"
 		},
 		"Centimeter (cm)": {
-			ru: "Сантиметр (см)"
+			ru: "Сантиметр (см, cm)"
 		},
 		"Decimeter (dm)": {
-			ru: "Дециметр (дм)"
+			ru: "Дециметр (дм, dm)"
 		},
 		"Meter (m)": {
-			ru: "Метр (м)"
+			ru: "Метр (м, m)"
 		},
 		"Kilometer (km)": {
-			ru: "Километр (км)"
+			ru: "Километр (км, km)"
 		},
 		"Angstrom (Å)": {
 			ru: "Ангстрем (Å)"
 		},
 		"Astronomical unit (a.u.)": {
-			ru: "Астрономическая единица (а.е.)"
+			ru: "Астрономическая единица (а.е., a.u.)"
 		},
-		"Light-year": {
-			ru: "Световой год"
+		"Light-year (ly)": {
+			ru: "Световой год (св.г., ly)"
 		},
 		"Light-day": {
 			ru: "Световой день"
@@ -753,17 +753,17 @@ function _localize(s) {
 		"Light-second": {
 			ru: "Световая секунда"
 		},
-		"Parsec": {
-			ru: "Парсек"
+		"Parsec (pc)": {
+			ru: "Парсек (пк, pc)"
 		},
-		"Inch": {
-			ru: "Дюйм"
+		"Inch (in)": {
+			ru: "Дюйм (in)"
 		},
-		"Foot": {
-			ru: "Фут"
+		"Foot (ft)": {
+			ru: "Фут (ft)"
 		},
-		"Yard": {
-			ru: "Ярд"
+		"Yard (yd)": {
+			ru: "Ярд (yd)"
 		},
 		"Mile": {
 			ru: "Миля"
@@ -779,43 +779,43 @@ function _localize(s) {
 			ru: "&Площадь"
 		},
 		"Square picometer (pm²)": {
-			ru: "Квадратный пикометр (пм²)"
+			ru: "Квадратный пикометр (пм², pm²)"
 		},
 		"Square nanometer (nm²)": {
-			ru: "Квадратный нанометр (нм²)"
+			ru: "Квадратный нанометр (нм², nm²)"
 		},
 		"Square micrometer (µm²)": {
-			ru: "Квадратный микрометр (мкм²)"
+			ru: "Квадратный микрометр (мкм², µm²)"
 		},
 		"Square millimeter (mm²)": {
-			ru: "Квадратный миллиметр (мм²)"
+			ru: "Квадратный миллиметр (мм², mm²)"
 		},
 		"Square centimeter (cm²)": {
-			ru: "Квадратный сантиметр (см²)"
+			ru: "Квадратный сантиметр (см², cm²)"
 		},
 		"Square decimeter (dm²)": {
-			ru: "Квадратный дециметр (дм²)"
+			ru: "Квадратный дециметр (дм², dm²)"
 		},
 		"Square meter (m²)": {
-			ru: "Квадратный метр (м²)"
+			ru: "Квадратный метр (м², m²)"
 		},
 		"Square kilometer (km²)": {
-			ru: "Квадратный километр (км²)"
+			ru: "Квадратный километр (км², km²)"
 		},
 		"Are": {
 			ru: "Ар"
 		},
-		"Hectare": {
-			ru: "Гектар"
+		"Hectare (ha)": {
+			ru: "Гектар (га, ha)"
 		},
-		"Square inch": {
-			ru: "Квадратный дюйм"
+		"Square inch (in²)": {
+			ru: "Квадратный дюйм (in²)"
 		},
-		"Square foot": {
-			ru: "Квадратный фут"
+		"Square foot (ft²)": {
+			ru: "Квадратный фут (ft²)"
 		},
-		"Square yard": {
-			ru: "Квадратный ярд"
+		"Square yard (yd²)": {
+			ru: "Квадратный ярд (yd²)"
 		},
 		"Square mile": {
 			ru: "Квадратная миля"
@@ -831,43 +831,43 @@ function _localize(s) {
 			ru: "&Объём"
 		},
 		"Cubic picometer (pm³)": {
-			ru: "Кубический пикометр (пм³)"
+			ru: "Кубический пикометр (пм³, pm³)"
 		},
 		"Cubic nanometer (nm³)": {
-			ru: "Кубический нанометр (нм³)"
+			ru: "Кубический нанометр (нм³, nm³)"
 		},
 		"Cubic micrometer (µm³)": {
-			ru: "Кубический микрометр (мкм³)"
+			ru: "Кубический микрометр (мкм³, µm³)"
 		},
 		"Cubic millimeter (mm³)": {
-			ru: "Кубический миллиметр (мм³)"
+			ru: "Кубический миллиметр (мм³, mm³)"
 		},
 		"Cubic centimeter (cm³)": {
-			ru: "Кубический сантиметр (см³)"
+			ru: "Кубический сантиметр (см³, cm³)"
 		},
 		"Cubic decimeter (dm³)": {
-			ru: "Кубический дециметр (дм³)"
+			ru: "Кубический дециметр (дм³, dm³)"
 		},
 		"Cubic meter (m³)": {
-			ru: "Кубический метр (м³)"
+			ru: "Кубический метр (м³, m³)"
 		},
 		"Cubic kilometer (km³)": {
-			ru: "Кубический километр (км³)"
+			ru: "Кубический километр (км³, km³)"
 		},
 		"Litre (l)": {
-			ru: "Литр (л)"
+			ru: "Литр (л, l)"
 		},
 		"Millilitre (ml)": {
-			ru: "Миллилитр (мл)"
+			ru: "Миллилитр (мл, ml)"
 		},
-		"Cubic inch": {
-			ru: "Кубический дюйм"
+		"Cubic inch (in³)": {
+			ru: "Кубический дюйм (in³)"
 		},
-		"Cubic foot": {
-			ru: "Кубический фут"
+		"Cubic foot (ft³)": {
+			ru: "Кубический фут (ft³)"
 		},
-		"Cubic yard": {
-			ru: "Кубический ярд"
+		"Cubic yard (yd³)": {
+			ru: "Кубический ярд (yd³)"
 		},
 		"Cubic mile": {
 			ru: "Кубическая миля"
@@ -886,7 +886,7 @@ function _localize(s) {
 			ru: "Плоский &угол"
 		},
 		"Radian (rad)": {
-			ru: "Радиан (рад)"
+			ru: "Радиан (рад, rad)"
 		},
 		"Degree (°)": {
 			ru: "Градус (°)"
@@ -908,13 +908,13 @@ function _localize(s) {
 			ru: "Плот&ность"
 		},
 		"Kilogram per cubic metre (kg/m³)": {
-			ru: "Килограмм на кубический метр (кг/м³)"
+			ru: "Килограмм на кубический метр (кг/м³, kg/m³)"
 		},
 		"Gram per cubic centimeter (g/cm³)": {
-			ru: "Грамм на кубический сантиметр (г/см³)"
+			ru: "Грамм на кубический сантиметр (г/см³, g/cm³)"
 		},
 		"Tonne per cubic meter (t/m³)": {
-			ru: "Тонна на кубический метр (т/м³)"
+			ru: "Тонна на кубический метр (т/м³, t/m³)"
 		},
 		"Kilogram per litre": {
 			ru: "Килограмм на литр"
@@ -933,16 +933,16 @@ function _localize(s) {
 			ru: "&Время"
 		},
 		"Nanosecond (ns)": {
-			ru: "Наносекунда (нс)"
+			ru: "Наносекунда (нс, ns)"
 		},
 		"Microsecond (µs)": {
-			ru: "Микросекунда (мкс)"
+			ru: "Микросекунда (мкс, µs)"
 		},
 		"Millisecond (ms)": {
-			ru: "Миллисекунда (мс)"
+			ru: "Миллисекунда (мс, ms)"
 		},
 		"Second (s)": {
-			ru: "Секунда (с)"
+			ru: "Секунда (с, s)"
 		},
 		"Minute": {
 			ru: "Минута"
@@ -967,19 +967,19 @@ function _localize(s) {
 			ru: "&Скорость"
 		},
 		"Meter per second (m/s)": {
-			ru: "Метр в секунду (м/с)"
+			ru: "Метр в секунду (м/с, m/s)"
 		},
 		"Kilometer per second (km/s)": {
-			ru: "Километр в секунду (км/с)"
+			ru: "Километр в секунду (км/с, km/s)"
 		},
 		"Kilometer per hour (km/h)": {
-			ru: "Километр в час (км/ч)"
+			ru: "Километр в час (км/ч, km/h)"
 		},
 		"Mile per hour (mph)": {
-			ru: "Миля в час"
+			ru: "Миля в час (mph)"
 		},
 		"Knot (kn)": {
-			ru: "Узел"
+			ru: "Узел (kn)"
 		},
 
 		"Temperat&ure": {
@@ -999,99 +999,99 @@ function _localize(s) {
 			ru: "&Энергия"
 		},
 		"Joul (J)": {
-			ru: "Джоуль (Дж)"
+			ru: "Джоуль (Дж, J)"
 		},
 		"Kilojoul (kJ)": {
-			ru: "Килоджоуль (кДж)"
+			ru: "Килоджоуль (кДж, kJ)"
 		},
 		"Megajoul (MJ)": {
-			ru: "Мегаджоуль (МДж)"
+			ru: "Мегаджоуль (МДж, MJ)"
 		},
 		"Erg": {
 			ru: "Эрг"
 		},
 		"Calorie (cal)": {
-			ru: "Калория (кал)"
+			ru: "Калория (кал, cal)"
 		},
 		"Kilocalorie (kcal)": {
-			ru: "Килокалория (ккал)"
+			ru: "Килокалория (ккал, kcal)"
 		},
 		"Kilowatt hour (kW·h)": {
-			ru: "Киловатт-час (кВт·ч)"
+			ru: "Киловатт-час (кВт·ч, kW·h)"
 		},
 		"Electronvolt (eV)": {
-			ru: "Электронвольт (Эв)"
+			ru: "Электронвольт (эВ, eV)"
 		},
 		"Kiloelectronvolt (keV)": {
-			ru: "Килоэлектронвольт (кЭв)"
+			ru: "Килоэлектронвольт (кэВ, keV)"
 		},
 		"Megaelectronvolt (MeV)": {
-			ru: "Мегаэлектронвольт (МЭв)"
+			ru: "Мегаэлектронвольт (МэВ, MeV)"
 		},
 		"Gigaelectronvolt (GeV)": {
-			ru: "Гигаэлектронвольт (ГЭв)"
+			ru: "Гигаэлектронвольт (ГэВ, GeV)"
 		},
 		"Teraelectronvolt (TeV)": {
-			ru: "Тераэлектронвольт (ТЭв)"
+			ru: "Тераэлектронвольт (ТэВ, TeV)"
 		},
 
 		"&Power": {
 			ru: "Мо&щность"
 		},
 		"Milliwatt (mW)": {
-			ru: "Милливатт (мВт)"
+			ru: "Милливатт (мВт, mW)"
 		},
 		"Watt (W)": {
-			ru: "Ватт (Вт)"
+			ru: "Ватт (Вт, W)"
 		},
 		"Kilowatt (kW)": {
-			ru: "Киловатт (кВт)"
+			ru: "Киловатт (кВт, kW)"
 		},
 		"Megawatt (MW)": {
-			ru: "Мегаватт (МВт)"
+			ru: "Мегаватт (МВт, MW)"
 		},
 		"Gigawatt (GW)": {
-			ru: "Гигаватт (ГВт)"
+			ru: "Гигаватт (ГВт, GW)"
 		},
 		"Calorie per second (cal/s)": {
-			ru: "Калория в секунду (кал/с)"
+			ru: "Калория в секунду (кал/с, cal/s)"
 		},
 		"Horsepower (HP)": {
-			ru: "Лошадиная сила (л. с.)"
+			ru: "Лошадиная сила (л.с., HP)"
 		},
 
 		"Te&nsion": {
 			ru: "Дав&ление"
 		},
 		"Pascal (Pa)": {
-			ru: "Паскаль (Па)"
+			ru: "Паскаль (Па, Pa)"
 		},
 		"Kilopascal (kPa)": {
-			ru: "Килопаскаль (кПа)"
+			ru: "Килопаскаль (кПа, kPa)"
 		},
 		"Megapascal (MPa)": {
-			ru: "Мегапаскаль (МПа)"
+			ru: "Мегапаскаль (МПа, MPa)"
 		},
 		"Millibar (mbar)": {
-			ru: "Миллибар (мбар)"
+			ru: "Миллибар (мбар, mbar)"
 		},
 		"Bar (bar)": {
-			ru: "Бар (бар)"
+			ru: "Бар (бар, bar)"
 		},
 		"Technical atmosphere (at)": {
-			ru: "Техническая атмосфера (ат)"
+			ru: "Техническая атмосфера (ат, at)"
 		},
 		"Atmosphere (atm)": {
-			ru: "Атмосфера (атм)"
+			ru: "Атмосфера (атм, atm)"
 		},
 		"Millimeter of water (mm H2O)": {
-			ru: "Миллиметр водного столба (мм вод. ст.)"
+			ru: "Миллиметр водного столба (мм вод. ст., mm H2O)"
 		},
 		"Millimeter of mercury (mm Hg)": {
-			ru: "Миллиметр ртутного столба (мм рт. ст.)"
+			ru: "Миллиметр ртутного столба (мм рт. ст., mm Hg)"
 		},
 		"Pound-force per square inch (psi)": {
-			ru: "Фунт на квадратный дюйм"
+			ru: "Фунт на квадратный дюйм (psi)"
 		},
 
 		"&Currency": {
@@ -1502,6 +1502,9 @@ function _localize(s) {
 		"Update": {
 			ru: "Обновить"
 		},
+		"Update…": {
+			ru: "Обновление…"
+		},
 		"%S/%T": {
 			ru: "%S/%T"
 		},
@@ -1622,8 +1625,16 @@ var currencyRatios = {}; // code => ratio
 var maxRequestErrors = 3;
 var requestErrors = 0;
 function getCurrencyRatio(code) {
-	if(currencyRatios[code] && new Date().getTime() - currencyRatios[code].timestamp < offlineExpire)
+	if(
+		currencyRatios[code]
+		&& (
+			dialog // Don't use synchronous updater during dialog creation!
+			|| new Date().getTime() - currencyRatios[code].timestamp < offlineExpire
+		)
+	)
 		return currencyRatios[code].ratio;
+	if(dialog)
+		return NaN;
 	var url = getRequestURL(code);
 	try {
 		var request = new ActiveXObject("Microsoft.XMLHTTP");
@@ -1721,14 +1732,14 @@ var asyncUpdater = {
 	maxErrors: 4,
 	queue: [],
 	requests: {},
-	activeRequests: 0,
 	init: function(onProgress, onComplete, total) {
 		this.onProgress = onProgress;
 		this.onComplete = onComplete;
 		this.total = total || 0;
-		this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
+		this.activeRequests = this.processed = this.success = this.errors = this.abortedErrors = this.parseErrors = 0;
 		this.aborted = this.stopped = false;
 		this.details = [];
+		this.queue.length = 0;
 	},
 	abort: function() {
 		this.aborted = true;
@@ -1762,8 +1773,10 @@ var asyncUpdater = {
 				}
 			}
 			var cnt = --_this.activeRequests;
-			if(_this.errors > _this.maxErrors) //~ todo: (_this.errors + _this.abortedErrors) ?
+			if(_this.errors > _this.maxErrors) { //~ todo: (_this.errors + _this.abortedErrors) ?
 				_this.stopped = true;
+				_this.queue.length = 0;
+			}
 			if(!_this.stopped && !_this.aborted)
 				while(cnt++ < _this.maxActiveRequests && _this.queue.length > 0)
 					_this.nextRequest();
@@ -1811,20 +1824,21 @@ var asyncUpdater = {
 		};
 	}
 };
-function updateCurrencyDataAsync(force, onProgress, onComplete, maskInclude) {
+function updateCurrencyDataAsync(force, onStart, onProgress, onComplete, maskInclude) {
 	var codes = [];
 	var currencies = measures["&Currency"];
+	var now = new Date().getTime();
 	for(var currency in currencies) {
 		var code = currencies[currency];
 		if(typeof code != "string")
 			continue;
+		if(maskInclude && !maskInclude[currency])
+			continue;
 		if(
 			!force
 			&& currencyRatios[code]
-			&& new Date().getTime() - currencyRatios[code].timestamp < offlineExpire
+			&& now - currencyRatios[code].timestamp < offlineExpire
 		)
-			continue;
-		if(maskInclude && !maskInclude[currency])
 			continue;
 		codes[codes.length] = code;
 	}
@@ -1833,6 +1847,7 @@ function updateCurrencyDataAsync(force, onProgress, onComplete, maskInclude) {
 		onComplete && onComplete();
 		return;
 	}
+	onStart && onStart();
 	asyncUpdater.init(onProgress, onComplete, total);
 	for(var i = 0; i < total; ++i)
 		asyncUpdater.addRequest(codes[i]);
@@ -2038,7 +2053,7 @@ function converterDialog(modal) {
 	var typeW = 144;
 	var msrX = typeX + typeW + 12;
 	var msrY = 36;
-	var msrW = 240;
+	var msrW = 270;
 	var dy = 16;
 	var btnW = 130;
 	var roundH = 40;
@@ -2453,7 +2468,7 @@ function converterDialog(modal) {
 				if(updateOnStartup) try {
 					new ActiveXObject("htmlfile").parentWindow.setTimeout(function() {
 						oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
-					}, 0);
+					}, 500);
 				}
 				catch(e) {
 					oSys.Call("user32::PostMessage" + _TCHAR, hWnd, 273 /*WM_COMMAND*/, IDC_UPDATE_STARTUP, 0);
@@ -3002,6 +3017,8 @@ function converterDialog(modal) {
 		}
 		else if(windowText(hWndResult) != res) {
 			setEditText(hWndResult, res);
+			if(typeof from == "string" || typeof to == "string")
+				updateCommand(false, true);
 		}
 	}
 	function navigate(hWnds, idcs, selected, down, disabled) {
@@ -3055,23 +3072,32 @@ function converterDialog(modal) {
 			var maskInclude = {};
 			maskInclude[curItem] = maskInclude[curItem2] = true;
 		}
-		update(force || onlyCurrent, onlyCurrent ? 1 : 2, maskInclude);
+		update(force, onlyCurrent ? 1 : 2, maskInclude);
+	}
+	var pendingUpdate;
+	function doPendingUpdate() {
+		var pu = pendingUpdate;
+		if(pu) {
+			pendingUpdate = null;
+			pu.func.apply(this, pu.args);
+		}
 	}
 	function update(force, report, maskInclude) {
-		//if(!enabled(hWndUpdate))
-		//	return;
-		if(asyncUpdater.activeRequests)
+		if(asyncUpdater.activeRequests) {
+			if(!pendingUpdate)
+				pendingUpdate = { func: update, args: arguments };
 			return;
+		}
 		if(report == undefined)
 			report = 2;
-		//var btnFocused = hWndUpdate == oSys.Call("user32::GetFocus");
-		//btnFocused && AkelPad.SendMessage(hWndDialog, 7 /*WM_SETFOCUS*/, 0, 0);
-		//enabled(hWndUpdate, false);
-		var btnLabel = update._btnLabel
-			|| (update._btnLabel = windowText(hWndUpdate));
 		var startTime = new Date().getTime();
 		updateCurrencyDataAsync(
 			force,
+			function onStart() {
+				if(!update._btnLabel)
+					update._btnLabel = windowText(hWndUpdate);
+				windowText(hWndUpdate, _localize("Update…"));
+			},
 			function onProgress(state, code) {
 				onCodeUpdated(code);
 				var errors = state.errors + state.parseErrors;
@@ -3085,16 +3111,18 @@ function converterDialog(modal) {
 			},
 			function onComplete(state, code) {
 				onCodeUpdated(code);
-				//enabled(hWndUpdate, true);
-				windowText(hWndUpdate, btnLabel);
+				if(update._btnLabel)
+					windowText(hWndUpdate, update._btnLabel);
 				if(
 					!report
 					|| (
 						report == 1
 						&& (!state || !state.errors && !state.parseErrors && !state.abortedErrors)
 					)
-				)
+				) {
+					doPendingUpdate();
 					return;
+				}
 				var title = dialogTitle;
 				var icon = 0 /*MB_OK*/;
 				if(state) {
@@ -3125,17 +3153,17 @@ function converterDialog(modal) {
 							: 64 /*MB_ICONINFORMATION*/;
 				}
 				else {
-					//btnFocused && oSys.Call("user32::SetFocus", hWndUpdate);
 					var msg = _localize("No update needed!");
 					icon |= 64 /*MB_ICONINFORMATION*/;
 				}
 				AkelPad.MessageBox(hWndDialog, msg, title, icon);
+				doPendingUpdate();
 			},
 			maskInclude
 		);
 	}
 	function cancelUpdate() {
-		if(!asyncUpdater.activeRequests)
+		if(!asyncUpdater.activeRequests || asyncUpdater.aborted)
 			return false;
 		if(
 			AkelPad.MessageBox(
