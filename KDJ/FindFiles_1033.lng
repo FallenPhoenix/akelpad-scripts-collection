@@ -1,5 +1,5 @@
 /********************************
-FindFiles.js - ver. 2012-12-22
+FindFiles.js - ver. 2013-01-04
 Interface language
 Language:      English (1033)
 Translated by: KDJ
@@ -36,6 +36,7 @@ sTxtPathShow    = "Show full path on files list";
 sTxtDirNoExist  = "Directory does not exists.";
 sTxtFileNoExist = "Files does not exists.";
 sTxtErrorRE     = "Error in regular expression.";
+sTxtByteSymbol  = "B";
 sTxtNTFSStream  = "NTFS stream";
 sTxtWait        = "Wait...";
 sHlpAnyChar     = "any single character";

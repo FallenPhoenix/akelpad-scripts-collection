@@ -1,4 +1,4 @@
-// FindFiles.js - ver. 2012-12-22
+// FindFiles.js - ver. 2013-01-04
 //
 // Search files by name and content.
 //
@@ -65,7 +65,7 @@ else
   var hWndContentList;
   var hWndFocus;
 
-  var oWndMin = {"W": 435,
+  var oWndMin = {"W": 445,
                  "H": 442};
   var oWndPos = {"X": 240,
                  "Y": 140,
@@ -145,14 +145,15 @@ else
   var IDSKIPBINARY = 2019;
   var IDSKIPLARGER = 2020;
   var IDMAXSIZE    = 2021;
-  var IDFILELV     = 2022;
-  var IDSEARCHB    = 2023;
-  var IDEDITB      = 2024;
-  var IDCOPYB      = 2025;
-  var IDCLEARB     = 2026;
-  var IDSETTINGSB  = 2027;
-  var IDCLOSEB     = 2028;
-  var IDSTATUS     = 2029;
+  var IDBYTESYMBOL = 2022;
+  var IDFILELV     = 2023;
+  var IDSEARCHB    = 2024;
+  var IDEDITB      = 2025;
+  var IDCOPYB      = 2026;
+  var IDCLEARB     = 2027;
+  var IDSETTINGSB  = 2028;
+  var IDCLOSEB     = 2029;
+  var IDSTATUS     = 2030;
 
   //0x50000000 - WS_VISIBLE|WS_CHILD
   //0x50000002 - WS_VISIBLE|WS_CHILD|SS_RIGHT
@@ -163,7 +164,7 @@ else
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|CBS_DROPDOWNLIST
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
   //0x50810009 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|LVS_SHOWSELALWAYS|LVS_REPORT
-  //0x50812000 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_NUMBER
+  //0x50812002 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_NUMBER|ES_RIGHT
   //Windows           CLASS,             HWND,      STYLE, TXT
   aWnd[IDDIRG      ]=["BUTTON",             0, 0x50000007, sTxtDir];
   aWnd[IDDIRCB     ]=["COMBOBOX",           0, 0x50210042, ""];
@@ -186,7 +187,8 @@ else
   aWnd[IDINSTREAMS ]=["BUTTON",             0, 0x50010003, sTxtInStreams];
   aWnd[IDSKIPBINARY]=["BUTTON",             0, 0x50010003, sTxtSkipBinary];
   aWnd[IDSKIPLARGER]=["STATIC",             0, 0x50000000, sTxtSkipLarger];
-  aWnd[IDMAXSIZE   ]=["EDIT",               0, 0x50812000, (nMaxFileSize > 0) ? nMaxFileSize.toString() : ""];
+  aWnd[IDMAXSIZE   ]=["EDIT",               0, 0x50812002, (nMaxFileSize > 0) ? nMaxFileSize.toString() : ""];
+  aWnd[IDBYTESYMBOL]=["STATIC",             0, 0x50000000, sTxtByteSymbol];
   aWnd[IDFILELV    ]=["SysListView32",      0, 0x50810009, ""];
   aWnd[IDSEARCHB   ]=["BUTTON",             0, 0x50010000, sTxtSearch];
   aWnd[IDEDITB     ]=["BUTTON",             0, 0x50010000, sTxtEdit];
@@ -786,15 +788,22 @@ function ResizeWindow(hWnd)
             aWnd[IDSKIPLARGER][HWND], 0,
             335,
             192,
-            75,
+            85,
             26,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDMAXSIZE][HWND], 0,
             335,
             223,
-            75,
+            72,
             20,
+            0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
+  oSys.Call("User32::SetWindowPos",
+            aWnd[IDBYTESYMBOL][HWND], 0,
+            410,
+            225,
+            10,
+            13,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDFILELV][HWND], 0,
@@ -1087,7 +1096,7 @@ function SetTextSB(nItem)
       AkelPad.MemFree(lpThousandSep);
       AkelPad.MemFree(lpNUMBERFMT);
 
-      sText1 = "\t\t" + AkelPad.MemRead(lpBuffer, DT_UNICODE) + " B ";
+      sText1 = "\t\t" + AkelPad.MemRead(lpBuffer, DT_UNICODE) + " " + sTxtByteSymbol + " ";
 
       //file date and time
       lpLocalFileTime = AkelPad.MemAlloc(8);  //FILETIME
@@ -1759,8 +1768,9 @@ function ReadIni()
     sTxtKeepFiles   = "Keep files list";
     sTxtPathShow    = "Show full path on files list";
     sTxtDirNoExist  = "Directory does not exists.";
-    sTxtFileNoExist = "Files does not exists.";
+    sTxtFileNoExist = "File(s) does not exists.";
     sTxtErrorRE     = "Error in regular expression.";
+    sTxtByteSymbol  = "B";
     sTxtNTFSStream  = "NTFS stream";
     sTxtWait        = "Wait...";
     sHlpAnyChar     = "any single character";
