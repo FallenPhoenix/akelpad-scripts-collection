@@ -1,15 +1,19 @@
-// FindReplaceEx.js - ver. 2013-01-06
+// FindReplaceEx.js - ver. 2013-01-07
 //
 // "Find/Replace" dialog extended version
 //
 // Usage:
-// Call("Scripts::Main", 1, "FindReplaceEx.js")             - "Find" dialog
-// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R"') - "Replace" dialog
+// Call("Scripts::Main", 1, "FindReplaceEx.js")                         - "Find" dialog
+// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R"')             - "Replace" dialog
+// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R" -DefBut="A"') - "Replace" dialog, set default push button to "Replace all"
 // Arguments:
-//   -Dlg
-//     "F" - "Find" dialog (default)
-//     "R" - "Replace" dialog
-//     "G" - "Go to" dialog
+//   -Dlg - dialog type that is displayed when you run the script:
+//     "F" - "Find" (default)
+//     "R" - "Replace"
+//     "G" - "Go to"
+//   -DefBut - changes default push button in "Replace" dialog:
+//     "R" - "Replace"
+//     "A" - "Replace all"
 //
 // If you don't want switching "Find/Replace" <-> "Go to", set manually in FindReplaceEx.ini:
 // bGoToDlg=false;
@@ -26,9 +30,11 @@ var MLT_FIND    = 3;
 var MLT_REPLACE = 4;
 var MLT_GOTO    = 5;
 
-var IDC_SEARCH_FIND    = 3052; //Combobox What
-var IDC_SEARCH_REPLACE = 3053; //Combobox With
-var IDCANCEL           = 2;
+var IDC_SEARCH_FIND           = 3052; //Combobox What
+var IDC_SEARCH_REPLACE        = 3053; //Combobox With
+var IDC_SEARCH_REPLACE_BUTTON = 3066;
+var IDC_SEARCH_ALL_BUTTON     = 3067;
+var IDCANCEL                  = 2;
 
 var IDLFIND    = 9997;
 var IDLREPLACE = 9998;
@@ -40,9 +46,10 @@ var hMainWnd     = AkelPad.GetMainWnd();
 var hGuiFont     = oSys.Call("Gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 var nBufSize     = 1024;
 var lpBuffer     = AkelPad.MemAlloc(nBufSize);
-var nDlgType     = GetDialogType();
 var aLink        = [];
 var bContinue    = true;
+var nDlgType;
+var sDefBut;
 var hWndDlg;
 var hWndWhatE;
 var hWndWithE;
@@ -62,6 +69,7 @@ aLink[IDLFIND]    = {DlgID: 2004 /*IDD_FIND*/,    Text: "(Ctrl+F)", Visible: fal
 aLink[IDLREPLACE] = {DlgID: 2005 /*IDD_REPLACE*/, Text: "(Ctrl+R)", Visible: false, X: 0, Y: 0, W: 0};
 aLink[IDLGOTO]    = {DlgID: 2006 /*IDD_GOTO*/,    Text: "(Ctrl+G)", Visible: false, X: 0, Y: 0, W: 0};
 
+GetArguments();
 GetLinkText();
 
 while (bContinue)
@@ -83,8 +91,16 @@ while (bContinue)
   if ((typeof nDlgX == "number") && (typeof nDlgY == "number"))
     oSys.Call("User32::SetWindowPos", hWndDlg, 0, nDlgX, nDlgY, 0, 0, 0x15 /*SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE*/);
 
-  if ((nDlgType == MLT_GOTO) && bGoToDlg)
-    ResizeDialog();
+  if (nDlgType == MLT_REPLACE)
+  {
+    if (sDefBut)
+      AkelPad.SendMessage(hWndDlg, 0x0401 /*DM_SETDEFID*/, (sDefBut == "R") ? IDC_SEARCH_REPLACE_BUTTON : IDC_SEARCH_ALL_BUTTON, 0);
+  }
+  else if (nDlgType == MLT_GOTO)
+  {
+    if (bGoToDlg)
+      ResizeDialog();
+  }
 
   if (hWndWhatE && (typeof sWhatText == "string"))
   {
@@ -172,6 +188,25 @@ function Ctrl()
 function Shift()
 {
   return Boolean(oSys.Call("User32::GetKeyState", 0x10 /*VK_SHIFT*/) & 0x8000);
+}
+
+function GetArguments()
+{
+  var vArg = AkelPad.GetArgValue("Dlg", "F").toUpperCase();
+
+  if (vArg == "R")
+    nDlgType = MLT_REPLACE;
+  else if (vArg == "G")
+    nDlgType = MLT_GOTO;
+  else
+    nDlgType = MLT_FIND;
+
+  vArg = AkelPad.GetArgValue("DefBut", "").toUpperCase();
+
+  if ((vArg == "R") || (vArg == "A"))
+    sDefBut = vArg;
+  else
+    sDefBut = "";
 }
 
 function GetLinkText()
@@ -275,18 +310,6 @@ function GetLinkPos()
     aLink[IDLREPLACE].Visible = bGoToDlg;
     aLink[IDLGOTO].Visible    = false;
   }
-}
-
-function GetDialogType()
-{
-  var sArg = AkelPad.GetArgValue("Dlg", "F").toUpperCase();
-
-  if (sArg == "R")
-    return MLT_REPLACE;
-  else if (sArg == "G")
-    return MLT_GOTO;
-  else
-    return MLT_FIND;
 }
 
 function GetDialogWnd()
