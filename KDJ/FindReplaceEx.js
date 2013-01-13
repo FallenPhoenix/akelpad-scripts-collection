@@ -1,25 +1,44 @@
-// FindReplaceEx.js - ver. 2013-01-07
+// FindReplaceEx.js - ver. 2013-01-13
 //
 // "Find/Replace" dialog extended version
 //
 // Usage:
-// Call("Scripts::Main", 1, "FindReplaceEx.js")                         - "Find" dialog
-// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R"')             - "Replace" dialog
-// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R" -DefBut="A"') - "Replace" dialog, set default push button to "Replace all"
+// Call("Scripts::Main", 1, "FindReplaceEx.js")             - "Find" dialog
+// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R"') - "Replace" dialog
+// Call("Scripts::Main", 1, "FindReplaceEx.js", '-Dlg="R" -FR="M+R+S" -RDB="A"')
+// - "Replace" dialog, select "Match case" and "Regular expressions",
+//   direction "In selection", set default push button to "Replace all",
+//
 // Arguments:
 //   -Dlg - dialog type that is displayed when you run the script:
 //     "F" - "Find" (default)
 //     "R" - "Replace"
 //     "G" - "Go to"
-//   -DefBut - changes default push button in "Replace" dialog:
+//   -FR - set "Find/Replace" initial parameters:
+//     "M+" - select "Match case"
+//     "M-" - unselect "Match case"
+//     "W+" - select "Whole word"
+//     "W-" - unselect "Whole word"
+//     "R+" - select "Regular expressions"
+//     "R-" - unselect "Regular expressions"
+//     "E+" - select "Esc-sequences"
+//     "E-" - unselect "Esc-sequences"
+//     "D"  - "Down" (direction)
+//     "U"  - "Up"
+//     "B"  - "Begining"
+//     "S"  - "In selection"
+//     "A"  - "All files"
+//   -RDB - change default push button in "Replace" dialog:
 //     "R" - "Replace"
 //     "A" - "Replace all"
+//   -GT - set "Go to" initial parameter:
+//     "L" - "Line:Column"
+//     "O" - "Offset"
 //
 // If you don't want switching "Find/Replace" <-> "Go to", set manually in FindReplaceEx.ini:
 // bGoToDlg=false;
 
-if ((! AkelPad.GetEditWnd()) ||
-    AkelPad.ScriptHandle(AkelPad.ScriptHandle(WScript.ScriptName, 3 /*SH_FINDSCRIPT*/), 13 /*SH_GETMESSAGELOOP*/)) /*script already running*/
+if (! AkelPad.GetEditWnd())
   WScript.Quit();
 
 var DT_UNICODE = 1;
@@ -30,11 +49,22 @@ var MLT_FIND    = 3;
 var MLT_REPLACE = 4;
 var MLT_GOTO    = 5;
 
+var IDCANCEL                  = 2;
 var IDC_SEARCH_FIND           = 3052; //Combobox What
 var IDC_SEARCH_REPLACE        = 3053; //Combobox With
+var IDC_SEARCH_MATCHCASE      = 3054;
+var IDC_SEARCH_WHOLEWORD      = 3055;
+var IDC_SEARCH_ESCAPESEQ      = 3056;
+var IDC_SEARCH_REGEXP         = 3057;
+var IDC_SEARCH_BACKWARD       = 3059;
+var IDC_SEARCH_FORWARD        = 3060;
+var IDC_SEARCH_BEGINNING      = 3061;
+var IDC_SEARCH_INSEL          = 3062;
+var IDC_SEARCH_ALLFILES       = 3064;
 var IDC_SEARCH_REPLACE_BUTTON = 3066;
 var IDC_SEARCH_ALL_BUTTON     = 3067;
-var IDCANCEL                  = 2;
+var IDC_GOTO_LINE             = 3102;
+var IDC_GOTO_OFFSET           = 3103;
 
 var IDLFIND    = 9997;
 var IDLREPLACE = 9998;
@@ -48,7 +78,15 @@ var nBufSize     = 1024;
 var lpBuffer     = AkelPad.MemAlloc(nBufSize);
 var aLink        = [];
 var bContinue    = true;
+var bFirstTimeFR = true;
+var bFirstTimeGT = true;
 var nDlgType;
+var nMatchC;
+var nWholeW;
+var nRegExp;
+var nEscSeq;
+var nDirection;
+var nGoTo;
 var sDefBut;
 var hWndDlg;
 var hWndWhatE;
@@ -59,16 +97,20 @@ var sWhatText;
 var sWithText;
 var i;
 
-//read ini settings
+//ini settings
 var bGoToDlg = true;
 var nDlgX;
 var nDlgY;
-ReadIni();
 
 aLink[IDLFIND]    = {DlgID: 2004 /*IDD_FIND*/,    Text: "(Ctrl+F)", Visible: false, X: 0, Y: 0, W: 0};
 aLink[IDLREPLACE] = {DlgID: 2005 /*IDD_REPLACE*/, Text: "(Ctrl+R)", Visible: false, X: 0, Y: 0, W: 0};
 aLink[IDLGOTO]    = {DlgID: 2006 /*IDD_GOTO*/,    Text: "(Ctrl+G)", Visible: false, X: 0, Y: 0, W: 0};
 
+GetDialogWnd();
+if (hWndDlg && hWndCancel)
+  AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDCANCEL, hWndCancel);
+
+ReadIni();
 GetArguments();
 GetLinkText();
 
@@ -91,25 +133,77 @@ while (bContinue)
   if ((typeof nDlgX == "number") && (typeof nDlgY == "number"))
     oSys.Call("User32::SetWindowPos", hWndDlg, 0, nDlgX, nDlgY, 0, 0, 0x15 /*SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOSIZE*/);
 
-  if (nDlgType == MLT_REPLACE)
+  if (nDlgType == MLT_GOTO)
   {
-    if (sDefBut)
-      AkelPad.SendMessage(hWndDlg, 0x0401 /*DM_SETDEFID*/, (sDefBut == "R") ? IDC_SEARCH_REPLACE_BUTTON : IDC_SEARCH_ALL_BUTTON, 0);
-  }
-  else if (nDlgType == MLT_GOTO)
-  {
+    if (bFirstTimeGT)
+    {
+      bFirstTimeGT = false;
+
+      if (nGoTo >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_LINE),   0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_OFFSET), 0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo),           0x00F1 /*BM_SETCHECK*/, 1, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nGoTo, oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo));
+      }
+    }
+
     if (bGoToDlg)
       ResizeDialog();
   }
-
-  if (hWndWhatE && (typeof sWhatText == "string"))
+  else
   {
-    oSys.Call("User32::SetWindowTextW", hWndWhatE, sWhatText);
-    AkelPad.SendMessage(hWndWhatE, 0x00B1 /*EM_SETSEL*/, 0, -1);
-  }
+    if (typeof sWhatText == "string")
+    {
+      oSys.Call("User32::SetWindowTextW", hWndWhatE, sWhatText);
+      AkelPad.SendMessage(hWndWhatE, 0x00B1 /*EM_SETSEL*/, 0, -1);
+    }
 
-  if (hWndWithE && (typeof sWithText == "string"))
-    oSys.Call("User32::SetWindowTextW", hWndWithE, sWithText);
+    if (bFirstTimeFR)
+    {
+      bFirstTimeFR = false;
+
+      if (nMatchC >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE), 0x00F1 /*BM_SETCHECK*/, nMatchC, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_MATCHCASE, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE));
+      }
+      if (nWholeW >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD), 0x00F1 /*BM_SETCHECK*/, nWholeW, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_WHOLEWORD, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD));
+      }
+      if (nRegExp >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP), 0x00F1 /*BM_SETCHECK*/, nRegExp, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_REGEXP, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP));
+      }
+      if (nEscSeq >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ), 0x00F1 /*BM_SETCHECK*/, nEscSeq, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_ESCAPESEQ, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ));
+      }
+      if (nDirection >= 0)
+      {
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BACKWARD),  0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_FORWARD),   0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BEGINNING), 0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_INSEL),     0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ALLFILES),  0x00F1 /*BM_SETCHECK*/, 0, 0);
+        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nDirection),           0x00F1 /*BM_SETCHECK*/, 1, 0);
+        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nDirection, oSys.Call("User32::GetDlgItem", hWndDlg, nDirection));
+      }
+    }
+
+    if (nDlgType == MLT_REPLACE)
+    {
+      if (typeof sWithText == "string")
+        oSys.Call("User32::SetWindowTextW", hWndWithE, sWithText);
+
+      if (sDefBut)
+        AkelPad.SendMessage(hWndDlg, 0x0401 /*DM_SETDEFID*/, (sDefBut == "R") ? IDC_SEARCH_REPLACE_BUTTON : IDC_SEARCH_ALL_BUTTON, 0);
+    }
+  }
 
   GetLinkWidth();
   GetLinkPos();
@@ -201,12 +295,64 @@ function GetArguments()
   else
     nDlgType = MLT_FIND;
 
-  vArg = AkelPad.GetArgValue("DefBut", "").toUpperCase();
+  vArg = AkelPad.GetArgValue("FR", "").toUpperCase();
+
+  if (vArg.indexOf("M+") >= 0)
+    nMatchC = 1;
+  else if (vArg.indexOf("M-") >= 0)
+    nMatchC = 0;
+  else
+    nMatchC = -1;
+
+  if (vArg.indexOf("W+") >= 0)
+    nWholeW = 1;
+  else if (vArg.indexOf("W-") >= 0)
+    nWholeW = 0;
+  else
+    nWholeW = -1;
+
+  if (vArg.indexOf("R+") >= 0)
+    nRegExp = 1;
+  else if (vArg.indexOf("R-") >= 0)
+    nRegExp = 0;
+  else
+    nRegExp = -1;
+
+  if (vArg.indexOf("E+") >= 0)
+    nEscSeq = 1;
+  else if (vArg.indexOf("E-") >= 0)
+    nEscSeq = 0;
+  else
+    nEscSeq = -1;
+
+  if (vArg.indexOf("D") >= 0)
+    nDirection = IDC_SEARCH_FORWARD;
+  else if (vArg.indexOf("U") >= 0)
+    nDirection = IDC_SEARCH_BACKWARD;
+  else if (vArg.indexOf("B") >= 0)
+    nDirection = IDC_SEARCH_BEGINNING;
+  else if (vArg.indexOf("S") >= 0)
+    nDirection = IDC_SEARCH_INSEL;
+  else if (vArg.indexOf("A") >= 0)
+    nDirection = IDC_SEARCH_ALLFILES;
+  else
+    nDirection = -1;
+
+  vArg = AkelPad.GetArgValue("RDB", "").toUpperCase();
 
   if ((vArg == "R") || (vArg == "A"))
     sDefBut = vArg;
   else
     sDefBut = "";
+
+  vArg = AkelPad.GetArgValue("GT", "").toUpperCase();
+
+  if (vArg.indexOf("L") >= 0)
+    nGoTo = IDC_GOTO_LINE;
+  else if (vArg.indexOf("O") >= 0)
+    nGoTo = IDC_GOTO_OFFSET;
+  else
+    nGoTo = -1;
 }
 
 function GetLinkText()
