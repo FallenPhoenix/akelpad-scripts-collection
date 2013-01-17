@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=12107#12107
 // http://infocatcher.ucoz.net/js/akelpad_scripts/measuresConverter.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/measuresConverter.js
 
-// (c) Infocatcher 2011-2012
-// version 0.2.5 - 2012-12-29
+// (c) Infocatcher 2011-2013
+// version 0.2.5.1 - 2013-01-17
 
 //===================
 // Convert measures (internal) and currency (used data from exchange-rates.org and Google API, but with caching)
@@ -2048,6 +2049,17 @@ function converterDialog(modal) {
 	var hWndGroupSortMeasures, hWndSortMeasures;
 	var hWndGroupCurrency, hWndGroupSortCurrency, hWndSortByName, hWndSortByCode, hWndUpdate;
 
+	var windowsVersion;
+	var dwVersion = oSys.Call("kernel32::GetVersion");
+	if(dwVersion) {
+		dwVersion &= 0x0ffff; // LOWORD()
+		windowsVersion = Number(
+			(dwVersion & 0xff) // LOBYTE()
+			+ "."
+			+ (dwVersion >> 8 & 0xff) // HIBYTE()
+		);
+	}
+
 	var typeX = 12;
 	var typeY = 8;
 	var typeW = 144;
@@ -2063,6 +2075,7 @@ function converterDialog(modal) {
 
 	var dlgMinH = 12 + (btnH + 12)*3 + 8 + optsH; // buttons + options
 	var dh = dy + 12;
+	var typesCount = 0;
 
 	var hGuiFont = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
 
@@ -2117,6 +2130,7 @@ function converterDialog(modal) {
 				for(var type in measures) {
 					if(!curType)
 						curType = type;
+					++typesCount;
 
 					var id = IDCTypes[type] = idcCntr++;
 					// Radiobutton type
@@ -2613,10 +2627,12 @@ function converterDialog(modal) {
 				for(var type in hWndTypes) {
 					var id = IDCTypes[type];
 					if(id == idc) {
+						if(curType == type)
+							break msgLoop;
 						if(curType && curItem && curItem2)
 							selectedItems[curType] = [curItem, curItem2];
 						//curType = type;
-						draw(type, hWnd);
+						draw(type, hWnd, true);
 						for(var type in hWndTypes)
 							checked(hWndTypes[type], IDCTypes[type] == idc);
 						convertGUI();
@@ -2645,7 +2661,7 @@ function converterDialog(modal) {
 		return 0;
 	}
 
-	function draw(type, hWndDialog) {
+	function draw(type, hWndDialog, typeChanged) {
 		setRedraw(hWndDialog, false);
 
 		for(var id in hWndItems)
@@ -2894,6 +2910,15 @@ function converterDialog(modal) {
 				AkelPad.MemCopy(lpRect + 4,  scale.y(12 + btnH*3 + 13), 3 /*DT_DWORD*/);
 				AkelPad.MemCopy(lpRect + 8,  scale.x(dlgW),             3 /*DT_DWORD*/);
 				AkelPad.MemCopy(lpRect + 12, scale.y(dlgH),             3 /*DT_DWORD*/);
+				oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
+			}
+
+			if(typeChanged && (!windowsVersion || windowsVersion < 6.1)) {
+				// Only for Windows XP? Not needed on Windows 7
+				AkelPad.MemCopy(lpRect,      scale.x(typeX + 8),     3 /*DT_DWORD*/);
+				AkelPad.MemCopy(lpRect + 4,  scale.y(typeY + 12),    3 /*DT_DWORD*/);
+				AkelPad.MemCopy(lpRect + 8,  scale.x(typeW - 16),    3 /*DT_DWORD*/);
+				AkelPad.MemCopy(lpRect + 12, scale.y(typesCount*dy), 3 /*DT_DWORD*/);
 				oSys.Call("user32::InvalidateRect", hWndDialog, lpRect, true);
 			}
 
