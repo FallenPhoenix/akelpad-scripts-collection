@@ -1,4 +1,4 @@
-// ScreenView.js - ver. 2012-12-17
+// ScreenView.js - ver. 2013-01-25
 //
 // Switch between different views of AkelPad screen.
 //
@@ -123,6 +123,7 @@ var IDTOOLBAR        = 2039;
 //0x50000001 - WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON
 //0x50000003 - WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX
 //0x50004000 - WS_VISIBLE|WS_CHILD|BS_NOTIFY
+//0x50004003 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTOCHECKBOX
 //0x50004006 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTO3STATE
 //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 //0x50800080 - WS_VISIBLE|WS_CHILD|WS_BORDER|ES_AUTOHSCROLL
@@ -149,7 +150,7 @@ aWnd[IDFONT          ]=["BUTTON",    0, 0x50004003, "Font",            0,       
 aWnd[IDFONTSET       ]=["BUTTON",    0, 0x50004000, "",                0,               "FontSet"];
 aWnd[IDTHEME         ]=["BUTTON",    0, 0x50004003, "ColorTheme",      IDTHEMESET,      "Theme"];
 aWnd[IDTHEMENAME     ]=["BUTTON",    0, 0x50004000, "",                IDTHEMESET,      "ThemeName"];
-aWnd[IDCODERTHEME    ]=["BUTTON",    0, 0x50004003, "ColorCoderTheme", IDCODERTHEMESET, "CoderTheme"];
+aWnd[IDCODERTHEME    ]=["BUTTON",    0, 0x50004006, "ColorCoderTheme", IDCODERTHEMESET, "CoderTheme"];
 aWnd[IDCODERTHEMENAME]=["BUTTON",    0, 0x50004000, "",                IDCODERTHEMESET, "CoderThemeName"];
 aWnd[IDCLIPBOARD     ]=["BUTTON",    0, 0x50004006, "Clipboard",       IDCLIPBOARDSET,  "Clipboard"];
 aWnd[IDCODEFOLD      ]=["BUTTON",    0, 0x50004006, "CodeFold",        IDCODEFOLDSET,   "CodeFold"];
@@ -698,7 +699,7 @@ function CheckViewObject()
   for (i in oPlug)
     oTemp[i] = 2;
 
-  oTemp.CoderTheme = 0;
+  oTemp.CoderTheme = 2;
 
   for (i = 0; i < aTB.length; ++i)
     oTemp[aTB[i] + "Rows"] = "";
@@ -766,7 +767,7 @@ function CheckButtons()
   oSys.Call("User32::SetWindowTextW", aWnd[IDTHEMENAME][HWND], oView[sName].ThemeName);
 
   AkelPad.SendMessage(aWnd[IDCODERTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].CoderTheme, 0);
-  oSys.Call("User32::EnableWindow", aWnd[IDCODERTHEMENAME][HWND], oView[sName].CoderTheme && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODERTHEME][HWND]));
+  oSys.Call("User32::EnableWindow", aWnd[IDCODERTHEMENAME][HWND], (oView[sName].CoderTheme == 1) && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODERTHEME][HWND]));
   oSys.Call("User32::SetWindowTextW", aWnd[IDCODERTHEMENAME][HWND], oView[sName].CoderThemeName);
 
   for (i = IDCLIPBOARD; i < IDTOOLBAR + aTB.length; ++i)
@@ -835,7 +836,7 @@ function GetButtonState(nID)
 
     oSys.Call("User32::EnableWindow", aWnd[IDFONTSET       ][HWND], oView[sName].Font);
     oSys.Call("User32::EnableWindow", aWnd[IDTHEMENAME     ][HWND], oView[sName].Theme);
-    oSys.Call("User32::EnableWindow", aWnd[IDCODERTHEMENAME][HWND], oView[sName].CoderTheme && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODERTHEME][HWND]));
+    oSys.Call("User32::EnableWindow", aWnd[IDCODERTHEMENAME][HWND], (oView[sName].CoderTheme == 1) && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODERTHEME][HWND]));
     oSys.Call("User32::EnableWindow", aWnd[IDCODELIST      ][HWND], oView[sName].CodeFold && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODEFOLD][HWND]));
     oSys.Call("User32::EnableWindow", aWnd[IDTABBARTOP     ][HWND], oView[sName].TabBar == 1);
   }
@@ -1248,12 +1249,20 @@ function ChangeTheme(sViewName)
 
 function ChangeCoderTheme(sViewName)
 {
-  if (oView[sViewName].CoderTheme && IsPluginExists(oPlug.CoderTheme.Name))
+  if ((oView[sViewName].CoderTheme < 2) && IsPluginExists(oPlug.CoderTheme.Name))
   {
-    if (! oPlug.CoderTheme.IsRunning())
-      oPlug.CoderTheme.Switch();
+    if (oView[sViewName].CoderTheme == 1)
+    {
+      if (! oPlug.CoderTheme.IsRunning())
+        oPlug.CoderTheme.Switch();
 
-    AkelPad.Call("Coder::Settings", 5, oView[sViewName].CoderThemeName);
+      AkelPad.Call("Coder::Settings", 5, oView[sViewName].CoderThemeName);
+    }
+    else
+    {
+      if (oPlug.CoderTheme.IsRunning())
+        oPlug.CoderTheme.Switch();
+    }
   }
 }
 
