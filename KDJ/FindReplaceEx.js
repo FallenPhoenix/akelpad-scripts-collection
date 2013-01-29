@@ -1,4 +1,4 @@
-// FindReplaceEx.js - ver. 2013-01-23
+// FindReplaceEx.js - ver. 2013-01-29
 //
 // "Find/Replace" dialog extended version
 //
@@ -41,18 +41,18 @@
 // bGoToDlg=false;
 //
 // In "Find/Replace" dialog:
-// F1 - Regular expressions collection
+// F1 - Find/Replace templates
 //
-// Regular expressions collection is saved in file FindReplaceEx_REC.tsv
+// Find/Replace templates is saved in file FindReplaceEx_templates.tsv
 //
-// Keys and mouse in "Regular expressions collection" dialog:
+// Keys and mouse in "Find/Replace templates" dialog:
 // Ins       - New
 // Ctrl+Ins,
-// Shift+Ins - Add form "Find/Replace" dialog
+// Shift+Ins - Add (from "Find/Replace" dialog)
 // F2, F4    - Edit
 // Del       - Delete
 // Enter,
-// DblClick  - OK, put to "Find/Replace" dialog
+// DblClick  - OK (put template in "Find/Replace" dialog)
 
 if (! (AkelPad.GetEditWnd() && AkelPad.Include("InputBox_function.js")))
   WScript.Quit();
@@ -84,17 +84,21 @@ var IDC_GOTO_OFFSET           = 3103;
 
 var IDNAMELV = 9900;
 var IDWHATS  = 9901;
-var IDWHATE  = 9902;
-var IDWITHS  = 9903;
+var IDWITHS  = 9902;
+var IDWHATE  = 9903;
 var IDWITHE  = 9904;
-var IDNEWB   = 9905;
-var IDADDB   = 9906;
-var IDEDITB  = 9907;
-var IDDELB   = 9908;
-var IDOKB    = 9909;
-var IDCLOSEB = 9910;
+var IDMATCHC = 9905;
+var IDWHOLEW = 9906;
+var IDREGEXP = 9907;
+var IDESCSEQ = 9908;
+var IDNEWB   = 9909;
+var IDADDB   = 9910;
+var IDEDITB  = 9911;
+var IDDELB   = 9912;
+var IDOKB    = 9913;
+var IDCLOSEB = 9914;
 
-var IDREGEXPL  = 9996;
+var IDFRTL     = 9996;
 var IDFINDL    = 9997;
 var IDREPLACEL = 9998;
 var IDGOTOL    = 9999;
@@ -113,16 +117,16 @@ var aLink        = [];
 var bContinue    = true;
 var bFirstTimeFR = true;
 var bFirstTimeGT = true;
-var bChangeREC   = false;
+var bChangeFRT   = false;
 var nDlgType;
-var nMatchC;
-var nWholeW;
+var nMatchCase;
+var nWholeWord;
 var nRegExp;
 var nEscSeq;
 var nDirection;
 var nGoTo;
-var sDefBut;
-var hWndREC;
+var sDefButton;
+var hWndFRT;
 var hWndDlg;
 var hWndWhatE;
 var hWndWithE;
@@ -135,9 +139,9 @@ var i;
 
 //ini settings
 var bGoToDlg = true;
-var nRECW    = 300;
-var nRECH    = 195;
-var nRECSel  = 0;
+var nFRTW    = 340;
+var nFRTH    = 250;
+var nFRTSel  = 0;
 var nDlgX;
 var nDlgY;
 
@@ -149,13 +153,18 @@ AkelPad.MemCopy(lpLVITEM + 24, nBufSize, DT_DWORD);
 
 //0x50000000 - WS_VISIBLE|WS_CHILD
 //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
-//0x50800800 - WS_VISIBLE|WS_CHILD|WS_BORDER|ES_READONLY
+//0x50010006 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTO3STATE
+//0x50810800 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_READONLY
 //0x5081801D - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|LVS_NOSORTHEADER|LVS_SORTASCENDING|LVS_SHOWSELALWAYS|LVS_SINGLESEL|LVS_REPORT
 aWnd[IDNAMELV] = {Class: "SysListView32", Style: 0x5081801D, Text: ""};
 aWnd[IDWHATS]  = {Class: "STATIC",        Style: 0x50000000, Text: sTxtFindWhat + ":"};
-aWnd[IDWHATE]  = {Class: "AkelEditW",     Style: 0x50800800, Text: ""};
 aWnd[IDWITHS]  = {Class: "STATIC",        Style: 0x50000000, Text: sTxtReplaceWith + ":"};
-aWnd[IDWITHE]  = {Class: "AkelEditW",     Style: 0x50800800, Text: ""};
+aWnd[IDWHATE]  = {Class: "AkelEditW",     Style: 0x50810800, Text: ""};
+aWnd[IDWITHE]  = {Class: "AkelEditW",     Style: 0x50810800, Text: ""};
+aWnd[IDMATCHC] = {Class: "BUTTON",        Style: 0x50010006, Text: sTxtMatchCase};
+aWnd[IDWHOLEW] = {Class: "BUTTON",        Style: 0x50010006, Text: sTxtWholeWord};
+aWnd[IDREGEXP] = {Class: "BUTTON",        Style: 0x50010006, Text: sTxtRegExp};
+aWnd[IDESCSEQ] = {Class: "BUTTON",        Style: 0x50010006, Text: sTxtEscSeq};
 aWnd[IDNEWB]   = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtNew};
 aWnd[IDADDB]   = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtAdd};
 aWnd[IDEDITB]  = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtEdit};
@@ -163,7 +172,7 @@ aWnd[IDDELB]   = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtDelete};
 aWnd[IDOKB]    = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtOK};
 aWnd[IDCLOSEB] = {Class: "BUTTON",        Style: 0x50010000, Text: sTxtClose};
 
-aLink[IDREGEXPL]  = {Text: "»"};
+aLink[IDFRTL]     = {Text: "»"};
 aLink[IDFINDL]    = {Text: "(Ctrl+F)", DlgID: 2004 /*IDD_FIND*/};
 aLink[IDREPLACEL] = {Text: "(Ctrl+R)", DlgID: 2005 /*IDD_REPLACE*/};
 aLink[IDGOTOL]    = {Text: "(Ctrl+G)", DlgID: 2006 /*IDD_GOTO*/};
@@ -202,61 +211,24 @@ while (bContinue)
     if (bFirstTimeGT)
     {
       bFirstTimeGT = false;
-
-      if (nGoTo >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_LINE),   0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_OFFSET), 0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo),           0x00F1 /*BM_SETCHECK*/, 1, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nGoTo, oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo));
-      }
+      SetParamsGT(nGoTo);
     }
 
     if (bGoToDlg)
-      ResizeDialog();
+      ResizeDialogGT();
   }
   else
   {
+    if (bFirstTimeFR)
+    {
+      bFirstTimeFR = false;
+      SetParamsFR(nMatchCase, nWholeWord, nRegExp, nEscSeq, nDirection);
+    }
+
     if (typeof sWhatText == "string")
     {
       oSys.Call("User32::SetWindowTextW", hWndWhatE, sWhatText);
       AkelPad.SendMessage(hWndWhatE, 0x00B1 /*EM_SETSEL*/, 0, -1);
-    }
-
-    if (bFirstTimeFR)
-    {
-      bFirstTimeFR = false;
-
-      if (nMatchC >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE), 0x00F1 /*BM_SETCHECK*/, nMatchC, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_MATCHCASE, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE));
-      }
-      if (nWholeW >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD), 0x00F1 /*BM_SETCHECK*/, nWholeW, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_WHOLEWORD, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD));
-      }
-      if (nRegExp >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP), 0x00F1 /*BM_SETCHECK*/, nRegExp, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_REGEXP, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP));
-      }
-      if (nEscSeq >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ), 0x00F1 /*BM_SETCHECK*/, nEscSeq, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_ESCAPESEQ, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ));
-      }
-      if (nDirection >= 0)
-      {
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BACKWARD),  0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_FORWARD),   0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BEGINNING), 0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_INSEL),     0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ALLFILES),  0x00F1 /*BM_SETCHECK*/, 0, 0);
-        AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nDirection),           0x00F1 /*BM_SETCHECK*/, 1, 0);
-        AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nDirection, oSys.Call("User32::GetDlgItem", hWndDlg, nDirection));
-      }
     }
 
     if (nDlgType == MLT_REPLACE)
@@ -264,15 +236,15 @@ while (bContinue)
       if (typeof sWithText == "string")
         oSys.Call("User32::SetWindowTextW", hWndWithE, sWithText);
 
-      if (sDefBut)
-        AkelPad.SendMessage(hWndDlg, 0x0401 /*DM_SETDEFID*/, (sDefBut == "R") ? IDC_SEARCH_REPLACE_BUTTON : IDC_SEARCH_ALL_BUTTON, 0);
+      if (sDefButton)
+        AkelPad.SendMessage(hWndDlg, 0x0401 /*DM_SETDEFID*/, (sDefButton == "R") ? IDC_SEARCH_REPLACE_BUTTON : IDC_SEARCH_ALL_BUTTON, 0);
     }
   }
 
   GetLinkWidth();
   GetLinkPos();
 
-  for (i = IDREGEXPL; i <= IDGOTOL; ++i)
+  for (i = IDFRTL; i <= IDGOTOL; ++i)
   {
     if (aLink[i].Visible)
       AkelPad.SendMessage(
@@ -311,10 +283,10 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   {
     if (AkelPad.MemRead(lParam + 8, DT_DWORD) == -2 /*NM_CLICK*/)
     {
-      if (wParam == IDREGEXPL)
+      if (wParam == IDFRTL)
       {
         oSys.Call("User32::SetFocus", hWndWhatE);
-        RegExpCollection();
+        FRTemplates();
       }
       else if (wParam == IDFINDL)
         SwitchDialog(MLT_FIND);
@@ -340,14 +312,14 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       else
       {
         if ((wParam == 0x70 /*VK_F1*/) && (nDlgType != MLT_GOTO))
-          RegExpCollection();
+          FRTemplates();
       }
     }
   }
   else if (uMsg == 2) //WM_DESTROY
   {
     GetDialogPos();
-    GetEditTextFR();
+    GetWhatWithFR();
     oSys.Call("User32::PostQuitMessage", 0); //Exit message loop
   }
 
@@ -378,32 +350,32 @@ function GetArguments()
   vArg = AkelPad.GetArgValue("FR", "").toUpperCase();
 
   if (vArg.indexOf("M+") >= 0)
-    nMatchC = 1;
+    nMatchCase = 1;
   else if (vArg.indexOf("M-") >= 0)
-    nMatchC = 0;
+    nMatchCase = 0;
   else
-    nMatchC = -1;
+    nMatchCase = 2;
 
   if (vArg.indexOf("W+") >= 0)
-    nWholeW = 1;
+    nWholeWord = 1;
   else if (vArg.indexOf("W-") >= 0)
-    nWholeW = 0;
+    nWholeWord = 0;
   else
-    nWholeW = -1;
+    nWholeWord = 2;
 
   if (vArg.indexOf("R+") >= 0)
     nRegExp = 1;
   else if (vArg.indexOf("R-") >= 0)
     nRegExp = 0;
   else
-    nRegExp = -1;
+    nRegExp = 2;
 
   if (vArg.indexOf("E+") >= 0)
     nEscSeq = 1;
   else if (vArg.indexOf("E-") >= 0)
     nEscSeq = 0;
   else
-    nEscSeq = -1;
+    nEscSeq = 2;
 
   if (vArg.indexOf("D") >= 0)
     nDirection = IDC_SEARCH_FORWARD;
@@ -416,14 +388,14 @@ function GetArguments()
   else if (vArg.indexOf("A") >= 0)
     nDirection = IDC_SEARCH_ALLFILES;
   else
-    nDirection = -1;
+    nDirection = 2;
 
   vArg = AkelPad.GetArgValue("RDB", "").toUpperCase();
 
   if ((vArg == "R") || (vArg == "A"))
-    sDefBut = vArg;
+    sDefButton = vArg;
   else
-    sDefBut = "";
+    sDefButton = "";
 
   vArg = AkelPad.GetArgValue("GT", "").toUpperCase();
 
@@ -432,7 +404,7 @@ function GetArguments()
   else if (vArg.indexOf("O") >= 0)
     nGoTo = IDC_GOTO_OFFSET;
   else
-    nGoTo = -1;
+    nGoTo = 2;
 }
 
 function GetLinkText()
@@ -490,7 +462,7 @@ function GetLinkWidth()
   oSys.Call("Gdi32::SelectObject", hDC, hGuiFont);
   oSys.Call("Gdi32::SetMapMode", hDC, 1 /*MM_TEXT*/);
 
-  for (i = IDREGEXPL; i <= IDGOTOL; ++i)
+  for (i = IDFRTL; i <= IDGOTOL; ++i)
   {
     oSys.Call("Gdi32::GetTextExtentPoint32W", hDC, aLink[i].Text, aLink[i].Text.length, lpBuffer);
     aLink[i].W = AkelPad.MemRead(lpBuffer, DT_DWORD);
@@ -511,24 +483,24 @@ function GetLinkPos()
 
   if (nDlgType == MLT_FIND)
   {
-    aLink[IDREGEXPL].X  = nCancelX - 11;
-    aLink[IDREGEXPL].Y  = 17;
+    aLink[IDFRTL].X     = nCancelX - 11;
+    aLink[IDFRTL].Y     = 17;
     aLink[IDREPLACEL].X = aLink[IDGOTOL].X = nCancelX;
     aLink[IDREPLACEL].Y = AkelPad.MemRead(lpBuffer + 12, DT_DWORD) - 23;
     aLink[IDGOTOL].Y    = aLink[IDREPLACEL].Y - 20;
-    aLink[IDREGEXPL].Visible  = true;
+    aLink[IDFRTL].Visible     = true;
     aLink[IDFINDL].Visible    = false;
     aLink[IDREPLACEL].Visible = true;
     aLink[IDGOTOL].Visible    = bGoToDlg;
   }
   else if (nDlgType == MLT_REPLACE)
   {
-    aLink[IDREGEXPL].X  = nCancelX - 11;
-    aLink[IDREGEXPL].Y  = 28;
+    aLink[IDFRTL].X  = nCancelX - 11;
+    aLink[IDFRTL].Y  = 28;
     aLink[IDFINDL].X = aLink[IDGOTOL].X = nCancelX;
     aLink[IDFINDL].Y = AkelPad.MemRead(lpBuffer + 12, DT_DWORD) - 23;
     aLink[IDGOTOL].Y = aLink[IDFINDL].Y - 20;
-    aLink[IDREGEXPL].Visible  = true;
+    aLink[IDFRTL].Visible     = true;
     aLink[IDFINDL].Visible    = true;
     aLink[IDREPLACEL].Visible = false;
     aLink[IDGOTOL].Visible    = bGoToDlg;
@@ -538,7 +510,7 @@ function GetLinkPos()
     aLink[IDFINDL].X    = 10;
     aLink[IDFINDL].Y    = aLink[IDREPLACEL].Y = AkelPad.MemRead(lpBuffer + 12, DT_DWORD) - 23;
     aLink[IDREPLACEL].X = AkelPad.MemRead(lpBuffer + 8, DT_DWORD) - aLink[IDREPLACEL].W - 10;
-    aLink[IDREGEXPL].Visible  = false;
+    aLink[IDFRTL].Visible     = false;
     aLink[IDFINDL].Visible    = bGoToDlg;
     aLink[IDREPLACEL].Visible = bGoToDlg;
     aLink[IDGOTOL].Visible    = false;
@@ -591,7 +563,7 @@ function SwitchDialog(nMLT)
   AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDCANCEL, hWndCancel);
 }
 
-function ResizeDialog()
+function ResizeDialogGT()
 {
   var nW, nH;
 
@@ -602,7 +574,52 @@ function ResizeDialog()
   oSys.Call("User32::SetWindowPos", hWndDlg, 0, 0, 0, nW, nH, 0x16 /*SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE*/);
 }
 
-function GetEditTextFR()
+function SetParamsFR(nMatchCase, nWholeWord, nRegExp, nEscSeq, nDirection)
+{
+  if (nMatchCase != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE), 0x00F1 /*BM_SETCHECK*/, nMatchCase, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_MATCHCASE, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE));
+  }
+  if (nWholeWord != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD), 0x00F1 /*BM_SETCHECK*/, nWholeWord, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_WHOLEWORD, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD));
+  }
+  if (nRegExp != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP), 0x00F1 /*BM_SETCHECK*/, nRegExp, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_REGEXP, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP));
+  }
+  if (nEscSeq != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ), 0x00F1 /*BM_SETCHECK*/, nEscSeq, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, IDC_SEARCH_ESCAPESEQ, oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ));
+  }
+  if (nDirection != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BACKWARD),  0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_FORWARD),   0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_BEGINNING), 0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_INSEL),     0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ALLFILES),  0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nDirection),           0x00F1 /*BM_SETCHECK*/, 1, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nDirection, oSys.Call("User32::GetDlgItem", hWndDlg, nDirection));
+  }
+}
+
+function SetParamsGT(nGoTo)
+{
+  if (nGoTo != 2)
+  {
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_LINE),   0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_GOTO_OFFSET), 0x00F1 /*BM_SETCHECK*/, 0, 0);
+    AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo),           0x00F1 /*BM_SETCHECK*/, 1, 0);
+    AkelPad.SendMessage(hWndDlg, 273 /*WM_COMMAND*/, nGoTo, oSys.Call("User32::GetDlgItem", hWndDlg, nGoTo));
+  }
+}
+
+function GetWhatWithFR()
 {
   if (hWndWhatE)
   {
@@ -617,56 +634,81 @@ function GetEditTextFR()
   }
 }
 
-function SetEditTextFR()
+function SetFRTtoFR()
 {
-  var nSel = GetCurSelLV();
+  var nItem = GetCurSelLV();
+  var sParams;
+  var nMatchCase;
+  var nWholeWord;
+  var nRegExp;
+  var nEscSeq;
 
-  if (nSel > -1)
+  if (nItem > -1)
   {
-    oSys.Call("User32::SetWindowTextW", hWndWhatE, GetTextLV(nSel, 1));
+    oSys.Call("User32::SetWindowTextW", hWndWhatE, GetTextLV(nItem, 1));
 
     if (hWndWithE)
-      oSys.Call("User32::SetWindowTextW", hWndWithE, GetTextLV(nSel, 2));
+      oSys.Call("User32::SetWindowTextW", hWndWithE, GetTextLV(nItem, 2));
+
+    sParams = GetTextLV(nItem, 3);
+
+    nMatchCase = parseInt(sParams.substr(0, 1));
+    nWholeWord = parseInt(sParams.substr(1, 1));
+    nRegExp    = parseInt(sParams.substr(2, 1));
+    nEscSeq    = parseInt(sParams.substr(3, 1));
+
+    if (isNaN(nMatchCase))
+      nMatchCase = 2;
+    if (isNaN(nWholeWord))
+      nWholeWord = 2;
+    if (isNaN(nRegExp))
+      nRegExp = 2;
+    if (isNaN(nEscSeq))
+      nEscSeq = 2;
+
+    SetParamsFR(nMatchCase, nWholeWord, nRegExp, nEscSeq, 2);
   }
+
+  oSys.Call("User32::PostMessageW", hWndFRT, 16 /*WM_CLOSE*/, 0, 0);
 }
 
-function RegExpCollection()
+function FRTemplates()
 {
-  var nDeskW, nDeskH, nRECX, nRECY;
+  var nDeskW, nDeskH, nFRTX, nFRTY;
 
   oSys.Call("User32::GetWindowRect", oSys.Call("user32::GetDesktopWindow"), lpBuffer);
   nDeskW = AkelPad.MemRead(lpBuffer +  8, DT_DWORD);
   nDeskH = AkelPad.MemRead(lpBuffer + 12, DT_DWORD);
 
   oSys.Call("User32::GetWindowRect", hWndWhatE, lpBuffer);
-  nRECX = AkelPad.MemRead(lpBuffer + 8, DT_DWORD);
-  nRECY = AkelPad.MemRead(lpBuffer + 4, DT_DWORD) - 10;
+  nFRTX = AkelPad.MemRead(lpBuffer + 8, DT_DWORD);
+  nFRTY = AkelPad.MemRead(lpBuffer + 4, DT_DWORD) - 10;
 
-  if (nRECX + nRECW > nDeskW)
-    nRECX = AkelPad.MemRead(lpBuffer, DT_DWORD) - nRECW;
-  if (nRECX < 0)
-    nRECX = 0;
-  if (nRECY + nRECH > nDeskH)
-    nRECY = nDeskH - nRECH;
+  if (nFRTX + nFRTW > nDeskW)
+    nFRTX = AkelPad.MemRead(lpBuffer, DT_DWORD) - nFRTW;
+  if (nFRTX < 0)
+    nFRTX = 0;
+  if (nFRTY + nFRTH > nDeskH)
+    nFRTY = nDeskH - nFRTH;
 
   oSys.Call("User32::EnableWindow", hWndDlg, 0);
 
-  hWndREC = oSys.Call("user32::CreateWindowExW",
+  hWndFRT = oSys.Call("user32::CreateWindowExW",
                       0,            //dwExStyle
                       sClassName,   //lpClassName
-                      sTxtREC,      //lpWindowName
+                      sTxtFRTempl,  //lpWindowName
                       0x90CC0000,   //dwStyle=WS_POPUP|WS_VISIBLE|WS_CAPTION|WS_SYSMENU|WS_SIZEBOX
-                      nRECX,        //x
-                      nRECY,        //y
-                      nRECW,        //nWidth
-                      nRECH,        //nHeight
+                      nFRTX,        //x
+                      nFRTY,        //y
+                      nFRTW,        //nWidth
+                      nFRTH,        //nHeight
                       hWndDlg,      //hWndParent
                       0,            //ID
                       hInstanceDLL, //hInstance
-                      RECCallback); //Script function callback. To use it class must be registered by WindowRegisterClass.
+                      FRTCallback); //Script function callback. To use it class must be registered by WindowRegisterClass.
 }
 
-function RECCallback(hWnd, uMsg, wParam, lParam)
+function FRTCallback(hWnd, uMsg, wParam, lParam)
 {
   if (uMsg == 1) //WM_CREATE
   {
@@ -693,7 +735,7 @@ function RECCallback(hWnd, uMsg, wParam, lParam)
 
     InsertColumnsLV();
     FillLV();
-    CheckButtons();
+    RefreshViewFRT();
 
     hWndFocus = aWnd[IDNAMELV].Handle;
   }
@@ -706,14 +748,14 @@ function RECCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 36) //WM_GETMINMAXINFO
   {
-    AkelPad.MemCopy(lParam + 24, 300, DT_DWORD); //ptMinTrackSize_x
-    AkelPad.MemCopy(lParam + 28, 195, DT_DWORD); //ptMinTrackSize_y
-    AkelPad.MemCopy(lParam + 32, 800, DT_DWORD); //ptMaxTrackSize_x
-    AkelPad.MemCopy(lParam + 36, 600, DT_DWORD); //ptMaxTrackSize_y
+    AkelPad.MemCopy(lParam + 24,  340, DT_DWORD); //ptMinTrackSize_x
+    AkelPad.MemCopy(lParam + 28,  250, DT_DWORD); //ptMinTrackSize_y
+    AkelPad.MemCopy(lParam + 32, 1200, DT_DWORD); //ptMaxTrackSize_x
+    AkelPad.MemCopy(lParam + 36, 1000, DT_DWORD); //ptMaxTrackSize_y
   }
 
   else if (uMsg == 5) //WM_SIZE
-    ResizeREC(hWnd);
+    ResizeFRT(hWnd);
 
   else if (uMsg == 15) //WM_PAINT
     PaintSizeGrip(hWnd);
@@ -723,30 +765,26 @@ function RECCallback(hWnd, uMsg, wParam, lParam)
     if (wParam == 0x2D /*VK_INSERT*/)
     {
       if (Ctrl() || Shift())
-        EditREC(1);
+        EditFRT(1);
       else
-        EditREC(0);
+        EditFRT(0);
     }
     if ((wParam == 0x71 /*VK_F2*/) || (wParam == 0x73 /*VK_F4*/))
     {
       if ((! Ctrl()) && (! Shift()))
-        EditREC(2);
+        EditFRT(2);
     }
     else if (wParam == 0x2E /*VK_DELETE*/)
     {
       if ((! Ctrl()) && (! Shift()))
-        DeleteREC();
+        DeleteFRT();
     }
     else if (wParam == 0x0D /*VK_RETURN*/)
     {
       if ((! Ctrl()) && (! Shift()))
       {
-        hWndFocus = oSys.Call("User32::GetFocus");
-        if ((hWndFocus == aWnd[IDNAMELV].Handle) || (hWndFocus == aWnd[IDWHATE].Handle) || (hWndFocus == aWnd[IDWITHE].Handle))
-        {
-          SetEditTextFR();
-          oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
-        }
+        if (oSys.Call("User32::GetDlgCtrlID", oSys.Call("User32::GetFocus")) < IDNEWB)
+          SetFRTtoFR();
       }
     }
     else if (wParam == 0x1B /*VK_ESCAPE*/)
@@ -759,16 +797,13 @@ function RECCallback(hWnd, uMsg, wParam, lParam)
     {
       case -101 : //LVN_ITEMCHANGED
         if (AkelPad.MemRead(lParam + 20 /*NMLISTVIEW.uNewState*/, DT_DWORD) & 0x2 /*LVIS_SELECTED*/)
-          ViewWhatWith(AkelPad.MemRead(lParam + 12 /*NMLISTVIEW.iItem*/, DT_DWORD));
+          RefreshViewFRT();
         break;
       case -3 : //NM_DBLCLK
         if (AkelPad.MemRead(lParam + 12 /*NMITEMACTIVATE.iItem*/, DT_DWORD) == -1)
           SetCurSelLV(GetCurFocLV());
         else
-        {
-          SetEditTextFR();
-          oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
-        }
+          SetFRTtoFR();
         break;
 
       case -2 : //NM_CLICK
@@ -782,36 +817,28 @@ function RECCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 273) //WM_COMMAND
   {
-    switch (wParam & 0xFFFF)
-    {
-      case IDNEWB :
-        EditREC(0);
-        break;
-      case IDADDB :
-        EditREC(1);
-        break;
-      case IDEDITB :
-        EditREC(2);
-        break;
-      case IDDELB :
-        DeleteREC();
-        break;
-      case IDOKB :
-        SetEditTextFR();
-      case IDCLOSEB :
-        oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
-        break;
-    }
+    var nLowParam = wParam & 0xFFFF;
+
+    if ((nLowParam >= IDMATCHC) && (nLowParam <= IDESCSEQ))
+      CheckButtonsFRT(nLowParam);
+    else if ((nLowParam >= IDNEWB) && (nLowParam <= IDEDITB))
+      EditFRT(nLowParam - IDNEWB);
+    else if (nLowParam == IDDELB)
+      DeleteFRT();
+    else if (nLowParam == IDOKB)
+      SetFRTtoFR();
+    else if (nLowParam == IDCLOSEB)
+      oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
   }
 
   else if (uMsg == 16) //WM_CLOSE
   {
     oSys.Call("User32::GetWindowRect", hWnd, lpBuffer);
-    nRECW   = AkelPad.MemRead(lpBuffer +  8, DT_DWORD) - AkelPad.MemRead(lpBuffer,      DT_DWORD);
-    nRECH   = AkelPad.MemRead(lpBuffer + 12, DT_DWORD) - AkelPad.MemRead(lpBuffer +  4, DT_DWORD);
-    nRECSel = GetCurSelLV();
+    nFRTW   = AkelPad.MemRead(lpBuffer +  8, DT_DWORD) - AkelPad.MemRead(lpBuffer,      DT_DWORD);
+    nFRTH   = AkelPad.MemRead(lpBuffer + 12, DT_DWORD) - AkelPad.MemRead(lpBuffer +  4, DT_DWORD);
+    nFRTSel = GetCurSelLV();
 
-    WriteREC();
+    WriteFRT();
     oSys.Call("User32::EnableWindow", hWndDlg, 1);
     oSys.Call("User32::DestroyWindow", hWnd);
   }
@@ -845,53 +872,64 @@ function PaintSizeGrip(hWnd)
   AkelPad.MemFree(lpPaint);
 }
 
-function ResizeREC(hWnd)
+function ResizeFRT(hWnd)
 {
   var nSBW = 0;
-  var nW, nH, nBW, nEH;
+  var nW, nH, nEW, nEH, nBW;
   var i;
 
   oSys.Call("User32::GetClientRect", hWnd, lpBuffer);
   nW  = AkelPad.MemRead(lpBuffer +  8, DT_DWORD);
   nH  = AkelPad.MemRead(lpBuffer + 12, DT_DWORD);
+  nEW = Math.round((nW - 30) / 2);
+  nEH = Math.round((nH - 160 - 21) / 2);
   nBW = (nW - (IDCLOSEB - IDNEWB) * 5 - 2 * 10) / (IDCLOSEB - IDNEWB + 1);
-  nEH = Math.round((nH - 80 - 21) / 2);
 
   oSys.Call("User32::SetWindowPos",
             aWnd[IDNAMELV].Handle, 0,
             10,
             10,
-            nW - 30 - 170,
+            nEW,
             nH - 30 - 21,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDWHATS].Handle, 0,
-            nW - 10 - 170,
-            15,
-            170,
+            nW - nEW - 10,
+            10,
+            nEW,
+            13,
+            0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
+  oSys.Call("User32::SetWindowPos",
+            aWnd[IDWITHS].Handle, 0,
+            nW - nEW - 10,
+            nH - 125 - 21 - nEH,
+            nEW,
             13,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDWHATE].Handle, 0,
-            nW - 10 - 170,
-            30,
-            170,
+            nW - nEW - 10,
+            25,
+            nEW,
             nEH,
-            0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
-  oSys.Call("User32::SetWindowPos",
-            aWnd[IDWITHS].Handle, 0,
-            nW - 10 - 170,
-            nH - 35 - 21 - nEH,
-            170,
-            13,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
   oSys.Call("User32::SetWindowPos",
             aWnd[IDWITHE].Handle, 0,
-            nW - 10 - 170,
-            nH - 20 - 21 - nEH,
-            170,
+            nW - nEW - 10,
+            nH - 110 - 21 - nEH,
+            nEW,
             nEH,
             0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
+  for (i = IDMATCHC; i <= IDESCSEQ; ++i)
+  {
+    oSys.Call("User32::SetWindowPos",
+              aWnd[i].Handle, 0,
+              nW - nEW - 10,
+              nH - 100 - 21 + 20 * (i - IDMATCHC),
+              nEW,
+              13,
+              0x14 /*SWP_NOACTIVATE|SWP_NOZORDER*/);
+  }
   for (i = IDNEWB; i <= IDCLOSEB; ++i)
   {
     oSys.Call("User32::SetWindowPos",
@@ -906,25 +944,58 @@ function ResizeREC(hWnd)
   if (GetItemCountLV() > AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x1028 /*LVM_GETCOUNTPERPAGE*/, 0, 0))
     nSBW = oSys.Call("User32::GetSystemMetrics",  2 /*SM_CXVSCROLL*/);
 
-  AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x101E /*LVM_SETCOLUMNWIDTH*/, 0, nW - 30 - 170 - nSBW);
+  AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x101E /*LVM_SETCOLUMNWIDTH*/, 0, nEW - nSBW);
   AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x1013 /*LVM_ENSUREVISIBLE*/, GetCurSelLV(), false);
 
-  AkelPad.SendMessage(aWnd[IDWHATE].Handle, 0x0CAA /*AEM_SETWORDWRAP*/, 0x102 /*AEWW_LIMITPIXEL|AEWW_SYMBOL*/, 170);
-  AkelPad.SendMessage(aWnd[IDWITHE].Handle, 0x0CAA /*AEM_SETWORDWRAP*/, 0x102 /*AEWW_LIMITPIXEL|AEWW_SYMBOL*/, 170);
+  AkelPad.SendMessage(aWnd[IDWHATE].Handle, 0x0CAA /*AEM_SETWORDWRAP*/, 0x102 /*AEWW_LIMITPIXEL|AEWW_SYMBOL*/, nEW);
+  AkelPad.SendMessage(aWnd[IDWITHE].Handle, 0x0CAA /*AEM_SETWORDWRAP*/, 0x102 /*AEWW_LIMITPIXEL|AEWW_SYMBOL*/, nEW);
 }
 
-function ViewWhatWith(nItem)
+function RefreshViewFRT()
 {
-  oSys.Call("User32::SetWindowTextW", aWnd[IDWHATE].Handle, GetTextLV(nItem, 1));
-  oSys.Call("User32::SetWindowTextW", aWnd[IDWITHE].Handle, GetTextLV(nItem, 2));
+  var nItem   = GetCurSelLV();
+  var bIsItem = (nItem > -1);
+  var sParams = bIsItem ? GetTextLV(nItem, 3) : "";
+  var nCheck;
+  var i;
+
+  for (i = IDWHATE; i <= IDWITHE; ++i)
+  {
+    oSys.Call("User32::SetWindowTextW", aWnd[i].Handle, bIsItem ? GetTextLV(nItem, i - IDWHATE + 1) : "");
+    oSys.Call("User32::EnableWindow", aWnd[i].Handle, bIsItem);
+  }
+
+  for (i = IDMATCHC; i <= IDESCSEQ; ++i)
+  {
+    nCheck = parseInt(sParams.substr(i - IDMATCHC, 1));
+
+    if (isNaN(nCheck))
+      nCheck = 2;
+
+    AkelPad.SendMessage(aWnd[i].Handle, 0x00F1 /*BM_SETCHECK*/, nCheck, 0);
+    oSys.Call("User32::EnableWindow", aWnd[i].Handle, bIsItem);
+  }
+
+  for (i = IDEDITB; i <= IDDELB; ++i)
+    oSys.Call("User32::EnableWindow", aWnd[i].Handle, bIsItem);
 }
 
-function CheckButtons()
+function CheckButtonsFRT(nID)
 {
-  var bEnable = (GetCurSelLV() > -1) ? true : false;
+  var sParams = "";
+  var i;
 
-  oSys.Call("User32::EnableWindow", aWnd[IDEDITB].Handle, bEnable);
-  oSys.Call("User32::EnableWindow", aWnd[IDDELB].Handle,  bEnable);
+  if ((nID == IDREGEXP) && (AkelPad.SendMessage(aWnd[IDREGEXP].Handle, 0x00F0 /*BM_GETCHECK*/, 0, 0) == 1))
+    AkelPad.SendMessage(aWnd[IDESCSEQ].Handle, 0x00F1 /*BM_SETCHECK*/, 0, 0);
+  else if ((nID == IDESCSEQ) && (AkelPad.SendMessage(aWnd[IDESCSEQ].Handle, 0x00F0 /*BM_GETCHECK*/, 0, 0) == 1))
+    AkelPad.SendMessage(aWnd[IDREGEXP].Handle, 0x00F1 /*BM_SETCHECK*/, 0, 0);
+
+  for (i = IDMATCHC; i <= IDESCSEQ; ++i)
+    sParams += AkelPad.SendMessage(aWnd[i].Handle, 0x00F0 /*BM_GETCHECK*/, 0, 0).toString();
+
+  SetTextLV(GetCurSelLV(), 3, sParams);
+
+  bChangeFRT = true;
 }
 
 function GetItemCountLV()
@@ -957,6 +1028,13 @@ function GetTextLV(nItem, nSubItem)
   return AkelPad.MemRead(lpBuffer, DT_UNICODE);
 }
 
+function SetTextLV(nItem, nSubItem, sText)
+{
+  AkelPad.MemCopy(lpLVITEM + 8, nSubItem, DT_DWORD);
+  AkelPad.MemCopy(lpBuffer, sText, DT_UNICODE);
+  AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x1074 /*LVM_SETITEMTEXTW*/, nItem, lpLVITEM);
+}
+
 function InsertItemLV(aField)
 {
   var nItem;
@@ -966,7 +1044,7 @@ function InsertItemLV(aField)
   AkelPad.MemCopy(lpBuffer, aField[0], DT_UNICODE);
   nItem = AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x104D /*LVM_INSERTITEMW*/, 0, lpLVITEM);
 
-  for (i = 1; i < 3; ++i)
+  for (i = 1; i < 4; ++i)
   {
     AkelPad.MemCopy(lpLVITEM + 8, i, DT_DWORD);
     AkelPad.MemCopy(lpBuffer, aField[i], DT_UNICODE);
@@ -984,13 +1062,13 @@ function DeleteItemLV(nItem)
 function InsertColumnsLV()
 {
   var lpLVCOLUMN = AkelPad.MemAlloc(40) //sizeof(LVCOLUMN)
-  var aText      = [sTxtName, sTxtFindWhat, sTxtReplaceWith];
+  var aText      = [sTxtName, sTxtFindWhat, sTxtReplaceWith, ""];
   var i;
 
   AkelPad.MemCopy(lpLVCOLUMN, 6 /*mask=LVCF_WIDTH|LVCF_TEXT*/, DT_DWORD);
   AkelPad.MemCopy(lpLVCOLUMN + 12, lpBuffer, DT_DWORD);
 
-  for (i = 0; i < 3; ++i)
+  for (i = 0; i < 4; ++i)
   {
     AkelPad.MemCopy(lpBuffer, aText[i], DT_UNICODE);
     AkelPad.SendMessage(aWnd[IDNAMELV].Handle, 0x1061 /*LVM_INSERTCOLUMNW*/, i, lpLVCOLUMN);
@@ -1002,17 +1080,17 @@ function InsertColumnsLV()
 
 function FillLV()
 {
-  var sRECName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_REC.tsv";
+  var sFRTName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_templates.tsv";
   var aRecord;
   var aField;
   var i;
 
-  if (oFSO.FileExists(sRECName))
-    aRecord = AkelPad.ReadFile(sRECName).split("\r\n");
+  if (oFSO.FileExists(sFRTName))
+    aRecord = AkelPad.ReadFile(sFRTName).split("\r\n");
   else
   {
-    aRecord    = ["Delete empty lines\t^[ \\t]*$\\n*\t"];
-    bChangeREC = true;
+    aRecord    = ["Empty lines\t^[ \\t]*$\\n*\t\t2210"];
+    bChangeFRT = true;
   }
 
   for (i = 0; i < aRecord.length; ++i)
@@ -1021,52 +1099,60 @@ function FillLV()
 
     if (aField[0])
     {
-      while (aField.length < 3)
+      while (aField.length < 4)
         aField[aField.length] = "";
 
       InsertItemLV(aField);
     }
   }
 
-  if (nRECSel > GetItemCountLV() - 1)
-    nRECSel = GetItemCountLV() - 1;
-  if (nRECSel < 0)
-    nRECSel = 0;
+  if (nFRTSel > GetItemCountLV() - 1)
+    nFRTSel = GetItemCountLV() - 1;
+  if (nFRTSel < 0)
+    nFRTSel = 0;
 
-  SetCurSelLV(nRECSel);
+  SetCurSelLV(nFRTSel);
 }
 
-function WriteREC()
+function WriteFRT()
 {
-  if (bChangeREC)
+  if (bChangeFRT)
   {
-    var oFile  = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_REC.tsv", 2, true, -1);
+    var oFile  = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_templates.tsv", 2, true, -1);
     var nItems = GetItemCountLV();
     var sText  = "";
     var i;
 
-    bChangeREC = false;
+    bChangeFRT = false;
 
     for (i = 0; i < nItems; ++i)
-      sText += GetTextLV(i, 0) + "\t" + GetTextLV(i, 1) + "\t" + GetTextLV(i, 2) + "\r\n";
+      sText += GetTextLV(i, 0) + "\t" + GetTextLV(i, 1) + "\t" + GetTextLV(i, 2) + "\t" + GetTextLV(i, 3) + "\r\n";
 
     oFile.Write(sText);
     oFile.Close();
   }
 }
 
-function EditREC(nType)
+function EditFRT(nType)
 {
-  var nSel   = GetCurSelLV();
-  var aField = [];
+  var nItem   = GetCurSelLV();
+  var aField  = [];
+  var sParams = "";
   var sCaption;
   var i;
 
   if (nType == 1) //Add
   {
-    GetEditTextFR();
+    GetWhatWithFR();
     sCaption = sTxtAdd;
-    aField   = ["", sWhatText, sWithText];
+    aField = [
+      "",
+      sWhatText,
+      (nDlgType == MLT_REPLACE) ? sWithText : "",
+      AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_MATCHCASE), 0x00F0 /*BM_GETCHECK*/, 0, 0).toString(),
+      AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_WHOLEWORD), 0x00F0 /*BM_GETCHECK*/, 0, 0).toString(),
+      AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_REGEXP),    0x00F0 /*BM_GETCHECK*/, 0, 0).toString(),
+      AkelPad.SendMessage(oSys.Call("User32::GetDlgItem", hWndDlg, IDC_SEARCH_ESCAPESEQ), 0x00F0 /*BM_GETCHECK*/, 0, 0).toString()];
   }
   else
   {
@@ -1074,29 +1160,49 @@ function EditREC(nType)
       sCaption = sTxtNew;
     else //Edit
     {
-      if (nSel < 0)
+      if (nItem < 0)
         return;
       sCaption = sTxtEdit;
     }
 
     for (i = 0; i < 3; ++i)
-      aField[i] = (nSel < 0) ? "" : GetTextLV(nSel, i);
+      aField[i] = (nItem < 0) ? "" : GetTextLV(nItem, i);
+
+    if (nItem > -1)
+      sParams = GetTextLV(nItem, 3);
+
+    for (i = 3; i < 7; ++i)
+      aField[i] = sParams.substr(i - 3, 1);
   }
 
-  aField = InputBox(hWndREC, sCaption, [sTxtName + ":", sTxtFindWhat + ":", sTxtReplaceWith + ":"], aField, 0, "CheckInputREC", nType);
+  aField = InputBox(hWndFRT, sCaption, [sTxtName + ":", sTxtFindWhat + ":", sTxtReplaceWith + ":", sTxtMatchCase + " " + sTxt0No1Yes + ":", sTxtWholeWord + ":", sTxtRegExp + ":", sTxtEscSeq + ":"], aField, 0, "CheckInputFRT", nType);
 
   if (aField)
   {
     if (nType == 2) //Edit
-      DeleteItemLV(nSel)
+      DeleteItemLV(nItem)
+
+    for (i = 0; i < 3; ++i)
+      aField[i] = aField[i].replace(/[\r\n\t]/g, "");
+
+    for (i = 3; i < 7; ++i)
+    {
+      if ((aField[i] != "0") && (aField[i] != "1"))
+        aField[i] = "2";
+    }
+
+    if ((aField[5] == "1") && (aField[6] == "1"))
+      aField[5] = "0";
+
+    aField[3] += aField[4] + aField[5] + aField[6]
+    aField.splice(4, 3);
 
     SetCurSelLV(InsertItemLV(aField));
-    CheckButtons();
-    bChangeREC = true;
+    bChangeFRT = true;
   }
 }
 
-function CheckInputREC(hWnd, aField, nType)
+function CheckInputFRT(hWnd, aField, nType)
 {
   var sCaption;
   var lpLVFINDINFO;
@@ -1146,28 +1252,25 @@ function CheckInputREC(hWnd, aField, nType)
   return -1;
 }
 
-function DeleteREC()
+function DeleteFRT()
 {
-  var nSel = GetCurSelLV();
+  var nItem = GetCurSelLV();
 
-  if (nSel > -1)
+  if (nItem > -1)
   {
-    if (QuestionBox(hWndREC, '"' + GetTextLV(nSel, 0) + '"\n\n' + sTxtWantRemove, sTxtDelete))
+    if (QuestionBox(hWndFRT, '"' + GetTextLV(nItem, 0) + '"\n\n' + sTxtWantRemove, sTxtDelete))
     {
-      DeleteItemLV(nSel);
+      DeleteItemLV(nItem);
 
-      if (nSel == GetItemCountLV())
-        --nSel;
+      if (nItem == GetItemCountLV())
+        --nItem;
 
-      SetCurSelLV(nSel);
-      CheckButtons();
-      bChangeREC = true;
+      SetCurSelLV(nItem);
+      RefreshViewFRT();
+      bChangeFRT = true;
 
-      if (! GetItemCountLV())
-      {
-        oSys.Call("User32::SetWindowTextW", aWnd[IDWHATE].Handle, "");
-        oSys.Call("User32::SetWindowTextW", aWnd[IDWITHE].Handle, "");
-      }
+      if (! oSys.Call("User32::IsWindowEnabled", oSys.Call("User32::GetFocus")))
+        oSys.Call("User32::SetFocus", aWnd[IDNAMELV].Handle);
     }
   }
 }
@@ -1187,10 +1290,15 @@ function ReadIni()
   var sIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
   var oError;
 
-  sTxtREC         = "Regular expressions collection";
+  sTxtFRTempl     = "Find/Replace templates";
   sTxtName        = "Name";
   sTxtFindWhat    = "Find - What";
   sTxtReplaceWith = "Replace - With";
+  sTxtMatchCase   = "Match case";
+  sTxtWholeWord   = "Whole word";
+  sTxtRegExp      = "Regular expression";
+  sTxtEscSeq      = "Esc sequence";
+  sTxt0No1Yes     = "(0 = No, 1 = Yes, 2 = Not change)";
   sTxtNew         = "New";
   sTxtAdd         = "Add";
   sTxtEdit        = "Edit";
@@ -1222,8 +1330,8 @@ function WriteIni()
     'bGoToDlg=' + bGoToDlg + ';\r\n' +
     'nDlgX='    + nDlgX    + ';\r\n' +
     'nDlgY='    + nDlgY    + ';\r\n' +
-    'nRECW='    + nRECW    + ';\r\n' +
-    'nRECH='    + nRECH    + ';\r\n' +
-    'nRECSel='  + nRECSel  + ';');
+    'nFRTW='    + nFRTW    + ';\r\n' +
+    'nFRTH='    + nFRTH    + ';\r\n' +
+    'nFRTSel='  + nFRTSel  + ';');
   oFile.Close();
 }
