@@ -2,9 +2,9 @@
 // http://infocatcher.ucoz.net/js/akelpad_scripts/jsBeautifier.js
 // https://github.com/Infocatcher/AkelPad_scripts/blob/master/jsBeautifier.js
 
-// (c) Infocatcher 2011-2012
-// version 0.2.2 - 2012-11-05
-// Based on scripts from http://jsbeautifier.org/ [2012-11-05 06:41:10 UTC]
+// (c) Infocatcher 2011-2013
+// version 0.2.3 - 2013-02-02
+// Based on scripts from http://jsbeautifier.org/ [2013-01-30 03:28:39 UTC]
 
 //===================
 // JavaScript unpacker and beautifier
@@ -31,6 +31,7 @@
 //   -indentScripts="keep"        - HTML <style>, <script> formatting: keep indent level of the tag
 //                 ="normal"      - add one indent level
 //                 ="separate"    - separate indentation
+//   -unescapeStrings=true        - unescape printable \xNN characters in strings ("example" vs "\x65\x78\x61\x6d\x70\x6c\x65")
 //   -maxChar=70                  - maximum amount of characters per line (only for HTML)
 //   -unformattedTags=["a"]       - list of tags, that shouldn't be reformatted (only for HTML)
 //   -detectPackers=true          - detect packers
@@ -92,6 +93,7 @@ var breakChainedMethods    = getArg("breakChainedMethods", false);
 var jsLintHappy            = getArg("jsLintHappy", false);
 var spaceBeforeConditional = getArg("spaceBeforeConditional", false);
 var indentScripts          = getArg("indentScripts", "normal");
+var unescapeStrings        = getArg("unescapeStrings"); // Will use jsBeautifier defaults
 var maxChar                = getArg("maxChar", 70);
 var unformattedTags        = getArg("unformattedTags"); // Will use jsBeautifier defaults
 var detectPackers          = getArg("detectPackers", true);
@@ -137,6 +139,7 @@ function beautify(source, syntax) { // Based on beautify function
 		jslint_happy:             jsLintHappy,
 		space_before_conditional: spaceBeforeConditional,
 		indent_scripts:           indentScripts,
+		unescape_strings:         unescapeStrings,
 		// for style_html():
 		max_char:                 maxChar,
 		unformatted:              unformattedTags
@@ -428,19 +431,19 @@ function js_beautify(js_source_text, options) {
 
     function print_single_space() {
 
-        if (last_type === 'TK_COMMENT') {
-            return print_newline();
-        }
+        var last_output = ' ';
+
         if (flags.eat_next_space) {
             flags.eat_next_space = false;
-            return;
-        }
-        var last_output = ' ';
-        if (output.length) {
-            last_output = output[output.length - 1];
-        }
-        if (last_output !== ' ' && last_output !== '\n' && last_output !== indent_string) { // prevent occassional duplicate space
-            output.push(' ');
+        } else if (last_type === 'TK_COMMENT') {
+            print_newline();
+        } else {
+            if (output.length) {
+                last_output = output[output.length - 1];
+            }
+            if (last_output !== ' ' && last_output !== '\n' && last_output !== indent_string) { // prevent occassional duplicate space
+                output.push(' ');
+            }
         }
     }
 
@@ -524,6 +527,70 @@ function js_beautify(js_source_text, options) {
         return false;
     }
 
+    function unescape_string(s) {
+        var esc = false,
+            out = '',
+            pos = 0,
+            s_hex = '',
+            escaped = 0,
+            c;
+
+        while (esc || pos < s.length) {
+
+            c = s.charAt(pos);
+            pos++;
+
+            if (esc) {
+                esc = false;
+                if (c === 'x') {
+                    // simple hex-escape \x24
+                    s_hex = s.substr(pos, 2);
+                    pos += 2;
+                } else if (c === 'u') {
+                    // unicode-escape, \u2134
+                    s_hex = s.substr(pos, 4);
+                    pos += 4;
+                } else {
+                    // some common escape, e.g \n
+                    out += '\\' + c;
+                    continue;
+                }
+                if ( ! s_hex.match(/^[0123456789abcdefABCDEF]+$/)) {
+                    // some weird escaping, bail out,
+                    // leaving whole string intact
+                    return s;
+                }
+
+                escaped = parseInt(s_hex, 16);
+
+                if (escaped >= 0x00 && escaped < 0x20) {
+                    // leave 0x00...0x1f escaped
+                    if (c === 'x') {
+                        out += '\\x' + s_hex;
+                    } else {
+                        out += '\\u' + s_hex;
+                    }
+                    continue;
+                } else if (escaped == 0x22 || escaped === 0x27 || escaped == 0x5c) {
+                    // single-quote, apostrophe, backslash - escape these
+                    out += '\\' + String.fromCharCode(escaped);
+                } else if (c === 'x' && escaped > 0x7e && escaped <= 0xff) {
+                    // we bail out on \x7f..\xff,
+                    // leaving whole string escaped,
+                    // as it's probably completely binary
+                    return s;
+                } else {
+                    out += String.fromCharCode(escaped);
+                }
+            } else if (c == '\\') {
+                esc = true;
+            } else {
+                out += c;
+            }
+        }
+        return out;
+    }
+
     function look_up(exclude) {
         var local_pos = parser_pos;
         var c = input.charAt(local_pos);
@@ -567,12 +634,14 @@ function js_beautify(js_source_text, options) {
                     just_added_newline = true;
                     whitespace_count = 0;
                 } else {
-                    if (c === '\t') {
-                        whitespace_count += 4;
-                    } else if (c === '\r') {
-                        // nothing
-                    } else {
-                        whitespace_count += 1;
+                    if (just_added_newline) {
+                        if (c === indent_string) {
+                            output.push(indent_string);
+                        } else {
+                            if (c !== '\r') {
+                                output.push(' ');
+                            }
+                        }
                     }
                 }
 
@@ -583,12 +652,6 @@ function js_beautify(js_source_text, options) {
                 c = input.charAt(parser_pos);
                 parser_pos += 1;
 
-            }
-
-            if (just_added_newline) {
-                for (i = 0; i < whitespace_count; i++) {
-                    output.push(' ');
-                }
             }
 
         } else {
@@ -725,9 +788,8 @@ function js_beautify(js_source_text, options) {
                 (last_text === ')' && in_array(flags.previous_mode, ['(COND-EXPRESSION)', '(FOR-EXPRESSION)'])) ||
                 (last_type === 'TK_COMMA' || last_type === 'TK_COMMENT' || last_type === 'TK_START_EXPR' || last_type === 'TK_START_BLOCK' || last_type === 'TK_END_BLOCK' || last_type === 'TK_OPERATOR' || last_type === 'TK_EQUALS' || last_type === 'TK_EOF' || last_type === 'TK_SEMICOLON')))) { // regexp
             var sep = c;
-            var esc = false;
-            var esc1 = 0;
-            var esc2 = 0;
+            var esc = false,
+                has_char_escapes = false;
             resulting_string = c;
 
             if (parser_pos < input_length) {
@@ -762,46 +824,26 @@ function js_beautify(js_source_text, options) {
                     //
                     while (esc || input.charAt(parser_pos) !== sep) {
                         resulting_string += input.charAt(parser_pos);
-                        if (esc1 && esc1 >= esc2) {
-                            esc1 = parseInt(resulting_string.slice(-esc2), 16);
-                            if (esc1 && esc1 >= 0x20 && esc1 <= 0x7e) {
-                                esc1 = String.fromCharCode(esc1);
-                                resulting_string = resulting_string.substr(0, resulting_string.length - esc2 - 2) + (((esc1 === sep) || (esc1 === '\\')) ? '\\' : '') + esc1;
+                        if (esc) {
+                            if (input.charAt(parser_pos) === 'x' || input.charAt(parser_pos) === 'u') {
+                                has_char_escapes = true;
                             }
-                            esc1 = 0;
-                        }
-                        if (esc1) {
-                            esc1++;
-                        } else if (!esc) {
-                            esc = input.charAt(parser_pos) === '\\';
-                        } else {
                             esc = false;
-                            if (opt_unescape_strings) {
-                                if (input.charAt(parser_pos) === 'x') {
-                                    esc1++;
-                                    esc2 = 2;
-                                } else if (input.charAt(parser_pos) === 'u') {
-                                    esc1++;
-                                    esc2 = 4;
-                                }
-                            }
+                        } else {
+                            esc = input.charAt(parser_pos) === '\\';
                         }
                         parser_pos += 1;
-                        if (parser_pos >= input_length) {
-                            // incomplete string/rexp when end-of-file reached.
-                            // bail out with what had been received so far.
-                            return [resulting_string, 'TK_STRING'];
-                        }
                     }
+
                 }
-
-
-
             }
 
             parser_pos += 1;
-
             resulting_string += sep;
+
+            if (has_char_escapes && opt_unescape_strings) {
+                resulting_string = unescape_string(resulting_string);
+            }
 
             if (sep === '/') {
                 // regexps may have modifiers /regexp/MOD , so fetch those, too
@@ -1193,7 +1235,7 @@ function js_beautify(js_source_text, options) {
                     // foo = function
                     print_single_space();
                 } else if (is_expression(flags.mode)) {
-                        //ää print nothing
+                    // print nothing
                 } else {
                     print_newline();
                 }
@@ -1327,15 +1369,15 @@ function js_beautify(js_source_text, options) {
 
             if (last_type === 'TK_END_EXPR' && in_array(flags.previous_mode, ['(COND-EXPRESSION)', '(FOR-EXPRESSION)'])) {
                 print_single_space();
-            } else if (last_type === 'TK_COMMENT' || last_type === 'TK_STRING' || last_type === 'TK_START_BLOCK' || last_type === 'TK_END_BLOCK' || last_type === 'TK_SEMICOLON') {
-                print_newline();
             } else if (last_type === 'TK_WORD') {
                 print_single_space();
-            } else {
-                if (opt_preserve_newlines && wanted_newline) {
+            } else if (last_type === 'TK_COMMA' || last_type === 'TK_START_EXPR' || last_type === 'TK_EQUALS' || last_type === 'TK_OPERATOR') {
+                if (opt_preserve_newlines && wanted_newline && flags.mode !== 'OBJECT') {
                     print_newline();
                     output.push(indent_string);
                 }
+            } else {
+                print_newline();
             }
             print_token();
             break;
@@ -1427,7 +1469,7 @@ function js_beautify(js_source_text, options) {
                 break;
             }
 
-            if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(last_text, line_starters)))) {
+            if (in_array(token_text, ['--', '++', '!']) || (in_array(token_text, ['-', '+']) && (in_array(last_type, ['TK_START_BLOCK', 'TK_START_EXPR', 'TK_EQUALS', 'TK_OPERATOR']) || in_array(last_text, line_starters) || last_text == ','))) {
                 // unary operators (and binary +/- pretending to be unary) special cases
 
                 space_before = false;
@@ -1658,8 +1700,8 @@ function css_beautify(source_text, options) {
     }
 
 
-    function lookBack(str, index) {
-        return output.slice(-str.length + (index||0), index).join("").toLowerCase() == str;
+    function lookBack(str) {
+        return source_text.substring(pos-str.length, pos).toLowerCase() == str;
     }
 
     // printer
@@ -1726,13 +1768,20 @@ function css_beautify(source_text, options) {
             print.newLine();
             output.push(eatComment(), "\n", indentString);
         } else if (ch == '(') { // may be a url
-            output.push(ch);
-            eatWhitespace();
-            if (lookBack("url", -1) && next()) {
+            if (lookBack("url")) {
+              output.push(ch);
+              eatWhitespace();
+              if (next()) {
                 if (ch != ')' && ch != '"' && ch != '\'')
                     output.push(eatString(')'));
                 else
                     pos--;
+              }
+            } else {
+              if (isAfterSpace)
+                  print.singleSpace();
+              output.push(ch);
+              eatWhitespace();
             }
         } else if (ch == ')') {
             output.push(ch);
@@ -1810,7 +1859,8 @@ function style_html(html_source, options) {
       indent_size,
       indent_character,
       max_char,
-      brace_style;
+      brace_style,
+      unformatted;
 
   options = options || {};
   indent_size = options.indent_size || 4;
@@ -1941,14 +1991,21 @@ function style_html(html_source, options) {
       }
     }
 
-    this.get_tag = function () { //function to get a full tag and parse its type
+    this.get_tag = function (peek) { //function to get a full tag and parse its type
       var input_char = '',
           content = [],
           space = false,
-          tag_start, tag_end;
+          tag_start, tag_end,
+          peek = typeof peek !== 'undefined' ? peek : false,
+          orig_pos = this.pos,
+          orig_line_char_count = this.line_char_count;
 
       do {
         if (this.pos >= this.input.length) {
+          if (peek) {
+            this.pos = orig_pos;
+            this.line_char_count = orig_line_char_count;
+          }
           return content.length?content.join(''):['', 'TK_EOF'];
         }
 
@@ -1986,7 +2043,7 @@ function style_html(html_source, options) {
           space = false;
         }
         if (input_char === '<') {
-            tag_start = this.pos - 1;
+          tag_start = this.pos - 1;
         }
         content.push(input_char); //inserts character at-a-time (or string)
       } while (input_char !== '>');
@@ -2001,18 +2058,24 @@ function style_html(html_source, options) {
       }
       var tag_check = tag_complete.substring(1, tag_index).toLowerCase();
       if (tag_complete.charAt(tag_complete.length-2) === '/' ||
-          this.Utils.in_array(tag_check, this.Utils.single_token)) { //if this tag name is a single tag type (either in the list or has a closing /)
-        this.tag_type = 'SINGLE';
+        this.Utils.in_array(tag_check, this.Utils.single_token)) { //if this tag name is a single tag type (either in the list or has a closing /)
+        if ( ! peek) {
+          this.tag_type = 'SINGLE';
+        }
       }
       else if (tag_check === 'script') { //for later script handling
-        this.record_tag(tag_check);
-        this.tag_type = 'SCRIPT';
+        if ( ! peek) {
+          this.record_tag(tag_check);
+          this.tag_type = 'SCRIPT';
+        }
       }
       else if (tag_check === 'style') { //for future style handling (for now it justs uses get_content)
-        this.record_tag(tag_check);
-        this.tag_type = 'STYLE';
+        if ( ! peek) {
+          this.record_tag(tag_check);
+          this.tag_type = 'STYLE';
+        }
       }
-      else if (this.Utils.in_array(tag_check, unformatted)) { // do not reformat the "unformatted" tags
+      else if (this.is_unformatted(tag_check, unformatted)) { // do not reformat the "unformatted" tags
         var comment = this.get_unformatted('</'+tag_check+'>', tag_complete); //...delegate to get_unformatted function
         content.push(comment);
         // Preserve collapsed whitespace either before or after this tag.
@@ -2031,7 +2094,9 @@ function style_html(html_source, options) {
             var comment = this.get_unformatted('-->', tag_complete); //...delegate to get_unformatted
             content.push(comment);
           }
-          this.tag_type = 'START';
+          if ( ! peek) {
+            this.tag_type = 'START';
+          }
         }
         else if (tag_check.indexOf('[endif') != -1) {//peek for <!--[endif end conditional comment
           this.tag_type = 'END';
@@ -2040,7 +2105,9 @@ function style_html(html_source, options) {
         else if (tag_check.indexOf('[cdata[') != -1) { //if it's a <[cdata[ comment...
           var comment = this.get_unformatted(']]>', tag_complete); //...delegate to get_unformatted function
           content.push(comment);
-          this.tag_type = 'SINGLE'; //<![CDATA[ comments are treated like single tags
+          if ( ! peek) {
+            this.tag_type = 'SINGLE'; //<![CDATA[ comments are treated like single tags
+          }
         }
         else {
           var comment = this.get_unformatted('-->', tag_complete);
@@ -2048,7 +2115,7 @@ function style_html(html_source, options) {
           this.tag_type = 'SINGLE';
         }
       }
-      else {
+      else if ( ! peek) {
         if (tag_check.charAt(0) === '/') { //this tag is a double tag so check for tag-ending
           this.retrieve_tag(tag_check.substring(1)); //remove it and all ancestors
           this.tag_type = 'END';
@@ -2061,12 +2128,18 @@ function style_html(html_source, options) {
           this.print_newline(true, this.output);
         }
       }
+
+      if (peek) {
+        this.pos = orig_pos;
+        this.line_char_count = orig_line_char_count;
+      }
+
       return content.join(''); //returns fully formatted tag
     }
 
     this.get_unformatted = function (delimiter, orig_tag) { //function to return unformatted content in its entirety
 
-      if (orig_tag && orig_tag.indexOf(delimiter) != -1) {
+      if (orig_tag && orig_tag.toLowerCase().indexOf(delimiter) != -1) {
         return '';
       }
       var input_char = '';
@@ -2103,7 +2176,7 @@ function style_html(html_source, options) {
         space = true;
 
 
-      } while (content.indexOf(delimiter) == -1);
+      } while (content.toLowerCase().indexOf(delimiter) == -1);
       return content;
     }
 
@@ -2148,6 +2221,25 @@ function style_html(html_source, options) {
       return Array(level + 1).join(this.indent_string);
     }
 
+    this.is_unformatted = function(tag_check, unformatted) {
+        //is this an HTML5 block-level link?
+        if (!this.Utils.in_array(tag_check, unformatted)){
+            return false;
+        }
+
+        if (tag_check.toLowerCase() !== 'a' || !this.Utils.in_array('a', unformatted)){
+            return true;
+        }
+
+        //at this point we have an  tag; is its first child something we want to remain
+        //unformatted?
+        var next_tag = this.get_tag(true /* peek. */);
+        if (next_tag && this.Utils.in_array(next_tag, unformatted)){
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     this.printer = function (js_source, indent_character, indent_size, max_char, brace_style) { //handles input/output and some other printing functions
 
@@ -2295,6 +2387,12 @@ function style_html(html_source, options) {
     multi_parser.last_text = multi_parser.token_text;
   }
   return multi_parser.output.join('');
+}
+
+// Add support for CommonJS. Just put this file somewhere on your require.paths
+// and you will be able to `var html_beautify = require("beautify").html_beautify`.
+if (typeof exports !== "undefined") {
+    exports.html_beautify = style_html;
 }
 //== beautify-html.js end
 
@@ -2508,11 +2606,23 @@ var MyObfuscate = {
 
 var P_A_C_K_E_R = {
     detect: function (str) {
-        return P_A_C_K_E_R._starts_with(str.toLowerCase().replace(/ +/g, ''), 'eval(function(') ||
-               P_A_C_K_E_R._starts_with(str.toLowerCase().replace(/ +/g, ''), 'eval((function(') ;
+        return (P_A_C_K_E_R.get_chunks(str).length > 0);
+    },
+
+    get_chunks: function(str) {
+        var chunks = str.match(/eval\(\(?function\(.*?,0,\{\}\)\)/g);
+        return chunks ? chunks : [];
     },
 
     unpack: function (str) {
+        var chunks = P_A_C_K_E_R.get_chunks(str);
+        for(var i = 0; i < chunks.length; i++) {
+            str = str.replace(chunks[i], P_A_C_K_E_R.unpack_chunk(chunks[i]))
+        }
+        return str;
+    },
+
+    unpack_chunk: function (str) {
         var unpacked_source = '';
         if (P_A_C_K_E_R.detect(str)) {
             try {
@@ -2527,27 +2637,24 @@ var P_A_C_K_E_R = {
         return str;
     },
 
-    _starts_with: function (str, what) {
-        return str.substr(0, what.length) === what;
-    },
-
     run_tests: function (sanity_test) {
-        var t = sanity_test || new SanityTest();
+        var t = sanity_test || new SanityTest(),
+            pk1 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))",
+            unpk1 = 'var a=1',
+            pk2 = "eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'foo||b'.split('|'),0,{}))",
+            unpk2 = 'foo b=1',
+            pk_broken =  "eval(function(p,a,c,k,e,r){BORKBORK;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))";
         t.test_function(P_A_C_K_E_R.detect, "P_A_C_K_E_R.detect");
         t.expect('', false);
         t.expect('var a = b', false);
-        t.expect('eval(function(p,a,c,k,e,r', true);
-        t.expect('eval ( function(p, a, c, k, e, r', true);
-        t.test_function(P_A_C_K_E_R.unpack, 'P_A_C_K_E_R.unpack');
-        t.expect("eval(function(p,a,c,k,e,r){e=String;if(!''.replace(/^/,String)){while(c--)r[c]=k[c]||c;k=[function(e){return r[e]}];e=function(){return'\\\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\\\b'+e(c)+'\\\\b','g'),k[c]);return p}('0 2=1',3,3,'var||a'.split('|'),0,{}))",
-            'var a=1');
+        t.test_function(P_A_C_K_E_R.unpack, "P_A_C_K_E_R.unpack");
+        t.expect(pk_broken, pk_broken);
+        t.expect(pk1, unpk1);
+        t.expect(pk2, unpk2);
 
-        var starts_with_a = function(what) { return P_A_C_K_E_R._starts_with(what, 'a'); }
-        t.test_function(starts_with_a, "P_A_C_K_E_R._starts_with(?, a)");
-        t.expect('abc', true);
-        t.expect('bcd', false);
-        t.expect('a', true);
-        t.expect('', false);
+        var filler = '\nfiller\n';
+        t.expect(filler + pk1 + pk_broken + filler + pk2 + filler, filler + unpk1 + pk_broken + filler + unpk2 + filler);
+
         return t;
     }
 
@@ -2557,6 +2664,8 @@ var P_A_C_K_E_R = {
 
 
 //== unpackers/urlencode_unpacker.js
+/*global unescape */
+/*jshint curly: false, scripturl: true */
 //
 // trivial bookmarklet/escaped script detector for the javascript beautifier
 // written by Einar Lielmanis <einar@jsbeautifier.org>
@@ -2568,6 +2677,11 @@ var P_A_C_K_E_R = {
 // }
 //
 //
+
+var isNode = (typeof module !== 'undefined' && module.exports);
+if (isNode) {
+    var SanityTest = require(__dirname + '/../tests/sanitytest');
+}
 
 var Urlencoded = {
     detect: function (str) {
@@ -2618,17 +2732,22 @@ var Urlencoded = {
     }
 
 
+};
+
+if (isNode) {
+    module.exports = Urlencoded;
 }
 //== unpackers/urlencode_unpacker.js end
 
 
 //== tests/beautify-tests.js
-/*global js_beautify */
+/*global js_beautify: true */
 /*jshint node:true */
 
 var isNode = (typeof module !== 'undefined' && module.exports);
 if (isNode) {
     var SanityTest = require('./sanitytest'),
+        Urlencoded = require('../unpackers/urlencode_unpacker'),
         js_beautify = require('../beautify').js_beautify;
 }
 
@@ -2794,6 +2913,7 @@ function run_beautifier_tests(test_obj)
     bt("a = 1;// comment", "a = 1; // comment");
     bt("a = 1; // comment", "a = 1; // comment");
     bt("a = 1;\n // comment", "a = 1;\n// comment");
+    bt('a = [-1, -1, -1]');
 
     bt('o = [{a:b},{c:d}]', 'o = [{\n    a: b\n}, {\n    c: d\n}]');
 
@@ -2989,6 +3109,7 @@ function run_beautifier_tests(test_obj)
     opts.indent_char = ' ';
 
     opts.preserve_newlines = false;
+
     bt('var\na=dont_preserve_newlines;', 'var a = dont_preserve_newlines;');
 
     // make sure the blank line between function definitions stays
@@ -3000,7 +3121,6 @@ function run_beautifier_tests(test_obj)
     bt('function foo() {\n    return 1;\n}\n\n\nfunction foo() {\n    return 1;\n}',
        'function foo() {\n    return 1;\n}\n\nfunction foo() {\n    return 1;\n}'
       );
-
 
     opts.preserve_newlines = true;
     bt('var\na=do_preserve_newlines;', 'var\na = do_preserve_newlines;');
@@ -3122,9 +3242,16 @@ function run_beautifier_tests(test_obj)
     bt("var a = \"foo\" +\n    \"bar\";");
 
     opts.unescape_strings = false;
-    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
+    test_fragment('"\\x22\\x27", \'\\x22\\x27\', "\\x5c", \'\\x5c\', "\\xff and \\xzz", "unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"');
     opts.unescape_strings = true;
-    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"', '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
+    test_fragment('"\\x20\\x40\\x4a"', '" @J"');
+    test_fragment('"\\xff\\x40\\x4a"');
+    test_fragment('"\\u0072\\u016B\\u0137\\u012B\\u0074\\u0069\\u0073"', '"rūķītis"');
+    test_fragment('"Google Chrome est\\u00E1 actualizado."', '"Google Chrome está actualizado."');
+    /*
+    bt('"\\x22\\x27",\'\\x22\\x27\',"\\x5c",\'\\x5c\',"\\xff and \\xzz","unicode \\u0000 \\u0022 \\u0027 \\u005c \\uffff \\uzzzz"',
+       '"\\"\'", \'"\\\'\', "\\\\", \'\\\\\', "\\xff and \\xzz", "unicode \\u0000 \\" \' \\\\ \\uffff \\uzzzz"');
+    */
     opts.unescape_strings = false;
     bt('foo = {\n    x: y, // #44\n    w: z // #44\n}');
 
@@ -3151,12 +3278,21 @@ function run_beautifier_tests(test_obj)
     bt('if(foo) // comment\n(bar());');
     bt('if(foo) // comment\n/asdf/;');
 
+    bt('/* foo */\n"x"');
+
     opts.break_chained_methods = true;
     bt('foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('foo.bar().baz().cucumber(fat); foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat);\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('foo.bar().baz().cucumber(fat)\n foo.bar().baz().cucumber(fat)', 'foo.bar()\n    .baz()\n    .cucumber(fat)\nfoo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('this.something = foo.bar().baz().cucumber(fat)', 'this.something = foo.bar()\n    .baz()\n    .cucumber(fat)');
     bt('this.something.xxx = foo.moo.bar()');
+
+    opts.preserve_newlines = false;
+    bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
+    bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
+    opts.preserve_newlines = true;
+    bt('var a = {\n"a":1,\n"b":2}', "var a = {\n    \"a\": 1,\n    \"b\": 2\n}");
+    bt("var a = {\n'a':1,\n'b':2}", "var a = {\n    'a': 1,\n    'b': 2\n}");
 
     Urlencoded.run_tests(sanitytest);
 
@@ -3188,13 +3324,13 @@ if (isNode) {
 // alert(t.results_raw());        // html unescaped
 
 
-function SanityTest (func, test_name) {
+function SanityTest (func, name_of_test) {
 
     var test_func = func || function (x) {
         return x;
     };
 
-    var test_name = test_name || '';
+    var test_name = name_of_test || '';
 
     var n_failed = 0;
     var n_succeeded = 0;
@@ -3259,7 +3395,6 @@ function SanityTest (func, test_name) {
             } else {
                 return something;
             }
-            break;
         case 'number':
             return '' + something;
         case 'boolean':
@@ -3282,7 +3417,6 @@ function SanityTest (func, test_name) {
             } else {
                 return 'object: ' + something;
             }
-            break;
         default:
             return type + ': ' + something;
         }
@@ -3402,8 +3536,6 @@ function convertSource(file, text) {
 			'results = _localize("All %S tests passed.").replace("%S", n_succeeded);'
 		);
 	}
-	else if(file == "beautify-html.js") // See https://github.com/einars/js-beautify/pull/146
-		return text.replace("this.unformatted", "unformatted");
 	return text;
 }
 function selfUpdate() {
