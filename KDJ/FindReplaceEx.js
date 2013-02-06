@@ -1,4 +1,4 @@
-// FindReplaceEx.js - ver. 2013-02-05
+// FindReplaceEx.js - ver. 2013-02-06
 //
 // "Find/Replace" dialog extended version
 //
@@ -1601,76 +1601,90 @@ function RegExpHelp(nHelpID, bFRT)
 
 function ReadIni()
 {
-  var sIniName = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var sIniFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var sLngFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + AkelPad.GetLangId(0 /*LANGID_FULL*/).toString() + ".lng";
   var oError;
 
-  sTxtFRTempl     = "Find/Replace templates";
-  sTxtTemplates   = "Templates";
-  sTxtName        = "Name";
-  sTxtFindWhat    = "Find - What";
-  sTxtReplaceWith = "Replace - With";
-  sTxtMatchCase   = "Match case";
-  sTxtWholeWord   = "Whole word";
-  sTxtRegExp      = "Regular expressions";
-  sTxtEscSeq      = "Esc sequences";
-  sTxt1Yes0No     = "(1 = Yes, 0 = No)";
-  sTxtNew         = "New";
-  sTxtAdd         = "Add";
-  sTxtEdit        = "Edit";
-  sTxtDelete      = "Delete";
-  sTxtOK          = "OK";
-  sTxtClose       = "Close";
-  sTxtNameExists  = "Name already exists.";
-  sTxtNoName      = "Name is required.";
-  sTxtNoFindWhat  = "Find - What is required.";
-  sTxtWantRemove  = "Do you want to remove it?";
-  sHlpSpecChars   = "()[]{}^$.?+*|\\ special chars";
-  sHlpFF          = "form feed \\x0C";
-  sHlpAnyNL       = "any new line";
-  sHlpTab         = "tab \\x09";
-  sHlpVTab        = "vertical tab \\x0B";
-  sHlpCharHex     = "character hex code FF";
-  sHlpUniCharHex  = "Unicode char hex code FFFF";
-  sHlpAnyChar     = "any character (dot)";
-  sHlpDigit       = "digit [0-9]";
-  sHlpNonDigit    = "non-digit [^0-9]";
-  sHlpWhiteSp     = "whitespace [ \\f\\n\\r\\t\\v]";
-  sHlpNonWhiteSp  = "non-whitespace";
-  sHlpWordChar    = "word character [A-Za-z0-9_]";
-  sHlpNonWordChar = "non-word character";
-  sHlpBeginLine   = "beginning of line";
-  sHlpEndLine     = "end of line";
-  sHlpWordBoun    = "word boundary";
-  sHlpNonWordBoun = "non-word boundary";
-  sHlpAlternative = "alternative ab or xy";
-  sHlpCharSet     = "character set, any specified";
-  sHlpNegCharSet  = "negative character set";
-  sHlpRange       = "range of chars from a to z";
-  sHlpNegRange    = "negative range of chars";
-  sHlpCapture     = "capture";
-  sHlpNotCapture  = "not capture";
-  sHlpFollow      = "followed by ab";
-  sHlpNotFollow   = "not followed by ab";
-  sHlpBackrefer9  = "backreference, range 1-9";
-  sHlpBackrefer99 = "backreference, range 01-99";
-  sHlpZeroOrOne   = "zero or one times";
-  sHlpZeroOrMore  = "zero or more times";
-  sHlpOneOrMore   = "one or more times";
-  sHlpexactly     = "exactly 3 times";
-  sHlpAtLeast     = "at least 3 times";
-  sHlpFromTo      = "from 3 to 7 times";
-  sHlpBackslash   = "backslash";
-  sHlpNL          = "new line";
-  sHlpEntireStr   = "entire string matched";
-  sHlpSubmatch9   = "9th captured submatch, range 1-9";
-  sHlpSubmatch99  = "99th captured submatch, range 01-99";
-  sHlpNonGreedy   = "Quantifiers *+{} are non-greedy";
-
-  if (oFSO.FileExists(sIniName))
+  if (oFSO.FileExists(sLngFile))
   {
     try
     {
-      eval(AkelPad.ReadFile(sIniName));
+      eval(AkelPad.ReadFile(sLngFile));
+    }
+    catch (oError)
+    {
+    }
+  }
+  else
+  {
+    sTxtFRTempl     = 'Find/Replace templates';
+    sTxtTemplates   = 'Templates';
+    sTxtName        = 'Name';
+    sTxtFindWhat    = 'Find - What';
+    sTxtReplaceWith = 'Replace - With';
+    sTxtMatchCase   = 'Match case';
+    sTxtWholeWord   = 'Whole word';
+    sTxtRegExp      = 'Regular expressions';
+    sTxtEscSeq      = 'Esc sequences';
+    sTxt1Yes0No     = '(1 = Yes, 0 = No)';
+    sTxtNew         = 'New';
+    sTxtAdd         = 'Add';
+    sTxtEdit        = 'Edit';
+    sTxtDelete      = 'Delete';
+    sTxtOK          = 'OK';
+    sTxtClose       = 'Close';
+    sTxtNameExists  = 'This name already exists.';
+    sTxtNoName      = 'Field "Name" is required.';
+    sTxtNoFindWhat  = 'Field "Find - What" is required.';
+    sTxtWantRemove  = 'Do you want to remove it?';
+    sHlpSpecChars   = '()[]{}^$.?+*|\\ special chars';
+    sHlpFF          = 'form feed \\x0C';
+    sHlpAnyNL       = 'any new line';
+    sHlpTab         = 'tab \\x09';
+    sHlpVTab        = 'vertical tab \\x0B';
+    sHlpCharHex     = 'character hex code FF';
+    sHlpUniCharHex  = 'Unicode char hex code FFFF';
+    sHlpAnyChar     = 'any character (dot)';
+    sHlpDigit       = 'digit [0-9]';
+    sHlpNonDigit    = 'non-digit [^0-9]';
+    sHlpWhiteSp     = 'whitespace [ \\f\\n\\r\\t\\v]';
+    sHlpNonWhiteSp  = 'non-whitespace';
+    sHlpWordChar    = 'word character [A-Za-z0-9_]';
+    sHlpNonWordChar = 'non-word character';
+    sHlpBeginLine   = 'beginning of line';
+    sHlpEndLine     = 'end of line';
+    sHlpWordBoun    = 'word boundary';
+    sHlpNonWordBoun = 'non-word boundary';
+    sHlpAlternative = 'alternative ab or xy';
+    sHlpCharSet     = 'character set, any specified';
+    sHlpNegCharSet  = 'negative character set';
+    sHlpRange       = 'range of chars from a to z';
+    sHlpNegRange    = 'negative range of chars';
+    sHlpCapture     = 'capture';
+    sHlpNotCapture  = 'not capture';
+    sHlpFollow      = 'followed by ab';
+    sHlpNotFollow   = 'not followed by ab';
+    sHlpBackrefer9  = 'backreference, range 1-9';
+    sHlpBackrefer99 = 'backreference, range 01-99';
+    sHlpZeroOrOne   = 'zero or one times';
+    sHlpZeroOrMore  = 'zero or more times';
+    sHlpOneOrMore   = 'one or more times';
+    sHlpexactly     = 'exactly 3 times';
+    sHlpAtLeast     = 'at least 3 times';
+    sHlpFromTo      = 'from 3 to 7 times';
+    sHlpBackslash   = 'backslash';
+    sHlpNL          = 'new line';
+    sHlpEntireStr   = 'entire string matched';
+    sHlpSubmatch9   = '9th captured submatch, range 1-9';
+    sHlpSubmatch99  = '99th captured submatch, range 01-99';
+    sHlpNonGreedy   = 'Quantifiers *+{} are non-greedy';
+  }
+
+  if (oFSO.FileExists(sIniFile))
+  {
+    try
+    {
+      eval(AkelPad.ReadFile(sIniFile));
     }
     catch (oError)
     {
