@@ -1,44 +1,53 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=12548#12548
-// Version v1.3
+// Version v1.5
 //
 //
-//// Open/Convert files in directory.
+//// Open/Convert files.
 //
 // Arguments:
 // -OpenMask="C:\MyFolder\*.*" -Search any files in "C:\MyFolder".
+// -OpenList="C:\files.lst"    -Open files specified in "files.lst".
 // -SubDir=true                -Search recursively (default is false).
 // -OpenCodepage=-1            -Open codepage, if -1 it will be autodetected (default is -1).
 // -OpenBOM=-1                 -File byte order mark, if -1 it will be autodetected (default is -1).
 // -OpenBinary=-1              -Open binary file, 1 - open if binary, 0 - don't open if binary, -1 - prompt (default is 0).
+// -SaveDir=""                 -Save directory, if "" files will be saved in place.
 // -SaveCodepage=65001         -Save codepage, if -1 current codepage will be used (default is -1).
 // -SaveBOM=1                  -File byte order mark, 1 - exist, 2 - doesn't exist, -1 - current BOM will be used (default is -1).
+// -Silent=true                -Display no messages (default is false).
+// -CloseNoFiles=false         -Don't close program, if after script ending no files are opened (default is true).
 //
 // Remark:
 // If SaveCodepage and SaveBOM not specified when no convertion operation will occur and files will be just opened.
 //
-// Usage (Open):
+// Usage (open):
 // Call("Scripts::Main", 1, "OpenSaveMask.js", `-OpenMask="C:\MyFolder\*.txt" -SubDir=true`)
 //
-// Usage (Convert):
+// Usage (convert by mask):
 // Call("Scripts::Main", 1, "OpenSaveMask.js", `-OpenMask="C:\MyFolder\*.txt" -SubDir=true -SaveCodepage=65001 -SaveBOM=1`)
 
 //Arguments
 var pOpenMask=AkelPad.GetArgValue("OpenMask", "");
+var pOpenList=AkelPad.GetArgValue("OpenList", "");
 var bSubDir=AkelPad.GetArgValue("SubDir", false);
 var nOpenCodepage=AkelPad.GetArgValue("OpenCodepage", -1);
 var nOpenBOM=AkelPad.GetArgValue("OpenBOM", -1);
 var nOpenBinary=AkelPad.GetArgValue("OpenBinary", 0);
+var pSaveDir=AkelPad.GetArgValue("SaveDir", "");
 var nSaveCodepage=AkelPad.GetArgValue("SaveCodepage", -1);
 var nSaveBOM=AkelPad.GetArgValue("SaveBOM", -1);
+var bSilent=AkelPad.GetArgValue("Silent", false);
+var bCloseNoFiles=AkelPad.GetArgValue("CloseNoFiles", true);
 
 var hMainWnd=AkelPad.GetMainWnd();
 var oSys=AkelPad.SystemFunction();
+var pFileList="";
 var dwCmdOptions;
 var nAllFiles=0;
 var nDoneFiles=0;
 var nErrors=0;
 
-if (pOpenMask)
+if (pOpenMask || pOpenList)
 {
   dwCmdOptions=AkelPad.SendMessage(hMainWnd, 1145 /*AKD_GETCMDLINEOPTIONS*/, 0, 0);
   if (nOpenBinary == 1)
@@ -48,17 +57,50 @@ if (pOpenMask)
   else if (nOpenBinary == -1)
     AkelPad.SendMessage(hMainWnd, 1146 /*AKD_SETCMDLINEOPTIONS*/, (dwCmdOptions & ~0x10 /*CLO_MSGOPENBINARYYES*/) & ~0x20 /*CLO_MSGOPENBINARYNO*/, 0);
 
-  if (!Locate(pOpenMask, bSubDir))
+  if (pOpenMask)
   {
-    if (nSaveCodepage != -1 || nSaveBOM != -1)
+    Locate(pOpenMask, bSubDir);
+  }
+  if (pOpenList)
+  {
+    var pFilesText;
+    var pLinesArray;
+    var nIndex;
+
+    if (pFilesText=AkelPad.ReadFile(pOpenList))
     {
-      if (nAllFiles && AkelPad.IsMDI())
-        AkelPad.Command(4325 /*IDM_WINDOW_FILEEXIT*/);
-      WScript.Echo("Converted: " + nDoneFiles + " of " + nAllFiles + " files (" + nErrors + " errors)");
+      pFilesText=pFilesText.replace(/\r\r\n|\r\n|\r|\n/g, "\n");
+      if (pLinesArray=pFilesText.split("\n"))
+      {
+        for (nIndex=0; nIndex < pLinesArray.length; ++nIndex)
+        {
+          if (pLinesArray[nIndex])
+          {
+            DoFile(pLinesArray[nIndex], pSaveDir);
+          }
+        }
+      }
     }
   }
 
   AkelPad.SendMessage(hMainWnd, 1146 /*AKD_SETCMDLINEOPTIONS*/, dwCmdOptions, 0);
+
+  if (nSaveCodepage != -1 || nSaveBOM != -1)
+  {
+    if (nAllFiles && AkelPad.IsMDI())
+      AkelPad.Command(4325 /*IDM_WINDOW_FILEEXIT*/);
+    if (!bSilent)
+      WScript.Echo("Converted: " + nDoneFiles + " of " + nAllFiles + " files (" + nErrors + " errors)");
+  }
+  if (bCloseNoFiles)
+  {
+    if (AkelPad.SendMessage(hMainWnd, 1292 /*AKD_FRAMENOWINDOWS*/, 0, 0) ||
+        (AkelPad.IsMDI() == 1 && AkelPad.SendMessage(hMainWnd, 1291 /*AKD_FRAMESTATS*/, 0 /*FWS_COUNTALL*/, 0) == 1 &&
+         !AkelPad.GetEditFile(0) && !AkelPad.GetEditModified(0)))
+    {
+      AkelPad.Command(4109 /*IDM_FILE_EXIT*/);
+    }
+  }
 }
 
 function Locate(pSearchFor, bSubDir)
@@ -156,6 +198,21 @@ function Locate(pSearchFor, bSubDir)
 
 function LocateCallback(pDir, pFileName, dwAttributes, nSize, lpWriteTime)
 {
+  DoFile(pDir + "\\" + pFileName, pSaveDir);
+
+  //WScript.Echo("Name:" + pDir + "\\" + pFileName + "\n" +
+  //             "Attr:" + dwAttributes + "\n" +
+  //             "Size:" + nSize + "\n" +
+  //             "WriteTime:" + lpWriteTime.wYear + "." + lpWriteTime.wMonth + "." + lpWriteTime.wDay + " " +
+  //                            lpWriteTime.wHour + ":" + lpWriteTime.wMinute + ":" + lpWriteTime.wSecond + " " +
+  //                            lpWriteTime.wMilliseconds + "ms, DayOfWeek:" + lpWriteTime.wDayOfWeek);
+
+  //Stop?
+  return false;
+}
+
+function DoFile(pOpenFile, pSaveFile)
+{
   var nOpenResult;
   var dwOpenFlags=0x1 /*OD_ADT_BINARY_ERROR*/;
 
@@ -164,14 +221,19 @@ function LocateCallback(pDir, pFileName, dwAttributes, nSize, lpWriteTime)
   if (nOpenBOM == -1)
     dwOpenFlags|=0x8 /*OD_ADT_DETECT_BOM*/;
 
-  if (!(nOpenResult=AkelPad.OpenFile(pDir + "\\" + pFileName, dwOpenFlags, nOpenCodepage, nOpenBOM)))
+  if (!(nOpenResult=AkelPad.OpenFile(pOpenFile, dwOpenFlags, nOpenCodepage, nOpenBOM)))
   {
     if (nSaveCodepage != -1 || nSaveBOM != -1)
     {
       if ((nSaveCodepage != -1 && AkelPad.GetEditCodePage(0) != nSaveCodepage) ||
           (nSaveBOM != -1 && AkelPad.GetEditBOM(0) != nSaveBOM))
       {
-        if (!AkelPad.SaveFile(0, pDir + "\\" + pFileName, nSaveCodepage, nSaveBOM))
+        if (!pSaveFile)
+          pSaveFile=pOpenFile;
+        else if (oSys.Call("kernel32::GetFileAttributes" + _TCHAR, pSaveFile) & 0x10 /*FILE_ATTRIBUTE_DIRECTORY*/)
+          pSaveFile=pSaveFile + "\\" + GetFileName(pOpenFile);
+
+        if (!AkelPad.SaveFile(0, pSaveFile, nSaveCodepage, nSaveBOM))
           ++nDoneFiles;
         else
           ++nErrors;
@@ -184,14 +246,13 @@ function LocateCallback(pDir, pFileName, dwAttributes, nSize, lpWriteTime)
     ++nErrors;
   }
   ++nAllFiles;
+}
 
-  //WScript.Echo("Name:" + pDir + "\\" + pFileName + "\n" +
-  //             "Attr:" + dwAttributes + "\n" +
-  //             "Size:" + nSize + "\n" +
-  //             "WriteTime:" + lpWriteTime.wYear + "." + lpWriteTime.wMonth + "." + lpWriteTime.wDay + " " +
-  //                            lpWriteTime.wHour + ":" + lpWriteTime.wMinute + ":" + lpWriteTime.wSecond + " " +
-  //                            lpWriteTime.wMilliseconds + "ms, DayOfWeek:" + lpWriteTime.wDayOfWeek);
+function GetFileName(pFile)
+{
+  var nOffset;
 
-  //Stop?
-  return false;
+  if ((nOffset=pFile.lastIndexOf("\\")) != -1)
+    pFile=pFile.substr(nOffset);
+  return pFile;
 }
