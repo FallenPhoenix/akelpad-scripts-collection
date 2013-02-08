@@ -1,4 +1,4 @@
-// Translator.js - ver. 2012-09-03
+// Translator.js - ver. 2013-02-08
 //
 // On line translator via Google, MS Bing and Yandex.
 //
@@ -102,7 +102,7 @@ var aLangs = [
   ["hu"   , "", 1, 1, 0],
   ["id"   , "", 1, 1, 0],
   ["is"   , "", 1, 0, 0],
-  ["it"   , "", 1, 1, 0],
+  ["it"   , "", 1, 1, 1],
   ["iw"   , "", 1, 1, 0],
   ["ja"   , "", 1, 1, 0],
   ["ko"   , "", 1, 1, 0],
@@ -145,8 +145,8 @@ var aAPIs = [{"Name":        "Google",
               "APIkeyP":     "",
               "RegistrURL":  "http://www.bing.com/developers",
               "AutoDetect":  1,
-              //"TextLen":     10000}, //POST method
-              "TextLen":     3500}, //GET method
+              "TextLen":     10000}, //POST method
+              //"TextLen":     3500}, //GET method
              {"Name":        "Yandex",
               "APIkey":      "",
               "APIkeyP":     "",
@@ -1939,7 +1939,6 @@ function BuiltInLang()
   sTxtRegScripts = "You must register library: Scripts.dll";
   sTxtNoLibrary  = "Can not load library: ";
 
-
   aLangs[ 0][1] = "Afrikaans";
   aLangs[ 1][1] = "Arabic";
   aLangs[ 2][1] = "Belarusian";
@@ -2057,18 +2056,40 @@ function Translate(bSelection, bAddToTarget)
     sURL  = "http://translate.google.com/translate_a/t";
     sSend = "client=qlt&sl=" + (sFromLang || "auto") + "&tl=" + sToLang + "&q=" + encodeURIComponent(sSource);
   }
-  //Bing GET method
   else if (oSelect.API == 1) //Bing
+//  //Bing GET method
+//  {
+//    sMethod = "GET";
+//
+//    if (nLang < 0) //Auto detect
+//    {
+//      sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey + "&text=" + encodeURIComponent(sSource);
+//
+//      OpenRequest(oRequest, sMethod, sURL)
+//
+//      if (! SendRequest(oRequest, null))
+//        return;
+//
+//      if (oRequest.status != 200)
+//      {
+//        ErrorBox(oRequest.status + " : " + oRequest.statusText);
+//        return;
+//      }
+//      sFromLang = oRequest.responseText.substring(oRequest.responseText.indexOf(">") + 1, oRequest.responseText.lastIndexOf("<"));
+//    }
+//
+//    sURL  = "http://api.microsofttranslator.com/V2/Http.svc/Translate?appId=" + sAPIkey + "&from=" + sFromLang + "&to=" + sToLang + "&text=" + encodeURIComponent(sSource);
+//    sSend = null;
+//  }
+  //Bing POST method
   {
-    sMethod = "GET";
-
     if (nLang < 0) //Auto detect
     {
-      sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey + "&text=" + encodeURIComponent(sSource);
+      sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey;
 
       OpenRequest(oRequest, sMethod, sURL)
 
-      if (! SendRequest(oRequest, null))
+      if (! SendRequest(oRequest, sSource))
         return;
 
       if (oRequest.status != 200)
@@ -2079,28 +2100,9 @@ function Translate(bSelection, bAddToTarget)
       sFromLang = oRequest.responseText.substring(oRequest.responseText.indexOf(">") + 1, oRequest.responseText.lastIndexOf("<"));
     }
 
-    sURL  = "http://api.microsofttranslator.com/V2/Http.svc/Translate?appId=" + sAPIkey + "&from=" + sFromLang + "&to=" + sToLang + "&text=" + encodeURIComponent(sSource);
-    sSend = null;
+    sURL  = "http://api.microsofttranslator.com/V2/Http.svc/Translate?appId=" + sAPIkey + "&from=" + sFromLang + "&to=" + sToLang;
+    sSend = sSource;
   }
-//  //Bing POST method
-//  else if (oSelect.API == 1) //Bing
-//  {
-//    if (nLang < 0) //Auto detect
-//    {
-//      sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey;
-//      OpenRequest(oRequest, sMethod, sURL)
-//      if (! SendRequest(oRequest, sSource))
-//        return;
-//      if (oRequest.status != 200)
-//      {
-//        ErrorBox(oRequest.status + " : " + oRequest.statusText);
-//        return;
-//      }
-//      sFromLang = oRequest.responseText.substring(oRequest.responseText.indexOf(">") + 1, oRequest.responseText.lastIndexOf("<"));
-//    }
-//    sURL  = "http://api.microsofttranslator.com/V2/Http.svc/Translate?appId=" + sAPIkey + "&from=" + sFromLang + "&to=" + sToLang;
-//    sSend = sSource;
-//  }
   else //Yandex
   {
     sURL  = "http://translate.yandex.ru/tr.json/translate";
