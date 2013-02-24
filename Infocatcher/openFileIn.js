@@ -1,8 +1,9 @@
 // http://akelpad.sourceforge.net/forum/viewtopic.php?p=9927#9927
 // http://infocatcher.ucoz.net/js/akelpad_scripts/openFileIn.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/openFileIn.js
 
-// (c) Infocatcher 2010-2011
-// version 0.1.4 - 2011-02-21
+// (c) Infocatcher 2010-2013
+// version 0.2.0 - 2013-02-25
 
 //===================
 // Open file in other application
@@ -17,6 +18,11 @@
 
 //== Settings begin
 // You can use openFileIn-options.js file for override or tweak settings
+// Override:
+//   var appsData = { ... };
+// Tweak:
+//   appsData["App"] = { ... };       - add application
+//   appsData["App"].paths = [ ... ]  - change paths
 var mappings = {
 	// Only for applications marked as 'isBrowser: true'
 	// Example:
@@ -28,17 +34,24 @@ var appsData = {
 	//	"appID": {
 	//		paths: [
 	//			"c:\\path\\to\\app.exe",
-	//			"%EnvVar%\\another\\path\\to\\app.exe"
+	//			"%EnvVar%\\another\\path\\to\\app.exe",
+	//			"<HKCU\\path\\from\\registry>app.exe",
+	//			"?x64?...\\app64.exe", // Check only on x64 system
+	//			"?x86?...\\app32.exe"  // Check only on x86 system
 	//		],
 	//		args: "-file:%f -line:%l",
 	//		isBrowser: true
 	//	}
 	"Total Commander": {
 		paths: [
+			"%COMMANDER_EXE%",
 			"%COMMANDER_PATH%\\TOTALCMD.EXE",
+			"?x64?%COMMANDER_PATH%\\TOTALCMD64.EXE",
 			"%AkelDir%\\..\\totalcmd\\TOTALCMD.EXE",
 			"%AkelDir%\\..\\Total Commander\\TOTALCMD.EXE",
 			"%__portable__%\\totalcmd\\TOTALCMD.EXE",
+			"?x64?<HKCU\\Software\\Ghisler\\Total Commander\\InstallDir>\\TOTALCMD64.EXE",
+			"<HKCU\\Software\\Ghisler\\Total Commander\\InstallDir>\\TOTALCMD.EXE",
 			"%ProgramFiles%\\totalcmd\\TOTALCMD.EXE",
 			"%ProgramFiles%\\Total Commander\\TOTALCMD.EXE"
 		],
@@ -89,6 +102,7 @@ var appsData = {
 	},
 	"Firefox": {
 		paths: [
+			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\firefox.exe\\>",
 			"%ProgramFiles%\\Mozilla Firefox\\firefox.exe",
 			"%COMMANDER_PATH%\\..\\FirefoxPortable\\FirefoxPortable.exe",
 			"%AkelDir%\\..\\FirefoxPortable\\FirefoxPortable.exe"
@@ -98,6 +112,7 @@ var appsData = {
 	},
 	"Opera": {
 		paths: [
+			"<HKCU\\Software\\Opera Software\\Last Install Path>\\opera.exe",
 			"%ProgramFiles%\\Opera\\opera.exe",
 			"%COMMANDER_PATH%\\..\\OperaUSB\\opera.exe",
 			"%COMMANDER_PATH%\\..\\Opera\\opera.exe",
@@ -109,6 +124,8 @@ var appsData = {
 	},
 	"Google Chrome": {
 		paths: [
+			"<HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\\>",
+			"<HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe\\>",
 			"%LocalAppData%\\Google\\Chrome\\Application\\chrome.exe",
 			"%UserProfile%\\Local Settings\\Application Data\\Google\\Chrome\\Application\\chrome.exe",
 			"%UserProfile%\\Local Settings\\Application Data\\Bromium\\Application\\chrome.exe",
@@ -135,7 +152,7 @@ var fso = new ActiveXObject("Scripting.FileSystemObject");
 if(fso.FileExists(optionsPath))
 	eval(AkelPad.ReadFile(optionsPath));
 
-var allowMappings = getArg("mappings", true);
+var allowMappings = AkelPad.GetArgValue("mappings", true);
 
 var wsh = new ActiveXObject("WScript.Shell");
 var akelDir = AkelPad.GetAkelDir();
@@ -150,19 +167,24 @@ if(WScript.Arguments.length >= 2) {
 			if(appData.isBrowser) {
 				for(var p in mappings) {
 					var pl = p.length;
-					if(file.substr(0, p.length) == p) {
+					if(file.substr(0, pl) == p) {
 						file = mappings[p] + file.substr(pl).replace(/\\/g, "/");
 						break;
 					}
 				}
 			}
-			var args = file
-				? appData.args
-					.replace(/%f/g, '"' + file + '"')
-					.replace(/%l/g, getLine())
-				: appData.args
+			var args = appData.args;
+			if(file) {
+				if(/%f/.test(args))
+					args = args.replace(/%f/g, '"' + file + '"');
+				if(/%l/.test(args))
+					args = args.replace(/%l/g, getLine());
+			}
+			else {
+				args = args
 					.replace(/\s*\S*%f\S*\s*/g, " ")
 					.replace(/\s*\S*%l\S*\s*/g, " ");
+			}
 			var cmdLine = ('"' + path + '" ' + args).replace(/\s+$/, "");
 			try {
 				wsh.Exec(cmdLine);
@@ -185,10 +207,39 @@ else {
 	warn('Wrong arguments!\nUsage:\nCall("Scripts::Main", 1, "' + WScript.ScriptName + '", \'"appID" "%f"\')');
 }
 function getPath(paths) {
-	for(var i = 0, l = paths.length; i < l; i++) {
-		var path = wsh.ExpandEnvironmentStrings(paths[i].replace(/^%AkelDir%/, akelDir));
+	for(var i = 0, l = paths.length; i < l; ++i) {
+		var path = paths[i];
+		if(path.charAt(0) == "?") {
+			if(path.substr(0, 5) != (_X64 ? "?x64?" : "?x86?"))
+				continue;
+			path = path.substr(5);
+		}
+		var path = expandVariables(paths[i]);
+		//WScript.Echo(paths[i] + "\n=>\n" + path);
 		if(fso.FileExists(path))
 			return path;
+	}
+	return "";
+}
+function expandVariables(s) {
+	return expandEnvironmentVariables(expandRegistryVariables(s));
+}
+function expandEnvironmentVariables(s) {
+	return wsh.ExpandEnvironmentStrings(s.replace(/^%AkelDir%/, akelDir));
+}
+function expandRegistryVariables(s) { // <HKCU\Software\Foo\installPath>\foo.exe
+	return s.replace(/<(.+?)>/g, function(s, path) {
+		var val = getRegistryValue(path);
+		if(val)
+			return val;
+		return s;
+	});
+}
+function getRegistryValue(path) {
+	try {
+		return wsh.RegRead(path);
+	}
+	catch(e) {
 	}
 	return "";
 }
@@ -200,18 +251,4 @@ function getLine() {
 }
 function warn(msg) {
 	AkelPad.MessageBox(AkelPad.GetMainWnd(), msg, WScript.ScriptName, 48 /*MB_ICONEXCLAMATION*/);
-}
-
-function getArg(argName, defaultVal) {
-	var args = {};
-	for(var i = 0, argsCount = WScript.Arguments.length; i < argsCount; i++)
-		if(/^[-\/](\w+)(=(.+))?$/i.test(WScript.Arguments(i)))
-			args[RegExp.$1.toLowerCase()] = RegExp.$3 ? eval(RegExp.$3) : true;
-	getArg = function(argName, defaultVal) {
-		argName = argName.toLowerCase();
-		return typeof args[argName] == "undefined" // argName in args
-			? defaultVal
-			: args[argName];
-	};
-	return getArg(argName, defaultVal);
 }
