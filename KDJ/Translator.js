@@ -1,4 +1,4 @@
-// Translator.js - ver. 2013-02-08
+// Translator.js - ver. 2013-02-27
 //
 // On line translator via Google, MS Bing and Yandex.
 //
@@ -31,160 +31,6 @@
 // F4          - maximize/restore window
 // Right click - context menu in edit panels
 
-var sTxtCaption;
-var sTxtUse;
-var sTxtFromLang;
-var sTxtToLang;
-var sTxtAutoDetect;
-var sTxtTranslate;
-var sTxtTranslateP;
-var sTxtOptions;
-var sTxtSource;
-var sTxtTarget;
-var sTxtSettings;
-var sTxtUndo;
-var sTxtRedo;
-var sTxtCut;
-var sTxtCopyCB;
-var sTxtInsertAP;
-var sTxtPasteCB;
-var sTxtPasteAP;
-var sTxtDelete;
-var sTxtSelectAll;
-var sTxtEntireText;
-var sTxtInterface;
-var sTxtSourceInCB;
-var sTxtSourceWnd;
-var sTxtLoadText;
-var sTxtImmediate;
-var sTxtFontAP;
-var sTxtFontGUI;
-var sTxtWordWrap;
-var sTxtSortLang;
-var sTxtSortCode;
-var sTxtSortName;
-var sTxtOwnKey;
-var sTxtRegister;
-var sTxtOK;
-var sTxtCancel;
-var sTxtError;
-var sTxtNoText;
-var sTxtNoSupport;
-var sTxtNoInternet;
-var sTxtWait;
-var sTxtUndefined;
-var sTxtRegScripts;
-var sTxtNoLibrary;
-
-var aLangs = [
-  ["af"   , "", 1, 0, 0], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex*/
-  ["ar"   , "", 1, 1, 0],
-  ["be"   , "", 1, 0, 0],
-  ["bg"   , "", 1, 1, 0],
-  ["ca"   , "", 1, 1, 0],
-  ["cs"   , "", 1, 1, 0],
-  ["cy"   , "", 1, 0, 0],
-  ["da"   , "", 1, 1, 0],
-  ["de"   , "", 1, 1, 1],
-  ["el"   , "", 1, 1, 0],
-  ["en"   , "", 1, 1, 1],
-  ["eo"   , "", 1, 0, 0],
-  ["es"   , "", 1, 1, 1],
-  ["et"   , "", 1, 1, 0],
-  ["fa"   , "", 1, 0, 0],
-  ["fi"   , "", 1, 1, 0],
-  ["fr"   , "", 1, 1, 1],
-  ["ga"   , "", 1, 0, 0],
-  ["gl"   , "", 1, 0, 0],
-  ["hi"   , "", 1, 1, 0],
-  ["hr"   , "", 1, 0, 0],
-  ["ht"   , "", 1, 1, 0],
-  ["hu"   , "", 1, 1, 0],
-  ["id"   , "", 1, 1, 0],
-  ["is"   , "", 1, 0, 0],
-  ["it"   , "", 1, 1, 1],
-  ["iw"   , "", 1, 1, 0],
-  ["ja"   , "", 1, 1, 0],
-  ["ko"   , "", 1, 1, 0],
-  ["la"   , "", 1, 0, 0],
-  ["lt"   , "", 1, 1, 0],
-  ["lv"   , "", 1, 1, 0],
-  ["mk"   , "", 1, 0, 0],
-  ["ms"   , "", 1, 0, 0],
-  ["mt"   , "", 1, 0, 0],
-  ["nl"   , "", 1, 1, 0],
-  ["no"   , "", 1, 1, 0],
-  ["pl"   , "", 1, 1, 1],
-  ["pt"   , "", 1, 1, 0],
-  ["ro"   , "", 1, 1, 0],
-  ["ru"   , "", 1, 1, 1],
-  ["sk"   , "", 1, 1, 0],
-  ["sl"   , "", 1, 1, 0],
-  ["sq"   , "", 1, 0, 0],
-  ["sr"   , "", 1, 0, 0],
-  ["sv"   , "", 1, 1, 0],
-  ["sw"   , "", 1, 0, 0],
-  ["th"   , "", 1, 1, 0],
-  ["tl"   , "", 1, 0, 0],
-  ["tr"   , "", 1, 1, 1],
-  ["uk"   , "", 1, 1, 1],
-  ["vi"   , "", 1, 1, 0],
-  ["yi"   , "", 1, 0, 0],
-  ["zh"   , "", 1, 0, 0],
-  ["zh-CN", "", 1, 1, 0],
-  ["zh-TW", "", 1, 1, 0]];
-
-var aAPIs = [{"Name":        "Google",
-              "APIkey":      "",
-              "APIkeyP":     "",
-              "RegistrURL":  "",
-              "AutoDetect":  1,
-              "TextLen":     48000},
-             {"Name":        "MS Bing",
-              "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
-              "APIkeyP":     "",
-              "RegistrURL":  "http://www.bing.com/developers",
-              "AutoDetect":  1,
-              "TextLen":     10000}, //POST method
-              //"TextLen":     3500}, //GET method
-             {"Name":        "Yandex",
-              "APIkey":      "",
-              "APIkeyP":     "",
-              "RegistrURL":  "",
-              "AutoDetect":  0,
-              "TextLen":     10000}];
-var oSelect = {"API":      0,
-               "FromLang": 0,
-               "ToLang"  : 0,
-               "Source1" : 0,
-               "Source2" : 0,
-               "Target1" : 0,
-               "Target2" : 0};
-var oWndMin = {"W": 656,
-               "H": 200};
-var oWndPos = {"X": 100,
-               "Y": 120,
-               "W": oWndMin.W,
-               "H": oWndMin.H,
-               "Max": 0};
-
-var nOpaque     = 255;
-var bSourceInCB = 0;
-var bSourceWnd  = 1;
-var bLoadText   = 1;
-var bImmediate  = 0;
-var bFontAP     = 0;
-var bFontGUI    = 0;
-var bWordWrap   = 1;
-var bSortCode   = 0;
-var nDetectLang = -1;
-var sSource     = "";
-var sTarget     = "";
-var sLanguage   = "";
-var aFont;
-
-ReadIniFile();
-ReadInterfaceLang();
 GetAkelPadObject();
 
 var oSys         = AkelPad.SystemFunction();
@@ -222,12 +68,170 @@ else
   var hMainWnd     = AkelPad.GetMainWnd();
   var hEditWnd     = AkelPad.GetEditWnd();
   var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
+  var oFSO         = new ActiveXObject("Scripting.FileSystemObject");
+  var sIniFile     = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var sMp3File     = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".mp3";
   var sEditLibName = "AkelEdit.dll";
   var nBufSize     = 0xFFFF;
   var lpBuffer;
   var hEditLib;
   var hFocus;
   var bCloseCB;
+
+  var sTxtCaption;
+  var sTxtUse;
+  var sTxtFromLang;
+  var sTxtToLang;
+  var sTxtAutoDetect;
+  var sTxtTranslate;
+  var sTxtTranslateP;
+  var sTxtOptions;
+  var sTxtSource;
+  var sTxtTarget;
+  var sTxtSettings;
+  var sTxtUndo;
+  var sTxtRedo;
+  var sTxtCut;
+  var sTxtCopyCB;
+  var sTxtInsertAP;
+  var sTxtPasteCB;
+  var sTxtPasteAP;
+  var sTxtDelete;
+  var sTxtSelectAll;
+  var sTxtEntireText;
+  var sTxtInterface;
+  var sTxtSourceInCB;
+  var sTxtSourceWnd;
+  var sTxtLoadText;
+  var sTxtImmediate;
+  var sTxtFontAP;
+  var sTxtFontGUI;
+  var sTxtWordWrap;
+  var sTxtSortLang;
+  var sTxtSortCode;
+  var sTxtSortName;
+  var sTxtOwnKey;
+  var sTxtRegister;
+  var sTxtOK;
+  var sTxtCancel;
+  var sTxtError;
+  var sTxtNoText;
+  var sTxtNoSupport;
+  var sTxtNoInternet;
+  var sTxtWait;
+  var sTxtUndefined;
+  var sTxtRegScripts;
+  var sTxtNoLibrary;
+
+  var aLangs = [
+    ["af"   , "", 1, 0, 0, 1], /*1 - available in Google, 0 - not in Bing, 0 - not in Yandex, 1 - available Google TTS*/
+    ["ar"   , "", 1, 1, 0, 1],
+    ["be"   , "", 1, 0, 0, 0],
+    ["bg"   , "", 1, 1, 0, 0],
+    ["ca"   , "", 1, 1, 0, 1],
+    ["cs"   , "", 1, 1, 0, 1],
+    ["cy"   , "", 1, 0, 0, 1],
+    ["da"   , "", 1, 1, 0, 1],
+    ["de"   , "", 1, 1, 1, 1],
+    ["el"   , "", 1, 1, 0, 1],
+    ["en"   , "", 1, 1, 1, 1],
+    ["eo"   , "", 1, 0, 0, 1],
+    ["es"   , "", 1, 1, 1, 1],
+    ["et"   , "", 1, 1, 0, 0],
+    ["fa"   , "", 1, 0, 0, 0],
+    ["fi"   , "", 1, 1, 0, 1],
+    ["fr"   , "", 1, 1, 1, 1],
+    ["ga"   , "", 1, 0, 0, 0],
+    ["gl"   , "", 1, 0, 0, 0],
+    ["hi"   , "", 1, 1, 0, 1],
+    ["hr"   , "", 1, 0, 0, 1],
+    ["ht"   , "", 1, 1, 0, 1],
+    ["hu"   , "", 1, 1, 0, 1],
+    ["id"   , "", 1, 1, 0, 1],
+    ["is"   , "", 1, 0, 0, 1],
+    ["it"   , "", 1, 1, 1, 1],
+    ["iw"   , "", 1, 1, 0, 0],
+    ["ja"   , "", 1, 1, 0, 1],
+    ["ko"   , "", 1, 1, 0, 1],
+    ["la"   , "", 1, 0, 0, 1],
+    ["lt"   , "", 1, 1, 0, 0],
+    ["lv"   , "", 1, 1, 0, 1],
+    ["mk"   , "", 1, 0, 0, 1],
+    ["ms"   , "", 1, 0, 0, 0],
+    ["mt"   , "", 1, 0, 0, 0],
+    ["nl"   , "", 1, 1, 0, 1],
+    ["no"   , "", 1, 1, 0, 1],
+    ["pl"   , "", 1, 1, 1, 1],
+    ["pt"   , "", 1, 1, 0, 1],
+    ["ro"   , "", 1, 1, 0, 1],
+    ["ru"   , "", 1, 1, 1, 1],
+    ["sk"   , "", 1, 1, 0, 1],
+    ["sl"   , "", 1, 1, 0, 0],
+    ["sq"   , "", 1, 0, 0, 1],
+    ["sr"   , "", 1, 0, 0, 1],
+    ["sv"   , "", 1, 1, 0, 1],
+    ["sw"   , "", 1, 0, 0, 1],
+    ["th"   , "", 1, 1, 0, 1],
+    ["tl"   , "", 1, 0, 0, 0],
+    ["tr"   , "", 1, 1, 1, 1],
+    ["uk"   , "", 1, 1, 1, 0],
+    ["vi"   , "", 1, 1, 0, 1],
+    ["yi"   , "", 1, 0, 0, 0],
+    ["zh"   , "", 1, 0, 0, 1],
+    ["zh-CN", "", 1, 1, 0, 1],
+    ["zh-TW", "", 1, 1, 0, 1]];
+
+  var aAPIs = [{"Name":        "Google",
+                "APIkey":      "",
+                "APIkeyP":     "",
+                "RegistrURL":  "",
+                "AutoDetect":  1,
+                "TextLen":     48000},
+               {"Name":        "MS Bing",
+                "APIkey":      "49F91281913BE5C04C18F184C4A14ED6097F6AD3",
+                "APIkeyP":     "",
+                "RegistrURL":  "http://www.bing.com/developers",
+                "AutoDetect":  1,
+                "TextLen":     10000}, //POST method
+                //"TextLen":     3500}, //GET method
+               {"Name":        "Yandex",
+                "APIkey":      "",
+                "APIkeyP":     "",
+                "RegistrURL":  "",
+                "AutoDetect":  0,
+                "TextLen":     10000}];
+  var oSelect = {"API":      0,
+                 "FromLang": 0,
+                 "ToLang"  : 0,
+                 "Source1" : 0,
+                 "Source2" : 0,
+                 "Target1" : 0,
+                 "Target2" : 0};
+  var oWndMin = {"W": 656,
+                 "H": 200};
+  var oWndPos = {"X": 100,
+                 "Y": 120,
+                 "W": oWndMin.W,
+                 "H": oWndMin.H,
+                 "Max": 0};
+
+  var nOpaque     = 255;
+  var bSourceInCB = 0;
+  var bSourceWnd  = 1;
+  var bLoadText   = 1;
+  var bImmediate  = 0;
+  var bFontAP     = 0;
+  var bFontGUI    = 0;
+  var bWordWrap   = 1;
+  var bSortCode   = 0;
+  var nDetectLang = -1;
+  var sSource     = "";
+  var sTarget     = "";
+  var sLanguage   = "";
+  var aFont;
+
+  ReadIniFile();
+  ReadInterfaceLang();
 
   if (bSourceWnd && bLoadText)
   {
@@ -255,7 +259,7 @@ else
   if (! aFont)
     aFont = ConvertFontFormat(hGuiFont, 2, 3);
 
-  //Main window
+  //Main dialog
   var aSubClassHand = [];
   var aWnd          = [];
   var IDUSE         = 1000;
@@ -267,14 +271,16 @@ else
   var IDTOLANGCB    = 1006;
   var IDSWITCHLANG  = 1007;
   var IDSWITCHALL   = 1008;
-  var IDOPAQMINUS   = 1009;
-  var IDOPAQPLUS    = 1010;
-  var IDTRANSLATE   = 1011;
-  var IDOPTIONS     = 1012;
-  var IDTXTSOURCE   = 1013;
-  var IDTXTTARGET   = 1014;
+  var IDLISTEN1     = 1009;
+  var IDLISTEN2     = 1010;
+  var IDOPAQMINUS   = 1011;
+  var IDOPAQPLUS    = 1012;
+  var IDTRANSLATE   = 1013;
+  var IDOPTIONS     = 1014;
+  var IDTXTSOURCE   = 1015;
+  var IDTXTTARGET   = 1016;
 
-  //Settings window
+  //Settings dialog
   var aWndSet       = [];
   var IDINTERFACECB = 1100;
   var IDINTERFACE   = 1101;
@@ -298,7 +304,7 @@ else
   var IDOK          = 1119;
   var IDCANCEL      = 1120;
 
-  var WNDTYPE  = 0;
+  var WNDCLASS = 0;
   var WND      = 1;
   var WNDEXSTY = 2;
   var WNDSTY   = 3;
@@ -320,20 +326,22 @@ else
   //0x50200103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_SORT|CBS_DROPDOWNLIST
   //0x50210103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_TABSTOP|CBS_SORT|CBS_DROPDOWNLIST
   //0x50311104 - WS_VISIBLE|WS_CHILD|WS_HSCROLL|WS_VSCROLL|WS_TABSTOP|ES_WANTRETURN|ES_NOHIDESEL|ES_MULTILINE
-  //Windows               WNDTYPE,  WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
+  //Windows              WNDCLASS,  WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
   aWnd[IDUSE        ] = ["STATIC",    0,       0, 0x50000000,  10,  10,  80,  13];
-  aWnd[IDAPICB      ] = ["COMBOBOX",  0,       0, 0x50200003,  10,  25,  80,  20, ""];
-  aWnd[IDDETECTLANG ] = ["STATIC",    0,       0, 0x50000000,  10,  60, 290,  13, ""];
+  aWnd[IDAPICB      ] = ["COMBOBOX",  0,       0, 0x50200003,  10,  25,  80,  21, ""];
+  aWnd[IDDETECTLANG ] = ["STATIC",    0,       0, 0x50000000,  10,  60, 210,  13, ""];
   aWnd[IDFROMLANG   ] = ["STATIC",    0,       0, 0x50000000, 110,  10, 200,  13];
-  aWnd[IDFROMLANGCB ] = ["COMBOBOX",  0,       0, 0x50200103, 110,  25, 200,  20, ""];
+  aWnd[IDFROMLANGCB ] = ["COMBOBOX",  0,       0, 0x50200103, 110,  25, 200,  21, ""];
   aWnd[IDTOLANG     ] = ["STATIC",    0,       0, 0x50000000, 340,  10, 200,  13];
-  aWnd[IDTOLANGCB   ] = ["COMBOBOX",  0,       0, 0x50200103, 340,  25, 200,  20, ""];
-  aWnd[IDSWITCHLANG ] = ["BUTTON",    0,       0, 0x50000000, 310,  26,  30,  20, "<->"];
-  aWnd[IDSWITCHALL  ] = ["BUTTON",    0,       0, 0x50000000, 300,  50,  50,  20, "<->"];
+  aWnd[IDTOLANGCB   ] = ["COMBOBOX",  0,       0, 0x50200103, 340,  25, 200,  21, ""];
+  aWnd[IDSWITCHLANG ] = ["BUTTON",    0,       0, 0x50000000, 310,  25,  30,  21, "<->"];
+  aWnd[IDSWITCHALL  ] = ["BUTTON",    0,       0, 0x50000000, 310,  50,  30,  21, "<=>"];
+  aWnd[IDLISTEN1    ] = ["BUTTON",    0,       0, 0x50000000, 225,  50,  80,  21, sTxtListen];
+  aWnd[IDLISTEN2    ] = ["BUTTON",    0,       0, 0x50000000, 345,  50,  80,  21, sTxtListen];
   aWnd[IDOPAQMINUS  ] = ["BUTTON",    0,       0, 0x50000000, 617,   0,  15,  16, "-"];
   aWnd[IDOPAQPLUS   ] = ["BUTTON",    0,       0, 0x50000000, 632,   0,  15,  16, "+"];
-  aWnd[IDTRANSLATE  ] = ["BUTTON",    0,       0, 0x50000000, 560,  20,  80,  23];
-  aWnd[IDOPTIONS    ] = ["BUTTON",    0,       0, 0x50000000, 560,  45,  80,  23];
+  aWnd[IDTRANSLATE  ] = ["BUTTON",    0,       0, 0x50000000, 560,  25,  80,  21];
+  aWnd[IDOPTIONS    ] = ["BUTTON",    0,       0, 0x50000000, 560,  50,  80,  21];
   aWnd[IDTXTSOURCE  ] = ["AkelEditW", 0,   0x200, 0x50311104,  10,  75, 310,  80, sSource];
   aWnd[IDTXTTARGET  ] = ["AkelEditW", 0,   0x200, 0x50311104, 330,  75, 310,  80, sTarget];
 
@@ -407,6 +415,8 @@ function SetInterfaceLangToWndDef()
   aWnd[IDUSE      ][WNDTXT] = sTxtUse;
   aWnd[IDFROMLANG ][WNDTXT] = sTxtFromLang;
   aWnd[IDTOLANG   ][WNDTXT] = sTxtToLang;
+  aWnd[IDLISTEN1  ][WNDTXT] = sTxtListen;
+  aWnd[IDLISTEN2  ][WNDTXT] = sTxtListen;
   aWnd[IDTRANSLATE][WNDTXT] = sTxtTranslate;
   aWnd[IDOPTIONS  ][WNDTXT] = sTxtOptions;
 
@@ -434,11 +444,11 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     var oError;
     var i;
 
-    for (i = 1000; i < aWnd.length; ++i)
+    for (i = IDUSE; i < aWnd.length; ++i)
     {
       aWnd[i][WND] = oSys.Call("User32::CreateWindowExW",
                                 aWnd[i][WNDEXSTY], //dwExStyle
-                                aWnd[i][WNDTYPE],  //lpClassName
+                                aWnd[i][WNDCLASS], //lpClassName
                                 0,                 //lpWindowName
                                 aWnd[i][WNDSTY],   //dwStyle
                                 aWnd[i][WNDX],     //x
@@ -482,15 +492,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     if (nOpaque < 255)
       SetOpaqueLevel(hWnd, nOpaque);
 
-    hFocus = aWnd[bSourceWnd ? IDTXTSOURCE : IDTXTTARGET][WND];
-
-    if (! bSourceWnd)
-    {
-      aWnd[IDTXTTARGET][WNDW] = aWnd[IDTXTTARGET][WNDX] + aWnd[IDTXTTARGET][WNDW] - aWnd[IDTXTSOURCE][WNDX];
-      aWnd[IDTXTTARGET][WNDX] = aWnd[IDTXTSOURCE][WNDX];
-      oSys.Call("User32::ShowWindow", aWnd[IDSWITCHALL][WND], 0);
-      oSys.Call("User32::ShowWindow", aWnd[IDTXTSOURCE][WND], 0);
-    }
+    ShowSourceWindow();
 
     if (((! bSourceWnd) || (bSourceWnd && bLoadText)) && (bImmediate))
     {
@@ -737,6 +739,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
         SwitchLang();
       else if (nLowParam == IDSWITCHALL)
         SwitchLang(1);
+      else if ((nLowParam == IDLISTEN1) || (nLowParam == IDLISTEN2))
+        Listen(nLowParam);
       else if (nLowParam == IDOPAQMINUS)
       {
         if (nOpaque > 55)
@@ -758,6 +762,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
 
   else if (uMsg == 16) //WM_CLOSE
   {
+    oSys.Call("Winmm::mciSendStringW", "close TTS", 0, 0, 0);
     AkelPad.WindowUnsubClass(aWnd[IDTXTSOURCE][WND]);
     AkelPad.WindowUnsubClass(aWnd[IDTXTTARGET][WND]);
     WriteIniFile();
@@ -845,7 +850,7 @@ function ResizeWindow(hWnd)
 
   GetWindowPos(hWnd, oRect);
 
-  for (i = IDFROMLANG; i <= IDSWITCHALL; ++i)
+  for (i = IDFROMLANG; i <= IDLISTEN2; ++i)
     oSys.Call("User32::SetWindowPos", aWnd[i][WND], 0,
                                       aWnd[i][WNDX] + (oRect.W - oWndMin.W) / 2,
                                       aWnd[i][WNDY],
@@ -1114,6 +1119,7 @@ function ShowSourceWindow()
   }
 
   oSys.Call("User32::ShowWindow", aWnd[IDSWITCHALL][WND], bSourceWnd);
+  oSys.Call("User32::ShowWindow", aWnd[IDLISTEN1  ][WND], bSourceWnd);
   oSys.Call("User32::ShowWindow", aWnd[IDTXTSOURCE][WND], bSourceWnd);
   oSys.Call("User32::SetFocus", hFocus);
   ResizeWindow(hWndDlg)
@@ -1448,18 +1454,18 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
     for (i = 1100; i < aWndSet.length; ++i)
     {
       aWndSet[i][WND] = oSys.Call("User32::CreateWindowExW",
-                                   aWndSet[i][WNDEXSTY],//dwExStyle
-                                   aWndSet[i][WNDTYPE], //lpClassName
-                                   0,                   //lpWindowName
-                                   aWndSet[i][WNDSTY],  //dwStyle
-                                   aWndSet[i][WNDX],    //x
-                                   aWndSet[i][WNDY],    //y
-                                   aWndSet[i][WNDW],    //nWidth
-                                   aWndSet[i][WNDH],    //nHeight
-                                   hWnd,                //hWndParent
-                                   i,                   //ID
-                                   hInstanceDLL,        //hInstance
-                                   0);                  //lpParam
+                                   aWndSet[i][WNDEXSTY], //dwExStyle
+                                   aWndSet[i][WNDCLASS], //lpClassName
+                                   0,                    //lpWindowName
+                                   aWndSet[i][WNDSTY],   //dwStyle
+                                   aWndSet[i][WNDX],     //x
+                                   aWndSet[i][WNDY],     //y
+                                   aWndSet[i][WNDW],     //nWidth
+                                   aWndSet[i][WNDH],     //nHeight
+                                   hWnd,                 //hWndParent
+                                   i,                    //ID
+                                   hInstanceDLL,         //hInstance
+                                   0);                   //lpParam
       SetWndFontAndText(aWndSet[i][WND], hGuiFont, aWndSet[i][WNDTXT]);
     }
 
@@ -1553,7 +1559,7 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
       var sLangName = "";
       if (AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], CB_GETITEMDATA, nCurSel, 0) != -1)
       {
-        AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], 0x0148 /*CB_GETLBTEXT*/, nCurSel, lpBuffer)
+        AkelPad.SendMessage(aWndSet[IDINTERFACECB][WND], 0x0148 /*CB_GETLBTEXT*/, nCurSel, lpBuffer);
         sLangName = AkelPad.MemRead(lpBuffer, DT_UNICODE);
       }
       if (sLangName.toUpperCase() != sLanguage.toUpperCase())
@@ -1562,7 +1568,7 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
         ReadInterfaceLang();
         SetInterfaceLangToWndDef();
         SetWndFontAndText(hWndDlg, hGuiFont, sTxtCaption);
-        for (i = 1000; i <= IDOPTIONS; ++i)
+        for (i = IDUSE; i <= IDOPTIONS; ++i)
           SetWndFontAndText(aWnd[i][WND], hGuiFont, aWnd[i][WNDTXT]);
 
         ShowDetectLang(true);
@@ -1801,14 +1807,12 @@ function GetAkelPadObject()
 
 function ReadIniFile()
 {
-  var sFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var oFSO  = new ActiveXObject("Scripting.FileSystemObject");
   var oFile;
   var oError;
 
-  if (oFSO.FileExists(sFile))
+  if (oFSO.FileExists(sIniFile))
   {
-    oFile = oFSO.OpenTextFile(sFile, 1, false, -1);
+    oFile = oFSO.OpenTextFile(sIniFile, 1, false, -1);
     try
     {
       eval(oFile.ReadAll());
@@ -1822,10 +1826,8 @@ function ReadIniFile()
 
 function WriteIniFile()
 {
-  var oFSO  = new ActiveXObject("Scripting.FileSystemObject");
-  var oFile = oFSO.OpenTextFile(WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini", 2, true, -1);
+  var oFile = oFSO.OpenTextFile(sIniFile, 2, true, -1);
   var sIniTxt;
-  var oError;
   var i;
 
   oWndPos.Max = oSys.Call("User32::IsZoomed", hWndDlg);
@@ -1866,7 +1868,6 @@ function ReadInterfaceLang()
   if (sLanguage)
   {
     var sLangFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + "_" + sLanguage + ".lng";
-    var oFSO      = new ActiveXObject("Scripting.FileSystemObject");
     var oFile;
     var oError;
 
@@ -1899,6 +1900,7 @@ function BuiltInLang()
   sTxtFromLang   = "From language";
   sTxtToLang     = "To language";
   sTxtAutoDetect = "Auto detect language";
+  sTxtListen     = "Listen";
   sTxtTranslate  = "&Translate";
   sTxtTranslateP = "Translate+";
   sTxtOptions    = "&Options";
@@ -1936,6 +1938,8 @@ function BuiltInLang()
   sTxtNoInternet = "There was a problem with internet connection.";
   sTxtWait       = "Wait...";
   sTxtUndefined  = "Undefined";
+  sTxtChooseLang = "You need to choose the language.";
+  sTxtNoSpeech   = "No support for speech in this language.";
   sTxtRegScripts = "You must register library: Scripts.dll";
   sTxtNoLibrary  = "Can not load library: ";
 
@@ -2009,6 +2013,7 @@ function Translate(bSelection, bAddToTarget)
   var sLangName;
   var sURL;
   var sSend;
+  var oRequest;
   var oResponse;
   var oError;
   var i, n;
@@ -2018,7 +2023,7 @@ function Translate(bSelection, bAddToTarget)
 
   try
   {
-    var oRequest = new ActiveXObject("Microsoft.XMLHTTP");
+    oRequest = new ActiveXObject("Microsoft.XMLHTTP");
   }
   catch (oError)
   {
@@ -2065,7 +2070,7 @@ function Translate(bSelection, bAddToTarget)
 //    {
 //      sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey + "&text=" + encodeURIComponent(sSource);
 //
-//      OpenRequest(oRequest, sMethod, sURL)
+//      OpenRequest(oRequest, sMethod, sURL);
 //
 //      if (! SendRequest(oRequest, null))
 //        return;
@@ -2087,7 +2092,7 @@ function Translate(bSelection, bAddToTarget)
     {
       sURL = "http://api.microsofttranslator.com/V2/Http.svc/Detect?appId=" + sAPIkey;
 
-      OpenRequest(oRequest, sMethod, sURL)
+      OpenRequest(oRequest, sMethod, sURL);
 
       if (! SendRequest(oRequest, sSource))
         return;
@@ -2109,7 +2114,7 @@ function Translate(bSelection, bAddToTarget)
     sSend = "lang=" + sFromLang + "-" + sToLang + "&text=" + encodeURIComponent(sSource);
   }
 
-  OpenRequest(oRequest, sMethod, sURL)
+  OpenRequest(oRequest, sMethod, sURL);
 
   if (! SendRequest(oRequest, sSend))
     return;
@@ -2209,6 +2214,90 @@ function ErrorBox(sError)
 {
   SetWndFontAndText(aWnd[IDDETECTLANG][WND], 0, "");
   AkelPad.MessageBox(hWndDlg, sError, sTxtError, 48);
+}
+
+function Listen(nID)
+{
+  var hWndText = (nID == IDLISTEN1) ? aWnd[IDTXTSOURCE][WND] : aWnd[IDTXTTARGET][WND];
+  var lpReturn = AkelPad.MemAlloc(64 * 2);
+  var sMode;
+  var nLang;
+  var sURL;
+  var sText;
+  var oRequest;
+  var oFile;
+  var oError;
+
+  oSys.Call("Winmm::mciSendStringW", "status TTS mode", lpReturn, 64, 0);
+  sMode = AkelPad.MemRead(lpReturn, DT_UNICODE);
+  AkelPad.MemFree(lpReturn);
+
+  if (sMode == "playing")
+    oSys.Call("Winmm::mciSendStringW", "close TTS", 0, 0, 0);
+  else
+  {
+    if (AkelPad.SendMessage(hWndText, 3125 /*AEM_GETSEL*/, 0, 0))
+      AkelPad.SendMessage(hWndText, 1086 /*EM_GETSELTEXT*/, 0, lpBuffer);
+    else
+      oSys.Call("User32::GetWindowTextW", hWndText, lpBuffer, nBufSize);
+
+    if (! (sText = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/\s{2,}/g, " ")))
+      return;
+
+    if (nID == IDLISTEN1)
+    {
+      nLang = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_GETITEMDATA, oSelect.FromLang, 0);
+      if (nLang < 0)
+      {
+        AkelPad.MessageBox(hWndDlg, sTxtChooseLang, sTxtListen, 48);
+        return;
+      }
+    }
+    else
+      nLang = AkelPad.SendMessage(aWnd[IDTOLANGCB][WND], CB_GETITEMDATA, oSelect.ToLang, 0);
+
+    if (! aLangs[nLang][5])
+    {
+      AkelPad.MessageBox(hWndDlg, aLangs[nLang][1] + "\n\n" + sTxtNoSpeech, sTxtListen, 48);
+      return;
+    }
+
+    try
+    {
+      oRequest = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    catch (oError)
+    {
+      ErrorBox(sTxtNoSupport);
+      return;
+    }
+
+    SetWndFontAndText(aWnd[IDDETECTLANG][WND], 0, sTxtWait);
+
+    sURL = "http://translate.google.com/translate_tts?ie=utf-8&tl=" + aLangs[nLang][0] + "&q=" + encodeURIComponent(sText);
+
+    OpenRequest(oRequest, "GET", sURL);
+
+    if (! SendRequest(oRequest, null))
+      return;
+
+    if (oRequest.status != 200)
+    {
+      ErrorBox(oRequest.status + " : " + oRequest.statusText);
+      return;
+    }
+
+    if (sMode)
+      oSys.Call("Winmm::mciSendStringW", "close TTS wait", 0, 0, 0);
+
+    oFile = oFSO.OpenTextFile(sMp3File, 2, true, -1);
+    oFile.Write(oRequest.responseBody);
+    oFile.Close();
+
+    SetWndFontAndText(aWnd[IDDETECTLANG][WND], 0, "");
+    oSys.Call("Winmm::mciSendStringW", "open " + sMp3File + " alias TTS", 0, 0, 0);
+    oSys.Call("Winmm::mciSendStringW", "play TTS", 0, 0, 0);
+  }
 }
 
 /**********************

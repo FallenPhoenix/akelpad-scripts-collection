@@ -1,6 +1,6 @@
 /*********************************************
 Translator.js for AkelPad - Interface language
-Version:       2012-09-02
+Version:       2013-02-27
 Language:      English
 Translated by: KDJ
 *********************************************/
@@ -9,6 +9,7 @@ sTxtUse        = "Use";
 sTxtFromLang   = "From language";
 sTxtToLang     = "To language";
 sTxtAutoDetect = "Auto detect language";
+sTxtListen     = "Listen";
 sTxtTranslate  = "&Translate";
 sTxtTranslateP = "Translate+";
 sTxtOptions    = "&Options";
@@ -46,6 +47,8 @@ sTxtNoSupport  = "Your system does not support XMLHttpRequest.";
 sTxtNoInternet = "There was a problem with internet connection.";
 sTxtWait       = "Wait...";
 sTxtUndefined  = "Undefined";
+sTxtChooseLang = "You need to choose the language.";
+sTxtNoSpeech   = "No support for speech in this language.";
 sTxtRegScripts = "You must register library: Scripts.dll";
 sTxtNoLibrary  = "Can not load library: ";
 
