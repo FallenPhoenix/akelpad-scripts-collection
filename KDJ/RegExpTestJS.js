@@ -1,4 +1,4 @@
-// RegExpTestJS.js - ver. 2012-10-14
+// RegExpTestJS.js - ver. 2013-03-01
 //
 // Regular expression tester for JavaScript
 //
@@ -1511,7 +1511,7 @@ function WriteIni()
   oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDRE][WND], lpBuffer, nBufSize);
   pREStr = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
   oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDSTRING][WND], lpBuffer, nBufSize);
-  pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  pString = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
   oSys.Call("user32::GetWindowText" + _TCHAR, lpWnd[IDEDWITH][WND], lpBuffer, nBufSize);
   pWith = AkelPad.MemRead(lpBuffer, _TSTR).replace(/[\\"]/g, "\\$&");
 
