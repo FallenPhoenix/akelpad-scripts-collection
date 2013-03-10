@@ -1,4 +1,4 @@
-// Translator.js - ver. 2013-02-27
+// Translator.js - ver. 2013-03-10
 //
 // On line translator via Google, MS Bing and Yandex.
 //
@@ -11,25 +11,27 @@
 // Wscript.exe Translator.js
 //
 // Shortcut keys in dialog box:
-// Tab         - change edit panel focus source <-> target (double-panel mode)
-// Ctrl+Enter, - double-panel mode - translates entire text from source panel
-//             - single-panel mode - translates selected text from AkelPad window or text from Clipboard
-// Alt+Enter   - works as Ctrl+Enter, but translated text will be added at the end in target panel
-// Shift+Enter - double-window mode - translates selected text from source panel;
-//               if is not selection - translates entire text
-//             - single-panel mode - translates selected text from AkelPad window or text from Clipboard
-// Alt+U       - switch languages
-// Shift+Alt+U - switch languages and texts (double-panel mode only)
-// Alt+F1      - choose translator
-// Alt+1       - choose from language
-// Alt+2       - choose to language
-// Ctrl+F      - switch font AkelPad/GUI/other
-// Ctrl+U      - switch wordwrap
-// Ctrl+W      - source panel on/off
-// Alt+S       - settings
-// Alt+-+      - change opaque/transparency level of dialog box
-// F4          - maximize/restore window
-// Right click - context menu in edit panels
+// Tab          - change edit panel focus source <-> target (double-panel mode)
+// Ctrl+Enter,  - double-panel mode - translates entire text from source panel
+//              - single-panel mode - translates selected text from AkelPad window or text from Clipboard
+// Alt+Enter    - works as Ctrl+Enter, but translated text will be added at the end in target panel
+// Shift+Enter  - double-window mode - translates selected text from source panel;
+//                if is not selection - translates entire text
+//              - single-panel mode - translates selected text from AkelPad window or text from Clipboard
+// Ctrl+L       - listen entire text from active edit panel
+// Ctrl+Shift+L - listen selected text from active edit panel
+// Alt+U        - switch languages
+// Shift+Alt+U  - switch languages and texts (double-panel mode only)
+// Alt+F1       - choose translator
+// Alt+1        - choose from language
+// Alt+2        - choose to language
+// Ctrl+F       - switch font AkelPad/GUI/other
+// Ctrl+U       - switch wordwrap
+// Ctrl+W       - source panel on/off
+// Alt+S        - settings
+// Alt+-+       - change opaque/transparency level of dialog box
+// F4           - maximize/restore window
+// Right click  - context menu in edit panels
 
 GetAkelPadObject();
 
@@ -70,13 +72,18 @@ else
   var hGuiFont     = oSys.Call("gdi32::GetStockObject", 17 /*DEFAULT_GUI_FONT*/);
   var oFSO         = new ActiveXObject("Scripting.FileSystemObject");
   var sIniFile     = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
-  var sMp3File     = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".mp3";
   var sEditLibName = "AkelEdit.dll";
   var nBufSize     = 0xFFFF;
   var lpBuffer;
   var hEditLib;
   var hFocus;
+  var hFocusSet;
   var bCloseCB;
+  var nTimerCount;
+  var nSpeechLang;
+  var sSpeechText;
+  var sSpeechPart;
+  var uSpeechBody;
 
   var sTxtCaption;
   var sTxtUse;
@@ -279,6 +286,8 @@ else
   var IDOPTIONS     = 1014;
   var IDTXTSOURCE   = 1015;
   var IDTXTTARGET   = 1016;
+  var IDTIMER       = 1017;
+  var nListenID     = IDLISTEN1;
 
   //Settings dialog
   var aWndSet       = [];
@@ -306,13 +315,12 @@ else
 
   var WNDCLASS = 0;
   var WND      = 1;
-  var WNDEXSTY = 2;
-  var WNDSTY   = 3;
-  var WNDX     = 4;
-  var WNDY     = 5;
-  var WNDW     = 6;
-  var WNDH     = 7;
-  var WNDTXT   = 8;
+  var WNDSTY   = 2;
+  var WNDX     = 3;
+  var WNDY     = 4;
+  var WNDW     = 5;
+  var WNDH     = 6;
+  var WNDTXT   = 7;
 
   //0x50000000 - WS_VISIBLE|WS_CHILD
   //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
@@ -320,52 +328,53 @@ else
   //0x50010000 - WS_VISIBLE|WS_CHILD|WS_TABSTOP
   //0x50010001 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
   //0x50010003 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
-  //0x50010080 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL
-  //0x50010880 - WS_VISIBLE|WS_CHILD|WS_TABSTOP|ES_AUTOHSCROLL|ES_READONLY
   //0x50200003 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_DROPDOWNLIST
   //0x50200103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|CBS_SORT|CBS_DROPDOWNLIST
   //0x50210103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_TABSTOP|CBS_SORT|CBS_DROPDOWNLIST
+  //0x50810080 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_AUTOHSCROLL
+  //0x50810880 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_TABSTOP|ES_READONLY|ES_AUTOHSCROLL
   //0x50311104 - WS_VISIBLE|WS_CHILD|WS_HSCROLL|WS_VSCROLL|WS_TABSTOP|ES_WANTRETURN|ES_NOHIDESEL|ES_MULTILINE
-  //Windows              WNDCLASS,  WND,WNDEXSTY,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
-  aWnd[IDUSE        ] = ["STATIC",    0,       0, 0x50000000,  10,  10,  80,  13];
-  aWnd[IDAPICB      ] = ["COMBOBOX",  0,       0, 0x50200003,  10,  25,  80,  21, ""];
-  aWnd[IDDETECTLANG ] = ["STATIC",    0,       0, 0x50000000,  10,  60, 210,  13, ""];
-  aWnd[IDFROMLANG   ] = ["STATIC",    0,       0, 0x50000000, 110,  10, 200,  13];
-  aWnd[IDFROMLANGCB ] = ["COMBOBOX",  0,       0, 0x50200103, 110,  25, 200,  21, ""];
-  aWnd[IDTOLANG     ] = ["STATIC",    0,       0, 0x50000000, 340,  10, 200,  13];
-  aWnd[IDTOLANGCB   ] = ["COMBOBOX",  0,       0, 0x50200103, 340,  25, 200,  21, ""];
-  aWnd[IDSWITCHLANG ] = ["BUTTON",    0,       0, 0x50000000, 310,  25,  30,  21, "<->"];
-  aWnd[IDSWITCHALL  ] = ["BUTTON",    0,       0, 0x50000000, 310,  50,  30,  21, "<=>"];
-  aWnd[IDLISTEN1    ] = ["BUTTON",    0,       0, 0x50000000, 225,  50,  80,  21, sTxtListen];
-  aWnd[IDLISTEN2    ] = ["BUTTON",    0,       0, 0x50000000, 345,  50,  80,  21, sTxtListen];
-  aWnd[IDOPAQMINUS  ] = ["BUTTON",    0,       0, 0x50000000, 617,   0,  15,  16, "-"];
-  aWnd[IDOPAQPLUS   ] = ["BUTTON",    0,       0, 0x50000000, 632,   0,  15,  16, "+"];
-  aWnd[IDTRANSLATE  ] = ["BUTTON",    0,       0, 0x50000000, 560,  25,  80,  21];
-  aWnd[IDOPTIONS    ] = ["BUTTON",    0,       0, 0x50000000, 560,  50,  80,  21];
-  aWnd[IDTXTSOURCE  ] = ["AkelEditW", 0,   0x200, 0x50311104,  10,  75, 310,  80, sSource];
-  aWnd[IDTXTTARGET  ] = ["AkelEditW", 0,   0x200, 0x50311104, 330,  75, 310,  80, sTarget];
+  //0x50B11104 - WS_VISIBLE|WS_CHILD|WS_BORDER|WS_HSCROLL|WS_VSCROLL|WS_TABSTOP|ES_WANTRETURN|ES_NOHIDESEL|ES_MULTILINE
+  //Windows              WNDCLASS,  WND,     WNDSTY,WNDX,WNDY,WNDW,WNDH, WNDTXT
+  aWnd[IDUSE        ] = ["STATIC",    0, 0x50000000,  10,  10,  80,  13];
+  aWnd[IDAPICB      ] = ["COMBOBOX",  0, 0x50200003,  10,  25,  80,  21, ""];
+  aWnd[IDDETECTLANG ] = ["STATIC",    0, 0x50000000,  10,  60, 210,  13, ""];
+  aWnd[IDFROMLANG   ] = ["STATIC",    0, 0x50000000, 110,  10, 200,  13];
+  aWnd[IDFROMLANGCB ] = ["COMBOBOX",  0, 0x50200103, 110,  25, 200,  21, ""];
+  aWnd[IDTOLANG     ] = ["STATIC",    0, 0x50000000, 340,  10, 200,  13];
+  aWnd[IDTOLANGCB   ] = ["COMBOBOX",  0, 0x50200103, 340,  25, 200,  21, ""];
+  aWnd[IDSWITCHLANG ] = ["BUTTON",    0, 0x50000000, 310,  25,  30,  21, "<->"];
+  aWnd[IDSWITCHALL  ] = ["BUTTON",    0, 0x50000000, 310,  50,  30,  21, "<=>"];
+  aWnd[IDLISTEN1    ] = ["BUTTON",    0, 0x50000000, 225,  50,  80,  21, sTxtListen];
+  aWnd[IDLISTEN2    ] = ["BUTTON",    0, 0x50000000, 345,  50,  80,  21, sTxtListen];
+  aWnd[IDOPAQMINUS  ] = ["BUTTON",    0, 0x50000000, 617,   0,  15,  16, "-"];
+  aWnd[IDOPAQPLUS   ] = ["BUTTON",    0, 0x50000000, 632,   0,  15,  16, "+"];
+  aWnd[IDTRANSLATE  ] = ["BUTTON",    0, 0x50000000, 560,  25,  80,  21];
+  aWnd[IDOPTIONS    ] = ["BUTTON",    0, 0x50000000, 560,  50,  80,  21];
+  aWnd[IDTXTSOURCE  ] = ["AkelEditW", 0, 0x50311104,  10,  75, 310,  80, sSource];
+  aWnd[IDTXTTARGET  ] = ["AkelEditW", 0, 0x50311104, 330,  75, 310,  80, sTarget];
 
-  aWndSet[IDINTERFACECB] = ["COMBOBOX", 0,       0, 0x50210103,  10,  10, 150,  20, ""];
-  aWndSet[IDINTERFACE  ] = ["STATIC",   0,       0, 0x50000000, 165,  13, 120,  13];
-  aWndSet[IDEDITOPTIONS] = ["BUTTON",   0,       0, 0x50000007,  10,  40, 285, 185, ""];
-  aWndSet[IDSOURCEINCB ] = ["BUTTON",   0,       0, 0x50010003,  20,  55, 270,  16];
-  aWndSet[IDSOURCEWND  ] = ["BUTTON",   0,       0, 0x50010003,  20,  75, 270,  16];
-  aWndSet[IDLOADTEXT   ] = ["BUTTON",   0,       0, 0x50010003,  20,  95, 270,  16];
-  aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0,       0, 0x50010003,  20, 115, 270,  16];
-  aWndSet[IDWORDWRAP   ] = ["BUTTON",   0,       0, 0x50010003,  20, 135, 270,  16];
-  aWndSet[IDFONTAP     ] = ["BUTTON",   0,       0, 0x50010003,  20, 155, 270,  16];
-  aWndSet[IDFONTGUI    ] = ["BUTTON",   0,       0, 0x50010003,  20, 175, 270,  16];
-  aWndSet[IDFONT       ] = ["BUTTON",   0,       0, 0x50010000,  20, 195, 170,  20, aFont.toString()];
-  aWndSet[IDSORTLANG   ] = ["BUTTON",   0,       0, 0x50000007, 305, 160, 120,  65];
-  aWndSet[IDSORTCODE   ] = ["BUTTON",   0,       0, 0x50000009, 315, 180,  90,  16];
-  aWndSet[IDSORTNAME   ] = ["BUTTON",   0,       0, 0x50000009, 315, 200,  90,  16];
-  aWndSet[IDAPINAME1   ] = ["BUTTON",   0,       0, 0x50000007,  10, 235, 415,  75];
-  aWndSet[IDAPIKEYS1   ] = ["STATIC",   0,       0, 0x50000000,  20, 255,  70,  13, "AppID:"];
-  aWndSet[IDAPIKEY1    ] = ["EDIT",     0,   0x200, 0x50010080,  90, 255, 325,  20, ""];
-  aWndSet[IDREGIST1    ] = ["STATIC",   0,       0, 0x50000000,  20, 280,  70,  13];
-  aWndSet[IDREGURL1    ] = ["EDIT",     0,   0x200, 0x50010880,  90, 280, 325,  20, aAPIs[1].RegistrURL];
-  aWndSet[IDOK         ] = ["BUTTON",   0,       0, 0x50010001, 345,  10,  80,  23];
-  aWndSet[IDCANCEL     ] = ["BUTTON",   0,       0, 0x50010000, 345,  35,  80,  23];
+  aWndSet[IDINTERFACECB] = ["COMBOBOX", 0, 0x50210103,  10,  10, 150,  20, ""];
+  aWndSet[IDINTERFACE  ] = ["STATIC",   0, 0x50000000, 165,  13, 120,  13];
+  aWndSet[IDEDITOPTIONS] = ["BUTTON",   0, 0x50000007,  10,  40, 285, 185, ""];
+  aWndSet[IDSOURCEINCB ] = ["BUTTON",   0, 0x50010003,  20,  55, 270,  16];
+  aWndSet[IDSOURCEWND  ] = ["BUTTON",   0, 0x50010003,  20,  75, 270,  16];
+  aWndSet[IDLOADTEXT   ] = ["BUTTON",   0, 0x50010003,  20,  95, 270,  16];
+  aWndSet[IDIMMEDIATE  ] = ["BUTTON",   0, 0x50010003,  20, 115, 270,  16];
+  aWndSet[IDWORDWRAP   ] = ["BUTTON",   0, 0x50010003,  20, 135, 270,  16];
+  aWndSet[IDFONTAP     ] = ["BUTTON",   0, 0x50010003,  20, 155, 270,  16];
+  aWndSet[IDFONTGUI    ] = ["BUTTON",   0, 0x50010003,  20, 175, 270,  16];
+  aWndSet[IDFONT       ] = ["BUTTON",   0, 0x50010000,  20, 195, 170,  20, aFont.toString()];
+  aWndSet[IDSORTLANG   ] = ["BUTTON",   0, 0x50000007, 305, 160, 120,  65];
+  aWndSet[IDSORTCODE   ] = ["BUTTON",   0, 0x50000009, 315, 180,  90,  16];
+  aWndSet[IDSORTNAME   ] = ["BUTTON",   0, 0x50000009, 315, 200,  90,  16];
+  aWndSet[IDAPINAME1   ] = ["BUTTON",   0, 0x50000007,  10, 235, 415,  75];
+  aWndSet[IDAPIKEYS1   ] = ["STATIC",   0, 0x50000000,  20, 255,  70,  13, "AppID:"];
+  aWndSet[IDAPIKEY1    ] = ["EDIT",     0, 0x50810080,  90, 255, 325,  20, ""];
+  aWndSet[IDREGIST1    ] = ["STATIC",   0, 0x50000000,  20, 280,  70,  13];
+  aWndSet[IDREGURL1    ] = ["EDIT",     0, 0x50810880,  90, 280, 325,  20, aAPIs[1].RegistrURL];
+  aWndSet[IDOK         ] = ["BUTTON",   0, 0x50010001, 345,  10,  80,  23];
+  aWndSet[IDCANCEL     ] = ["BUTTON",   0, 0x50010000, 345,  35,  80,  23];
 
   SetInterfaceLangToWndDef();
 
@@ -447,7 +456,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     for (i = IDUSE; i < aWnd.length; ++i)
     {
       aWnd[i][WND] = oSys.Call("User32::CreateWindowExW",
-                                aWnd[i][WNDEXSTY], //dwExStyle
+                                0,                 //dwExStyle
                                 aWnd[i][WNDCLASS], //lpClassName
                                 0,                 //lpWindowName
                                 aWnd[i][WNDSTY],   //dwStyle
@@ -548,6 +557,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
            (oSys.Call("User32::GetFocus") == aWnd[IDTXTTARGET][WND])))
         Translate(Shift());
     }
+    else if ((wParam == 0x4C /*L key*/) && Ctrl() && (! Alt()))
+      Listen(hFocus, Number(Shift()));
     else if ((wParam == 0x43 /*C key*/) && Ctrl() && Shift())
       InsertTextToAP(hFocus, 0);
     else if ((wParam == 0x56 /*V key*/) && Ctrl() && Shift())
@@ -663,6 +674,18 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     }
   }
 
+  else if (uMsg == 0x3B9) //MM_MCINOTIFY
+  {
+    if (wParam == 1 /*MCI_NOTIFY_SUCCESSFUL*/)
+    {
+      oSys.Call("Winmm::mciSendStringW", "close TTS wait", 0, 0, 0);
+      PlayTextToSpeech();
+    }
+  }
+
+  else if (uMsg == 0x0113) //WM_TIMER
+    SetWndFontAndText(aWnd[nListenID][WND], hGuiFont, (nTimerCount++ % 2) ? sTxtListen : "");
+
   else if (uMsg == 273) //WM_COMMAND
   {
     var nLowParam = LoWord(wParam);
@@ -721,14 +744,20 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     else if (nLowParam == IDTXTSOURCE)
     {
       if (nHiwParam == 0x0100) //EN_SETFOCUS
+      {
         hFocus = lParam;
+        SetEditStyle(lParam, aWnd[IDTXTTARGET][WND]);
+      }
       else if (nHiwParam == 0x0300) //EN_CHANGE
         ShowDetectLang(false);
     }
     else if (nLowParam == IDTXTTARGET)
     {
       if (nHiwParam == 0x0100) //EN_SETFOCUS
+      {
         hFocus = lParam;
+        SetEditStyle(lParam, aWnd[IDTXTSOURCE][WND]);
+      }
     }
     else if ((nLowParam >= IDSWITCHLANG) && (nLowParam <= IDOPTIONS))
     {
@@ -739,8 +768,10 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
         SwitchLang();
       else if (nLowParam == IDSWITCHALL)
         SwitchLang(1);
-      else if ((nLowParam == IDLISTEN1) || (nLowParam == IDLISTEN2))
-        Listen(nLowParam);
+      else if (nLowParam == IDLISTEN1)
+        Listen(aWnd[IDTXTSOURCE][WND], -1);
+      else if (nLowParam == IDLISTEN2)
+        Listen(aWnd[IDTXTTARGET][WND], -1);
       else if (nLowParam == IDOPAQMINUS)
       {
         if (nOpaque > 55)
@@ -763,6 +794,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   else if (uMsg == 16) //WM_CLOSE
   {
     oSys.Call("Winmm::mciSendStringW", "close TTS", 0, 0, 0);
+    KillTimer();
     AkelPad.WindowUnsubClass(aWnd[IDTXTSOURCE][WND]);
     AkelPad.WindowUnsubClass(aWnd[IDTXTTARGET][WND]);
     WriteIniFile();
@@ -821,6 +853,11 @@ function Ctrl()
   return Boolean(oSys.Call("User32::GetKeyState", 0x11 /*VK_CONTROL*/) & 0x8000);
 }
 
+function Alt()
+{
+  return Boolean(oSys.Call("User32::GetKeyState", 0x12 /*VK_MENU*/) & 0x8000);
+}
+
 function SetWndFontAndText(hWnd, hFont, sText)
 {
   if (hFont)
@@ -857,7 +894,6 @@ function ResizeWindow(hWnd)
                                       0,
                                       0,
                                       0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
-
   for (i = IDOPAQMINUS; i <= IDOPTIONS; ++i)
     oSys.Call("User32::SetWindowPos", aWnd[i][WND], 0,
                                       aWnd[i][WNDX] + oRect.W - oWndMin.W,
@@ -865,14 +901,12 @@ function ResizeWindow(hWnd)
                                       0,
                                       0,
                                       0x15 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE*/);
-
   oSys.Call("User32::SetWindowPos", aWnd[IDTXTSOURCE][WND], 0,
                                     0,
                                     0,
                                     aWnd[IDTXTSOURCE][WNDW] + (oRect.W - oWndMin.W) / 2,
                                     aWnd[IDTXTSOURCE][WNDH] + oRect.H - oWndMin.H,
                                     0x16 /*SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOMOVE*/);
-
   if (bSourceWnd)
     oSys.Call("User32::SetWindowPos", aWnd[IDTXTTARGET][WND], 0,
                                       aWnd[IDTXTTARGET][WNDX] + (oRect.W - oWndMin.W) / 2,
@@ -1103,6 +1137,26 @@ function SetEditFont()
   AkelPad.SendMessage(aWnd[IDTXTTARGET][WND], 48 /*WM_SETFONT*/, hFont, 1);
 }
 
+function SetEditStyle(hWnd1, hWnd2)
+{
+  AkelPad.SendMessage(hWndDlg, 11 /*WM_SETREDRAW*/, 0, 0);
+
+  oSys.Call("User32::SetWindowLongW", hWnd1, -20 /*GWL_EXSTYLE*/, 0);
+  oSys.Call("User32::SetWindowLongW", hWnd1, -16 /*GWL_STYLE*/, 0x50B11104);
+  oSys.Call("User32::SetWindowPos", hWnd1, 0, 0, 0, 0, 0, 0x37 /*SWP_FRAMECHANGED|SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE|SWP_NOSIZE*/);
+
+  if (bSourceWnd)
+  {
+    oSys.Call("User32::SetWindowLongW", hWnd2, -20 /*GWL_EXSTYLE*/, 0x20000 /*WS_EX_STATICEDGE*/);
+    oSys.Call("User32::SetWindowLongW", hWnd2, -16 /*GWL_STYLE*/, 0x50311104);
+    oSys.Call("User32::SetWindowPos", hWnd2, 0, 0, 0, 0, 0, 0x37 /*SWP_FRAMECHANGED|SWP_NOACTIVATE|SWP_NOZORDER|SWP_NOMOVE|SWP_NOSIZE*/);
+  }
+
+  AkelPad.SendMessage(hWndDlg, 11 /*WM_SETREDRAW*/, 1, 0);
+
+  oSys.Call("User32::InvalidateRect", hWndDlg, 0, 0);
+}
+
 function ShowSourceWindow()
 {
   if (bSourceWnd)
@@ -1247,10 +1301,14 @@ function ContextMenu(hWnd, nPosParam)
   oSys.Call("User32::AppendMenuW", hMenu1, MF_SEPARATOR, 0, 0);
   oSys.Call("User32::AppendMenuW", hMenu1,
             oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
-            (1 << 8) | 27, sTxtTranslate + "\tCtrl+Enter");
+            (1 << 8) | 27, sTxtListen + "\tCtrl+L");
+  oSys.Call("User32::AppendMenuW", hMenu1, MF_SEPARATOR, 0, 0);
   oSys.Call("User32::AppendMenuW", hMenu1,
             oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
-            (1 << 8) | 28, sTxtTranslateP + "\tAlt+Enter");
+            (1 << 8) | 28, sTxtTranslate + "\tCtrl+Enter");
+  oSys.Call("User32::AppendMenuW", hMenu1,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTSOURCE][WND]) ? MF_STRING : MF_GRAYED,
+            (1 << 8) | 29, sTxtTranslateP + "\tAlt+Enter");
 
   //Sub menu target text (Entire text)
   oSys.Call("User32::AppendMenuW", hMenu2,
@@ -1272,6 +1330,10 @@ function ContextMenu(hWnd, nPosParam)
   oSys.Call("User32::AppendMenuW", hMenu2,
             AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
             (2 << 8) | 26, sTxtPasteAP + "\tShift+Alt+V");
+  oSys.Call("User32::AppendMenuW", hMenu2, MF_SEPARATOR, 0, 0);
+  oSys.Call("User32::AppendMenuW", hMenu2,
+            oSys.Call("User32::GetWindowTextLengthW", aWnd[IDTXTTARGET][WND]) ? MF_STRING : MF_GRAYED,
+            (2 << 8) | 27, sTxtListen + "\tCtrl+L");
 
   if (nPosParam == -2) //Context menu for button Options
   {
@@ -1335,15 +1397,19 @@ function ContextMenu(hWnd, nPosParam)
     oSys.Call("User32::AppendMenuW", hMenu,
               AkelPad.SendMessage(hEditWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
               (nWnd << 8) | 9, sTxtPasteAP + "\tCtrl+Shift+V");
+    oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
+    oSys.Call("User32::AppendMenuW", hMenu,
+              AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
+              (nWnd << 8) | 10, sTxtListen + "\tCtrl+Shift+L");
     if (nWnd == 1)
     {
       oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
       oSys.Call("User32::AppendMenuW", hMenu,
                 AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
-                (nWnd << 8) | 10, sTxtTranslate + "\tShift+Enter");
+                (nWnd << 8) | 11, sTxtTranslate + "\tShift+Enter");
       oSys.Call("User32::AppendMenuW", hMenu,
                 AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0) ? MF_STRING : MF_GRAYED,
-                (nWnd << 8) | 11, sTxtTranslateP + "\tShift+Alt+Enter");
+                (nWnd << 8) | 12, sTxtTranslateP + "\tShift+Alt+Enter");
     }
     oSys.Call("User32::AppendMenuW", hMenu, MF_SEPARATOR, 0, 0);
     oSys.Call("User32::AppendMenuW", hMenu, MF_POPUP, (nWnd == 1) ? hMenu1 : hMenu2, sTxtEntireText);
@@ -1382,8 +1448,10 @@ function ContextMenu(hWnd, nPosParam)
   else if (nCmd == 9)
     PasteTextFromAP(hWnd, 0);
   else if (nCmd == 10)
-    Translate(1);
+    Listen(hWnd, 1);
   else if (nCmd == 11)
+    Translate(1);
+  else if (nCmd == 12)
     Translate(1, 1);
 
   //Entire text
@@ -1403,8 +1471,10 @@ function ContextMenu(hWnd, nPosParam)
   else if (nCmd == 26)
     PasteTextFromAP(hWnd, 1);
   else if (nCmd == 27)
-    Translate();
+    Listen(hWnd, 0);
   else if (nCmd == 28)
+    Translate();
+  else if (nCmd == 29)
     Translate(0, 1);
 
   //Settings
@@ -1454,7 +1524,7 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
     for (i = 1100; i < aWndSet.length; ++i)
     {
       aWndSet[i][WND] = oSys.Call("User32::CreateWindowExW",
-                                   aWndSet[i][WNDEXSTY], //dwExStyle
+                                   0,                    //dwExStyle
                                    aWndSet[i][WNDCLASS], //lpClassName
                                    0,                    //lpWindowName
                                    aWndSet[i][WNDSTY],   //dwStyle
@@ -1488,10 +1558,15 @@ function DialogCallbackSet(hWnd, uMsg, wParam, lParam)
     oSys.Call("User32::EnableWindow", aWndSet[IDIMMEDIATE ][WND], (! bSourceWnd) || (bSourceWnd && bLoadText));
     oSys.Call("User32::EnableWindow", aWndSet[IDFONTAP    ][WND], hEditWnd);
     oSys.Call("User32::EnableWindow", aWndSet[IDFONT      ][WND], ((! bFontAP) || (! hEditWnd)) && (! bFontGUI));
+
+    hFocusSet = aWndSet[IDINTERFACECB][WND];
   }
 
+  else if ((uMsg == 6 /*WM_ACTIVATE*/) && (! wParam))
+    hFocusSet = oSys.Call("User32::GetFocus");
+
   else if (uMsg == 7) //WM_SETFOCUS
-    oSys.Call("User32::SetFocus", aWndSet[IDINTERFACECB][WND]);
+    oSys.Call("User32::SetFocus", hFocusSet);
 
   else if (uMsg == 256) //WM_KEYDOWN
   {
@@ -1832,9 +1907,9 @@ function WriteIniFile()
 
   oWndPos.Max = oSys.Call("User32::IsZoomed", hWndDlg);
   oSys.Call("User32::GetWindowTextW", aWnd[IDTXTSOURCE][WND], lpBuffer, nBufSize);
-  sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  sSource = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
   oSys.Call("User32::GetWindowTextW", aWnd[IDTXTTARGET][WND], lpBuffer, nBufSize);
-  sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r\n/g, "\\r\\n");
+  sTarget = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/[\\"]/g, "\\$&").replace(/\r/g, "\\r").replace(/\n/g, "\\n");
 
   sIniTxt = 'nOpaque='     + nOpaque     + ';\r\n'  +
             'bSourceInCB=' + bSourceInCB + ';\r\n'  +
@@ -2216,88 +2291,141 @@ function ErrorBox(sError)
   AkelPad.MessageBox(hWndDlg, sError, sTxtError, 48);
 }
 
-function Listen(nID)
+function Listen(hWnd, nSelection)
 {
-  var hWndText = (nID == IDLISTEN1) ? aWnd[IDTXTSOURCE][WND] : aWnd[IDTXTTARGET][WND];
   var lpReturn = AkelPad.MemAlloc(64 * 2);
   var sMode;
-  var nLang;
-  var sURL;
-  var sText;
-  var oRequest;
-  var oFile;
-  var oError;
 
   oSys.Call("Winmm::mciSendStringW", "status TTS mode", lpReturn, 64, 0);
   sMode = AkelPad.MemRead(lpReturn, DT_UNICODE);
   AkelPad.MemFree(lpReturn);
 
   if (sMode == "playing")
+  {
     oSys.Call("Winmm::mciSendStringW", "close TTS", 0, 0, 0);
+    KillTimer();
+  }
   else
   {
-    if (AkelPad.SendMessage(hWndText, 3125 /*AEM_GETSEL*/, 0, 0))
-      AkelPad.SendMessage(hWndText, 1086 /*EM_GETSELTEXT*/, 0, lpBuffer);
+    if (nSelection < 0)
+      nSelection = AkelPad.SendMessage(hWnd, 3125 /*AEM_GETSEL*/, 0, 0);
+
+    if (nSelection)
+      AkelPad.SendMessage(hWnd, 1086 /*EM_GETSELTEXT*/, 0, lpBuffer);
     else
-      oSys.Call("User32::GetWindowTextW", hWndText, lpBuffer, nBufSize);
+      oSys.Call("User32::GetWindowTextW", hWnd, lpBuffer, nBufSize);
 
-    if (! (sText = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/\s{2,}/g, " ")))
-      return;
+    sSpeechText = AkelPad.MemRead(lpBuffer, DT_UNICODE).replace(/([\$\+\*=_#&~])\1{2,}/g, "$1$1").replace(/([\,;.:\?!'])\1+/g, "$1").replace(/\[\(\)\[\]\{\}\^\/\|\\<>%"`-]+/g, " ").replace(/\s+/g, " ").replace(/^ | $/g, "");
 
-    if (nID == IDLISTEN1)
+    if (hWnd == aWnd[IDTXTSOURCE][WND])
     {
-      nLang = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_GETITEMDATA, oSelect.FromLang, 0);
-      if (nLang < 0)
+      nSpeechLang = AkelPad.SendMessage(aWnd[IDFROMLANGCB][WND], CB_GETITEMDATA, oSelect.FromLang, 0);
+      nListenID   = IDLISTEN1;
+
+      if (nSpeechLang < 0)
       {
         AkelPad.MessageBox(hWndDlg, sTxtChooseLang, sTxtListen, 48);
         return;
       }
     }
     else
-      nLang = AkelPad.SendMessage(aWnd[IDTOLANGCB][WND], CB_GETITEMDATA, oSelect.ToLang, 0);
-
-    if (! aLangs[nLang][5])
     {
-      AkelPad.MessageBox(hWndDlg, aLangs[nLang][1] + "\n\n" + sTxtNoSpeech, sTxtListen, 48);
+      nSpeechLang = AkelPad.SendMessage(aWnd[IDTOLANGCB][WND], CB_GETITEMDATA, oSelect.ToLang, 0);
+      nListenID   = IDLISTEN2;
+    }
+
+    if (! aLangs[nSpeechLang][5])
+    {
+      AkelPad.MessageBox(hWndDlg, aLangs[nSpeechLang][1] + "\n\n" + sTxtNoSpeech, sTxtListen, 48);
       return;
     }
 
+    GetTextToSpeech();
+    nTimerCount = 0;
+    oSys.Call("User32::SetTimer", hWndDlg, IDTIMER, 250, 0);
+    PlayTextToSpeech();
+  }
+}
+
+function GetTextToSpeech()
+{
+  var nPartLen = 100; //Google TTS limit text length
+  var oRequest;
+  var oError;
+
+  uSpeechBody = null;
+
+  if (sSpeechText.length > nPartLen)
+  {
+    sSpeechPart = sSpeechText.substr(0, nPartLen + 1);
+
+    if ((/ \S*$/.test(sSpeechPart)) && (RegExp.index > 0))
+      nPartLen = RegExp.index;
+
+    sSpeechPart = sSpeechPart.substr(0, nPartLen);
+    sSpeechText = sSpeechText.substr(nPartLen).replace(/^ /, "");
+  }
+  else
+  {
+    sSpeechPart = sSpeechText;
+    sSpeechText = "";
+  }
+
+  if (sSpeechPart)
+  {
     try
     {
       oRequest = new ActiveXObject("Microsoft.XMLHTTP");
     }
     catch (oError)
     {
+      sSpeechPart = "";
       ErrorBox(sTxtNoSupport);
       return;
     }
 
-    SetWndFontAndText(aWnd[IDDETECTLANG][WND], 0, sTxtWait);
-
-    sURL = "http://translate.google.com/translate_tts?ie=utf-8&tl=" + aLangs[nLang][0] + "&q=" + encodeURIComponent(sText);
-
-    OpenRequest(oRequest, "GET", sURL);
+    OpenRequest(oRequest, "GET", "http://translate.google.com/translate_tts?ie=utf-8&tl=" + aLangs[nSpeechLang][0] + "&q=" + encodeURIComponent(sSpeechPart));
 
     if (! SendRequest(oRequest, null))
-      return;
-
-    if (oRequest.status != 200)
     {
-      ErrorBox(oRequest.status + " : " + oRequest.statusText);
+      sSpeechPart = "";
       return;
     }
 
-    if (sMode)
-      oSys.Call("Winmm::mciSendStringW", "close TTS wait", 0, 0, 0);
+    if (oRequest.status == 200)
+      uSpeechBody = oRequest.responseBody;
+    else
+    {
+      sSpeechPart = "";
+      ErrorBox(oRequest.status + " : " + oRequest.statusText);
+    }
+  }
+}
+
+function PlayTextToSpeech()
+{
+  if (sSpeechPart)
+  {
+    var sMp3File = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".mp3";
+    var oFile;
 
     oFile = oFSO.OpenTextFile(sMp3File, 2, true, -1);
-    oFile.Write(oRequest.responseBody);
+    oFile.Write(uSpeechBody);
     oFile.Close();
 
-    SetWndFontAndText(aWnd[IDDETECTLANG][WND], 0, "");
     oSys.Call("Winmm::mciSendStringW", "open " + sMp3File + " alias TTS", 0, 0, 0);
-    oSys.Call("Winmm::mciSendStringW", "play TTS", 0, 0, 0);
+    oSys.Call("Winmm::mciSendStringW", "play TTS notify", 0, 0, hWndDlg);
+
+    GetTextToSpeech();
   }
+  else
+    KillTimer();
+}
+
+function KillTimer()
+{
+  oSys.Call("User32::KillTimer", hWndDlg, IDTIMER);
+  SetWndFontAndText(aWnd[nListenID][WND], hGuiFont, sTxtListen);
 }
 
 /**********************
