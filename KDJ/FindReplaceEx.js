@@ -1,4 +1,4 @@
-// FindReplaceEx.js - ver. 2013-02-06
+// FindReplaceEx.js - ver. 2013-03-24
 //
 // "Find/Replace" dialog extended version
 //
@@ -1502,24 +1502,29 @@ function RegExpHelp(nHelpID, bFRT)
     }
 
     aMenu = [
+      [nString,  ".",       sHlpAnyChar],
       [nString,  "\\(",     sHlpSpecChars],
       [nString,  "\\f",     sHlpFF],
       [nString,  "\\n",     sHlpAnyNL],
       [nString,  "\\r",     sHlpAnyNL],
       [nString,  "\\t",     sHlpTab],
       [nString,  "\\v",     sHlpVTab],
-      [nString,  "\\xFF",   sHlpCharHex],
-      [nString,  "\\uFFFF", sHlpUniCharHex],
-      [nString,  ".",       sHlpAnyChar],
       [nString,  "\\d",     sHlpDigit],
       [nString,  "\\D",     sHlpNonDigit],
       [nString,  "\\s",     sHlpWhiteSp],
       [nString,  "\\S",     sHlpNonWhiteSp],
       [nString,  "\\w",     sHlpWordChar],
       [nString,  "\\W",     sHlpNonWordChar],
+      [nString,  "\\x{F}",  sHlpCharHex],
+      [nString,  "\\xFF",   sHlpCharHex2],
+      [nString,  "\\uFFFF", sHlpCharHex4],
       [nSepar,   0, 0],
       [nString,  "^",       sHlpBeginLine],
       [nString,  "$",       sHlpEndLine],
+      [nString,  "\\A",     sHlpBeginText],
+      [nString,  "\\Z",     sHlpEndText],
+      [nString,  "\\a",     sHlpBeginRange],
+      [nString,  "\\z",     sHlpEndRange],
       [nString,  "\\b",     sHlpWordBoun],
       [nString,  "\\B",     sHlpNonWordBoun],
       [nBreak,   "ab|xy",   sHlpAlternative],
@@ -1530,15 +1535,17 @@ function RegExpHelp(nHelpID, bFRT)
       [nSepar,   0, 0],
       [nString,  "(ab)",    sHlpCapture],
       [nString,  "(?:ab)",  sHlpNotCapture],
-      [nString,  "(?=ab)",  sHlpFollow],
-      [nString,  "(?!ab)",  sHlpNotFollow],
+      [nString,  "(?<=ab)", sHlpPreceded],
+      [nString,  "(?<!ab)", sHlpNotPreceded],
+      [nString,  "(?=ab)",  sHlpFollowed],
+      [nString,  "(?!ab)",  sHlpNotFollowed],
       [nString,  "\\9",     sHlpBackrefer9],
       [nString,  "\\99",    sHlpBackrefer99],
       [nSepar,   0, 0],
       [nString,  "?",       sHlpZeroOrOne],
       [nString,  "*",       sHlpZeroOrMore],
       [nString,  "+",       sHlpOneOrMore],
-      [nString,  "{3}",     sHlpexactly],
+      [nString,  "{3}",     sHlpExactly],
       [nString,  "{3,}",    sHlpAtLeast],
       [nString,  "{3,7}",   sHlpFromTo],
       [nDisable, "",        sHlpNonGreedy]];
@@ -1563,8 +1570,9 @@ function RegExpHelp(nHelpID, bFRT)
       [nString, "\\r",     sHlpNL],
       [nString, "\\t",     sHlpTab],
       [nString, "\\v",     sHlpVTab],
-      [nString, "\\xFF",   sHlpCharHex],
-      [nString, "\\uFFFF", sHlpUniCharHex],
+      [nString, "\\x{F}",  sHlpCharHex],
+      [nString, "\\xFF",   sHlpCharHex2],
+      [nString, "\\uFFFF", sHlpCharHex4],
       [nSepar,  0, 0],
       [nString, "\\0",     sHlpEntireStr],
       [nString, "\\9",     sHlpSubmatch9],
@@ -1637,22 +1645,27 @@ function ReadIni()
     sTxtNoName      = 'Field "Name" is required.';
     sTxtNoFindWhat  = 'Field "Find - What" is required.';
     sTxtWantRemove  = 'Do you want to remove it?';
+    sHlpAnyChar     = 'any character (dot)';
     sHlpSpecChars   = '()[]{}^$.?+*|\\ special chars';
     sHlpFF          = 'form feed \\x0C';
     sHlpAnyNL       = 'any new line';
     sHlpTab         = 'tab \\x09';
     sHlpVTab        = 'vertical tab \\x0B';
-    sHlpCharHex     = 'character hex code FF';
-    sHlpUniCharHex  = 'Unicode char hex code FFFF';
-    sHlpAnyChar     = 'any character (dot)';
     sHlpDigit       = 'digit [0-9]';
     sHlpNonDigit    = 'non-digit [^0-9]';
-    sHlpWhiteSp     = 'whitespace [ \\f\\n\\r\\t\\v]';
+    sHlpWhiteSp     = 'whitespace [ \\f\\n\\t\\v]';
     sHlpNonWhiteSp  = 'non-whitespace';
     sHlpWordChar    = 'word character [A-Za-z0-9_]';
     sHlpNonWordChar = 'non-word character';
+    sHlpCharHex     = 'char - hex code, range 0-10FFFF';
+    sHlpCharHex2    = 'char - 2-digit hex code';
+    sHlpCharHex4    = 'char - 4-digit hex code';
     sHlpBeginLine   = 'beginning of line';
     sHlpEndLine     = 'end of line';
+    sHlpBeginText   = 'beginning of text';
+    sHlpEndText     = 'end of text';
+    sHlpBeginRange  = 'beginning of search range';
+    sHlpEndRange    = 'end of search range';
     sHlpWordBoun    = 'word boundary';
     sHlpNonWordBoun = 'non-word boundary';
     sHlpAlternative = 'alternative ab or xy';
@@ -1662,14 +1675,16 @@ function ReadIni()
     sHlpNegRange    = 'negative range of chars';
     sHlpCapture     = 'capture';
     sHlpNotCapture  = 'not capture';
-    sHlpFollow      = 'followed by ab';
-    sHlpNotFollow   = 'not followed by ab';
+    sHlpPreceded    = 'preceded by ab';
+    sHlpNotPreceded = 'not preceded by ab';
+    sHlpFollowed    = 'followed by ab';
+    sHlpNotFollowed = 'not followed by ab';
     sHlpBackrefer9  = 'backreference, range 1-9';
     sHlpBackrefer99 = 'backreference, range 01-99';
     sHlpZeroOrOne   = 'zero or one times';
     sHlpZeroOrMore  = 'zero or more times';
     sHlpOneOrMore   = 'one or more times';
-    sHlpexactly     = 'exactly 3 times';
+    sHlpExactly     = 'exactly 3 times';
     sHlpAtLeast     = 'at least 3 times';
     sHlpFromTo      = 'from 3 to 7 times';
     sHlpBackslash   = 'backslash';
@@ -1677,7 +1692,7 @@ function ReadIni()
     sHlpEntireStr   = 'entire string matched';
     sHlpSubmatch9   = '9th captured submatch, range 1-9';
     sHlpSubmatch99  = '99th captured submatch, range 01-99';
-    sHlpNonGreedy   = 'Quantifiers *+{} are non-greedy';
+    sHlpNonGreedy   = 'Quantifiers ?*+{} are lazy';
   }
 
   if (oFSO.FileExists(sIniFile))
