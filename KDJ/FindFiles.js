@@ -1,4 +1,4 @@
-// FindFiles.js - ver. 2013-01-04
+// FindFiles.js - ver. 2013-03-26
 //
 // Search files by name and content.
 //
@@ -1569,9 +1569,7 @@ function OpenOrCloseFile(bSelect)
       {
         if (IsFileExists(aFiles[nItem]))
         {
-          AkelPad.OpenFile(aFiles[nItem]);
-
-          if (bSelect && sLastContent && (! bLastNotContain))
+          if ((AkelPad.OpenFile(aFiles[nItem]) == 0 /*EOD_SUCCESS*/) && bSelect && sLastContent && (! bLastNotContain))
           {
             if (bLastContentRE)
             {
