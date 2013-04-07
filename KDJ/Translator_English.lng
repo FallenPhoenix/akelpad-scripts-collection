@@ -1,9 +1,9 @@
-/*********************************************
-Translator.js for AkelPad - Interface language
-Version:       2013-02-27
+/********************************
+Translator.js - ver. 2013-03-20
+Interface language
 Language:      English
 Translated by: KDJ
-*********************************************/
+********************************/
 sTxtCaption    = "Translator";
 sTxtUse        = "Use";
 sTxtFromLang   = "From language";
@@ -103,8 +103,9 @@ aLangs[47][1] = "Thai";
 aLangs[48][1] = "Filipino";
 aLangs[49][1] = "Turkish";
 aLangs[50][1] = "Ukrainian";
-aLangs[51][1] = "Vietnamese";
-aLangs[52][1] = "Yiddish";
-aLangs[53][1] = "Chinese";
-aLangs[54][1] = "Chinese Simplified";
-aLangs[55][1] = "Chinese Traditional";
+aLangs[51][1] = "Urdu";
+aLangs[52][1] = "Vietnamese";
+aLangs[53][1] = "Yiddish";
+aLangs[54][1] = "Chinese";
+aLangs[55][1] = "Chinese Simplified";
+aLangs[56][1] = "Chinese Traditional";
