@@ -1,4 +1,4 @@
-// FileAndStream_functions.js - 2012-05-17
+// FileAndStream_functions.js - ver. 2013-04-07
 //
 // based on the article: http://www.flexhex.com/docs/articles/alternate-streams.phtml
 //
@@ -17,8 +17,8 @@
 // WriteFile()
 // EnumStreams()
 //
-// Usage:
-// AkelPad.Include("FileAndStream_functions.js");
+// Usage in script:
+// if (! AkelPad.Include("FileAndStream_functions.js")) WScript.Quit();
 
 //------------------------------------------------------------
 // bSupport = IsSupportStreams(sDrive)
@@ -560,7 +560,7 @@ function EnumStreams(sFile)
   nMinorVer = AkelPad.MemRead(lpOsVer + 8, 3 /*DT_DWORD*/);
   AkelPad.MemFree(lpOsVer);
 
-  //Win-Vista +, Win-Server-2003 +
+  //Win-Vista+, Win-Server-2003+
   if ((nMajorVer > 5) || ((nMajorVer == 5) && (nMinorVer >= 2)))
   {
     var lpFindStream = AkelPad.MemAlloc(8 + (260 + 36) * 2);
@@ -662,22 +662,22 @@ function EnumStreams(sFile)
   }
 
   return aStream;
-}
 
-function GetStreamSize(lpBuffer)
-{
-  var sNum = "";
-  var sByte;
-  var i;
-
-  for (i = 0; i < 8; ++i)
+  function GetStreamSize(lpBuffer)
   {
-    sByte = AkelPad.MemRead(lpBuffer + i, 5 /*DT_BYTE*/).toString(16);
-    if (sByte.length == 1)
-      sByte = "0" + sByte;
+    var sNum = "";
+    var sByte;
+    var i;
 
-    sNum = sByte + sNum;
+    for (i = 0; i < 8; ++i)
+    {
+      sByte = AkelPad.MemRead(lpBuffer + i, 5 /*DT_BYTE*/).toString(16);
+      if (sByte.length == 1)
+        sByte = "0" + sByte;
+
+      sNum = sByte + sNum;
+    }
+
+    return parseInt("0x" + sNum);
   }
-
-  return parseInt("0x" + sNum);
 }

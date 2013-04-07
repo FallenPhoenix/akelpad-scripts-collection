@@ -1,11 +1,11 @@
-// ChooseFont_function.js - 2012-06-20
+// ChooseFont_function.js - ver. 2013-04-07
 //
 // Contains functions:
 // ChooseFont() - displays a dialog box with a choice of fonts
 // ConvertFontFormat()
 //
-// Usage:
-// AkelPad.Include("ChooseFont_function.js");
+// Usage in script:
+// if (! AkelPad.Include("ChooseFont_function.js")) WScript.Quit();
 
 //------------------------------------------------------------------------------------------
 // vResult = ChooseFont(hWndOwn, nIniType, vIniVal, bEffects, bFixedPitchOnly, nResultType);
@@ -45,13 +45,19 @@ function ChooseFont(hWndOwn, nIniType, vIniVal, bEffects, bFixedPitchOnly, nResu
   var CF_FORCEFONTEXIST      = 0x00010000;
   var CF_INITTOLOGFONTSTRUCT = 0x00000040;
   var CF_SCREENFONTS         = 0x00000001;
-  var lpCallback = AkelPad.SystemFunction().RegisterCallback("CFHookProcCallback");
+
+  var oSys       = AkelPad.SystemFunction();
+  var hWndDesk   = oSys.Call("User32::GetDesktopWindow");
+  var lpCallback = oSys.RegisterCallback("", CFCallback, 4);
   var nFlags     = CF_ENABLEHOOK | CF_FORCEFONTEXIST | CF_SCREENFONTS;
   var nCFSize    = 60; //sizeof(CHOOSEFONT)
   var lpCF       = AkelPad.MemAlloc(nCFSize);
   var lpLF;
   var vResult;
   var i;
+
+  if (! oSys.Call("User32::IsWindow", hWndOwn))
+    hWndOwn = hWndDesk;
 
   if (nIniType && vIniVal)
   {
@@ -88,7 +94,7 @@ function ChooseFont(hWndOwn, nIniType, vIniVal, bEffects, bFixedPitchOnly, nResu
   AkelPad.MemCopy(lpCF + 52,          0, 3 /*DT_DWORD*/); //nSizeMin
   AkelPad.MemCopy(lpCF + 56,          0, 3 /*DT_DWORD*/); //nSizeMax
 
-  if (AkelPad.SystemFunction().Call("Comdlg32::ChooseFontW", lpCF))
+  if (oSys.Call("Comdlg32::ChooseFontW", lpCF))
   {
     if (nResultType == 1) //pointer to LOGFONTW
       vResult = lpLF;
@@ -109,74 +115,74 @@ function ChooseFont(hWndOwn, nIniType, vIniVal, bEffects, bFixedPitchOnly, nResu
     AkelPad.MemFree(lpLF);
   }
 
-  AkelPad.SystemFunction().UnregisterCallback(lpCallback);
+  oSys.UnregisterCallback(lpCallback);
   AkelPad.MemFree(lpCF);
+
   return vResult;
-}
 
-function CFHookProcCallback(hWnd, uMsg, wParam, lParam)
-{
-  if (uMsg == 272 /*WM_INITDIALOG*/)
+  function CFCallback(hWnd, uMsg, wParam, lParam)
   {
-    var lpRect  = AkelPad.MemAlloc(16); //sizeof(RECT)
-    var hWndOwn = AkelPad.MemRead(lParam + 4, 3 /*DT_DWORD*/) || AkelPad.SystemFunction().Call("user32::GetDesktopWindow");
-    var nWndX, nWndY, nWndW, nWndH;
-    var nOwnX, nOwnY, nOwnW, nOwnH;
-    var nDeskW, nDeskH;
-    var sTitle;
-    var nTextLen;
-    var lpText;
-
-    //center dialog
-    AkelPad.SystemFunction().Call("User32::GetWindowRect", hWnd, lpRect);
-    nWndX = AkelPad.MemRead(lpRect,      3 /*DT_DWORD*/);
-    nWndY = AkelPad.MemRead(lpRect  + 4, 3 /*DT_DWORD*/);
-    nWndW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/) - nWndX;
-    nWndH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/) - nWndY;
-
-    AkelPad.SystemFunction().Call("User32::GetWindowRect", hWndOwn, lpRect);
-    nOwnX = AkelPad.MemRead(lpRect,      3 /*DT_DWORD*/);
-    nOwnY = AkelPad.MemRead(lpRect  + 4, 3 /*DT_DWORD*/);
-    nOwnW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/) - nOwnX;
-    nOwnH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/) - nOwnY;
-
-    AkelPad.SystemFunction().Call("User32::GetWindowRect", AkelPad.SystemFunction().Call("User32::GetDesktopWindow"), lpRect);
-    nDeskW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/);
-    nDeskH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/);
-    AkelPad.MemFree(lpRect);
-
-    nWndX = nOwnX + (nOwnW - nWndW) / 2;
-    nWndY = nOwnY + (nOwnH - nWndH) / 2;
-
-    if ((nWndX + nWndW) > nDeskW)
-      nWndX = nDeskW - nWndW;
-    if (nWndX < 0)
-      nWndX = 0;
-    if ((nWndY + nWndH) > nDeskH)
-      nWndY = nDeskH - nWndH;
-    if (nWndY < 0)
-      nWndY = 0;
-
-    AkelPad.SystemFunction().Call("User32::MoveWindow", hWnd, nWndX, nWndY, nWndW, nWndH, 0);
-
-    //dialog title
-    if (AkelPad.MemRead(lParam + 20 /*offsetof(CHOOSEFONT, Flags)*/, 3 /*DT_DWORD*/) & 0x00004000 /*CF_FIXEDPITCHONLY*/)
+    if (uMsg == 272 /*WM_INITDIALOG*/)
     {
-      sTitle   = " [Monospace]";
-      nTextLen = AkelPad.SendMessage(hWnd, 0x000E /*WM_GETTEXTLENGTH*/, 0, 0) + sTitle.length + 1;
-      lpText   = AkelPad.MemAlloc(nTextLen * 2);
+      var lpRect  = AkelPad.MemAlloc(16); //sizeof(RECT)
+      var sTitle;
+      var nTextLen;
+      var lpText;
+      var nWndX, nWndY, nWndW, nWndH;
+      var nOwnX, nOwnY, nOwnW, nOwnH;
+      var nDeskW, nDeskH;
 
-      AkelPad.SendMessage(hWnd, 0x000D /*WM_GETTEXT*/, nTextLen, lpText);
-      sTitle = AkelPad.MemRead(lpText, 1 /*DT_UNICODE*/) + sTitle;
+      //dialog title
+      if (bFixedPitchOnly)
+      {
+        sTitle   = " [Monospace]";
+        nTextLen = AkelPad.SendMessage(hWnd, 0x000E /*WM_GETTEXTLENGTH*/, 0, 0) + sTitle.length + 1;
+        lpText   = AkelPad.MemAlloc(nTextLen * 2);
 
-      AkelPad.MemCopy(lpText, sTitle, 1 /*DT_UNICODE*/);
-      AkelPad.SendMessage(hWnd, 0x000C /*WM_SETTEXT*/, 0, lpText);
+        AkelPad.SendMessage(hWnd, 0x000D /*WM_GETTEXT*/, nTextLen, lpText);
+        sTitle = AkelPad.MemRead(lpText, 1 /*DT_UNICODE*/) + sTitle;
 
-      AkelPad.MemFree(lpText);
+        AkelPad.MemCopy(lpText, sTitle, 1 /*DT_UNICODE*/);
+        AkelPad.SendMessage(hWnd, 0x000C /*WM_SETTEXT*/, 0, lpText);
+
+        AkelPad.MemFree(lpText);
+      }
+
+      //center dialog
+      oSys.Call("User32::GetWindowRect", hWnd, lpRect);
+      nWndX = AkelPad.MemRead(lpRect,      3 /*DT_DWORD*/);
+      nWndY = AkelPad.MemRead(lpRect  + 4, 3 /*DT_DWORD*/);
+      nWndW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/) - nWndX;
+      nWndH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/) - nWndY;
+
+      oSys.Call("User32::GetWindowRect", hWndOwn, lpRect);
+      nOwnX = AkelPad.MemRead(lpRect,      3 /*DT_DWORD*/);
+      nOwnY = AkelPad.MemRead(lpRect  + 4, 3 /*DT_DWORD*/);
+      nOwnW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/) - nOwnX;
+      nOwnH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/) - nOwnY;
+
+      oSys.Call("User32::GetWindowRect", hWndDesk, lpRect);
+      nDeskW = AkelPad.MemRead(lpRect +  8, 3 /*DT_DWORD*/);
+      nDeskH = AkelPad.MemRead(lpRect + 12, 3 /*DT_DWORD*/);
+      AkelPad.MemFree(lpRect);
+
+      nWndX = nOwnX + (nOwnW - nWndW) / 2;
+      nWndY = nOwnY + (nOwnH - nWndH) / 2;
+
+      if ((nWndX + nWndW) > nDeskW)
+        nWndX = nDeskW - nWndW;
+      if (nWndX < 0)
+        nWndX = 0;
+      if ((nWndY + nWndH) > nDeskH)
+        nWndY = nDeskH - nWndH;
+      if (nWndY < 0)
+        nWndY = 0;
+
+      oSys.Call("User32::MoveWindow", hWnd, nWndX, nWndY, nWndW, nWndH, 0);
     }
-  }
 
-  return 0;
+    return 0;
+  }
 }
 
 //-------------------------------------------------------
@@ -192,6 +198,7 @@ function CFHookProcCallback(hWnd, uMsg, wParam, lParam)
 //-------------------------------------------------------
 function ConvertFontFormat(vFont, nInType, nRetType)
 {
+  var oSys    = AkelPad.SystemFunction();
   var nLFSize = 28 + 32 * 2; //sizeof(LOGFONTW)
   var lpLF    = AkelPad.MemAlloc(nLFSize);
   var hFont;
@@ -210,15 +217,15 @@ function ConvertFontFormat(vFont, nInType, nRetType)
   else if (nInType == 2)
   {
     if (! vFont)
-      vFont = AkelPad.SystemFunction().Call("Gdi32::GetStockObject", 13 /*SYSTEM_FONT*/);
+      vFont = oSys.Call("Gdi32::GetStockObject", 13 /*SYSTEM_FONT*/);
 
-    AkelPad.SystemFunction().Call("Gdi32::GetObjectW", vFont, nLFSize, lpLF);
+    oSys.Call("Gdi32::GetObjectW", vFont, nLFSize, lpLF);
   }
   else if (nInType == 3)
   {
-    hDC     = AkelPad.SystemFunction().Call("User32::GetDC", AkelPad.GetMainWnd());
-    nHeight = -AkelPad.SystemFunction().Call("Kernel32::MulDiv", vFont[2], AkelPad.SystemFunction().Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/), 72);
-    AkelPad.SystemFunction().Call("User32::ReleaseDC", AkelPad.GetMainWnd(), hDC);
+    hDC     = oSys.Call("User32::GetDC", AkelPad.GetMainWnd());
+    nHeight = -oSys.Call("Kernel32::MulDiv", vFont[2], oSys.Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/), 72);
+    oSys.Call("User32::ReleaseDC", AkelPad.GetMainWnd(), hDC);
 
     nWeight = 400;
     bItalic = 0;
@@ -237,7 +244,7 @@ function ConvertFontFormat(vFont, nInType, nRetType)
     vRetVal = lpLF;
   else if (nRetType == 2)
   {
-    vRetVal = AkelPad.SystemFunction().Call("Gdi32::CreateFontIndirectW", lpLF);
+    vRetVal = oSys.Call("Gdi32::CreateFontIndirectW", lpLF);
     AkelPad.MemFree(lpLF);
   }
   else if (nRetType == 3)
@@ -256,10 +263,10 @@ function ConvertFontFormat(vFont, nInType, nRetType)
     if (bItalic)
       vRetVal[1] += 2;
 
-    hDC        = AkelPad.SystemFunction().Call("User32::GetDC", AkelPad.GetMainWnd());
+    hDC        = oSys.Call("User32::GetDC", AkelPad.GetMainWnd());
     nHeight    = AkelPad.MemRead(lpLF, 3 /*DT_DWORD*/); //lfHeight
-    vRetVal[2] = -AkelPad.SystemFunction().Call("Kernel32::MulDiv", nHeight, 72, AkelPad.SystemFunction().Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/));
-    AkelPad.SystemFunction().Call("User32::ReleaseDC", AkelPad.GetMainWnd(), hDC); 
+    vRetVal[2] = -oSys.Call("Kernel32::MulDiv", nHeight, 72, oSys.Call("Gdi32::GetDeviceCaps", hDC, 90 /*LOGPIXELSY*/));
+    oSys.Call("User32::ReleaseDC", AkelPad.GetMainWnd(), hDC); 
     AkelPad.MemFree(lpLF);
   }
 
