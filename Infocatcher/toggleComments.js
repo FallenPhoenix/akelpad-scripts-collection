@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=9924#9924
 // http://infocatcher.ucoz.net/js/akelpad_scripts/toggleComments.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/toggleComments.js
 
-// (c) Infocatcher 2008-2012
-// version 0.4.3.1 - 2012-05-11
+// (c) Infocatcher 2008-2013
+// version 0.4.3.2 - 2013-05-05
 
 //===================
 // Adds/removes comments
@@ -90,7 +91,11 @@ var commentsSets = {
 	highlight: [ null, null, [";"] ],
 	coder: [ null, null, [";"] ],
 	sql: [ ["/*"], ["*/"], ["--"] ],
-	htaccess: [ null, null, ["#"] ]
+	htaccess: [ null, null, ["#"] ],
+	//ahk: [ ["\r/*"], ["\r*/"], [";"] ],
+	ahk: [ null, null, [";"] ],
+	py: [ null, null, ["#"] ],
+	pyw: "py"
 };
 var commentsRegions = {
 	// Example:
