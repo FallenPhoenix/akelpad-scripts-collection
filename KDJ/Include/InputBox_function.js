@@ -1,4 +1,4 @@
-// InputBox_function.js - ver. 2013-04-16
+// InputBox_function.js - ver. 2013-08-07 (x86/x64)
 //
 // InputBox with multiple edit value and variable window width.
 // Window width adjusts to the length of caption and labels.
@@ -323,7 +323,7 @@ function InputBox(hWndOwn, sCaption, vLabelT, vEdit, nFocus, oFunc, vFuncArg, nM
           nWndY = nDeskY1;
 
         //Dialog
-        AkelPad.SendMessage(hWnd, 0x0080 /*WM_SETICON*/, 0 /*ICON_SMALL*/, hIcon);
+        oSys.Call("User32::SendMessageW", hWnd, 0x0080 /*WM_SETICON*/, 0 /*ICON_SMALL*/, hIcon);
         oSys.Call("User32::MoveWindow", hWnd, nWndX, nWndY, nWndW, nWndH, 0);
         oSys.Call("User32::SetWindowTextW", hWnd, sCaption);
         oSys.Call("User32::SetFocus", oSys.Call("User32::GetDlgItem", hWnd, 3000 + nFocus));
@@ -363,7 +363,7 @@ function InputBox(hWndOwn, sCaption, vLabelT, vEdit, nFocus, oFunc, vFuncArg, nM
         break;
 
       case 16 : //WM_CLOSE
-        oSys.Call("User32::DestroyIcon", AkelPad.SendMessage(hWnd, 0x007F /*WM_GETICON*/, 0 /*ICON_SMALL*/, 0));
+        oSys.Call("User32::DestroyIcon", oSys.Call("User32::SendMessageW", hWnd, 0x007F /*WM_GETICON*/, 0 /*ICON_SMALL*/, 0));
         oSys.Call("User32::EndDialog", hWnd, wParam);
     }
 
