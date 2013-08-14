@@ -1,8 +1,9 @@
 ﻿// http://akelpad.sourceforge.net/forum/viewtopic.php?p=11095#11095
 // http://infocatcher.ucoz.net/js/akelpad_scripts/converter.js
+// https://github.com/Infocatcher/AkelPad_scripts/blob/master/converter.js
 
-// (c) Infocatcher 2010-2012
-// version 0.2.3 - 2012-09-28
+// (c) Infocatcher 2010-2013
+// version 0.2.4.1 - 2013-08-14
 
 //===================
 // Hotkeys:
@@ -17,6 +18,7 @@
 //   Delete                   - Delete selection
 //   Ctrl+A                   - Select all
 //   Ctrl+S                   - Save file
+//   F1                       - "Help" (just open this file)
 
 // Encode/decode HTML entities:
 //   &    <=> &amp;
@@ -26,7 +28,9 @@
 //   ©    <=> &copy;  (and some other entities, see arguments)
 //   char <=> &#code; (see arguments)
 
-// Convert JavaScript escape sequences like "\u00a9" or "\xa9" ((c) symbol)
+// Convert JavaScript escape sequences
+//   \u00a9 <=> ©
+//   \xa9   <=> ©
 
 // Escape/unescape special RegExp symbols:
 //   http://example.com/ <=> http:\/\/example\.com\/
@@ -37,10 +41,18 @@
 //   "ab"cd'ef" <=> "ab\"cd'ef"
 
 // Encode/decode Uniform Resource Identifiers (URIs) with
-//   encodeURI/decodeURI or encodeURIComponent/decodeURIComponent
+// encodeURI()/decodeURI()
+//   https://ru.wikipedia.org/wiki/%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
+// or encodeURIComponent()/decodeURIComponent()
+//   https%3A%2F%2Fru.wikipedia.org%2Fwiki%2F%D0%A2%D0%B5%D1%81%D1%82 <=> https://ru.wikipedia.org/wiki/Тест
+
+// Hexadecimal escape/unescape
+//   JavaScript's escape()/unescape()
+//   "test тест" <=> %22test%20%u0442%u0435%u0441%u0442%22
 
 // Base64 encode/decode
 // based on code from http://www.farfarfar.com/scripts/encrypt/
+//   Test, проверка <=> VGVzdCwg0L/RgNC+0LLQtdGA0LrQsA== (used UTF-8 code page)
 
 // Convert charset
 // -type="Charset"
@@ -55,11 +67,12 @@
 //   -mode=1                                 - encode
 //   -mode=2                                 - decode
 //   -type="RegExp"                          - type of converter ("HTML", "Escapes", "RegExp", "String",
-//                                             "URI", "URIComponent", "Base64", "Charset", "Recode")
+//                                             "URI", "URIComponent", "Unescape", "Base64", "Charset", "Recode")
 //   -action=1                               - sum of flags: 1 - insert, 2 - copy, 4 - show
 //   -dialog=false                           - don't show dialog
 //   -onlySelected=true                      - use only selected text
 //   -warningTime=4000                       - show warning for slow calculations
+//   -test=true                              - display convert speed
 //   -saveOptions=0                          - don't store options
 //   -saveOptions=1                          - (default) save options after converting
 //   -saveOptions=2                          - save options on exit
@@ -146,7 +159,7 @@ function _localize(s) {
 		"&&#c&ode; => symbol": {
 			ru: "&&#к&од; => символ"
 		},
-		"sy&mbol => &&#code;": {
+		"sym&bol => &&#code;": {
 			ru: "си&мвол => &&#код;"
 		},
 		"he&x-code": {
@@ -173,8 +186,11 @@ function _localize(s) {
 		"Base64": {
 			ru: "Base64"
 		},
-		"&Base64": {
-			ru: "&Base64"
+		"Hexadeci&mal escape": {
+			ru: "&Шестнадцатеричное кодирование"
+		},
+		"Base&64": {
+			ru: "Base&64"
 		},
 		"Direction": {
 			ru: "Направление"
@@ -246,6 +262,8 @@ if(saveOptions || savePosition || saveSize)
 var forceShowDialog       = getArg("dialog", true);
 var onlySelected          = getArg("onlySelected", false);
 var warningTime           = getArg("warningTime", 4000);
+
+var speedTest             = getArg("test", false);
 
 var type                  = getArgOrPref("type",                  prefs && prefs.STRING, "html").toLowerCase();
 var mode                  = getArgOrPref("mode",                  prefs && prefs.DWORD, MODE_AUTO);
@@ -864,6 +882,13 @@ function decodeURICustom(str, cp) {
 	return /%/.test(ret) ? str : ret;
 }
 
+function escapeWrapped(str) {
+	return escape(str);
+}
+function unescapeWrapped(str) {
+	return unescape(str);
+}
+
 
 var base64 = {
 	_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
@@ -1089,6 +1114,13 @@ var converters = {
 		encode: encodeURIComponentWrapped,
 		decode: decodeURIComponentWrapped
 	},
+	unescape: {
+		prettyName: "Unescape",
+		firstAction: "decode",
+		speed: [24e3, 120e3],
+		encode: escapeWrapped,
+		decode: unescapeWrapped
+	},
 	base64: {
 		prettyName: "Base64",
 		firstAction: "decode",
@@ -1210,7 +1242,8 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 	var res;
 	if(auto && actionObj)
 		actionObj.value = firstAction;
-	//var t = new Date().getTime();
+	if(speedTest)
+		var t = new Date().getTime();
 	if(useFirstAction || auto) {
 		try {
 			res = converter[firstAction](text);
@@ -1248,7 +1281,15 @@ function convert(hWnd, actionObj, firstChangedCharObj) {
 			return false;
 		}
 	}
-	//WScript.Echo(text.length/(new Date().getTime() - t));
+
+	if(speedTest) {
+		AkelPad.MessageBox(
+			hWnd || hMainWnd,
+			"Speed: " + text.length/(new Date().getTime() - t),
+			dialogTitle + " :: " + converter.prettyName,
+			64 /*MB_ICONINFORMATION*/
+		);
+	}
 
 	if(res == text || res == null) {
 		AkelPad.MessageBox(
@@ -1330,20 +1371,21 @@ function converterDialog(modal) {
 	var IDC_TYPE_URI      = 1012;
 	var IDC_TYPE_URIC     = 1013;
 	var IDC_TYPE_BASE64   = 1014;
-	var IDC_TO_DATA_URI   = 1015;
-	var IDC_TO_BASE64     = 1016;
-	var IDC_MODE_AUTO     = 1017;
-	var IDC_MODE_ENCODE   = 1018;
-	var IDC_MODE_DECODE   = 1019;
-	var IDC_ACT_INSERT    = 1020;
-	var IDC_ACT_COPY      = 1021;
-	var IDC_ACT_SHOW      = 1022;
-	var IDC_OUTPUT        = 1023;
-	var IDC_OK            = 1024;
-	var IDC_CONVERT       = 1025;
-	var IDC_CANCEL        = 1026;
+	var IDC_TYPE_UNESCAPE = 1015;
+	var IDC_TO_DATA_URI   = 1016;
+	var IDC_TO_BASE64     = 1017;
+	var IDC_MODE_AUTO     = 1018;
+	var IDC_MODE_ENCODE   = 1019;
+	var IDC_MODE_DECODE   = 1020;
+	var IDC_ACT_INSERT    = 1021;
+	var IDC_ACT_COPY      = 1022;
+	var IDC_ACT_SHOW      = 1023;
+	var IDC_OUTPUT        = 1024;
+	var IDC_OK            = 1025;
+	var IDC_CONVERT       = 1026;
+	var IDC_CANCEL        = 1027;
 
-	var hWndGroupType, hWndTypeHTML, hWndTypeEscapes, hWndTypeRegExp, hWndTypeString, hWndTypeURI, hWndTypeURIC, hWndTypeBase64;
+	var hWndGroupType, hWndTypeHTML, hWndTypeEscapes, hWndTypeRegExp, hWndTypeString, hWndTypeURI, hWndTypeURIC, hWndTypeUnescape, hWndTypeBase64;
 	var hWndDecEnt, hWndEncEnt, hWndDecEntSp, hWndEncEntSp, hWndDecChr, hWndEncChr, hWndEncChrHex;
 	var hWndToDataURI, hWndToBase64;
 	var hWndGroupMode, hWndModeAuto, hWndModeEncode, hWndModeDecode;
@@ -1379,7 +1421,7 @@ function converterDialog(modal) {
 	var sizeNonClientY = oSys.Call("user32::GetSystemMetrics", 33 /*SM_CYSIZEFRAME*/) * 2 + oSys.Call("user32::GetSystemMetrics", 4 /*SM_CYCAPTION*/);
 
 	var dlgMinW = scale.x(410) + sizeNonClientX;
-	var dlgMinH = scale.y(373) + sizeNonClientY; // + outputH + 12
+	var dlgMinH = scale.y(392) + sizeNonClientY; // + outputH + 12
 	var outputMinH = 20;
 
 	if(outputH != undefined)
@@ -1435,7 +1477,7 @@ function converterDialog(modal) {
 					12,           //x
 					10,           //y
 					386,          //nWidth
-					214,          //nHeight
+					233,          //nHeight
 					hWnd,         //hWndParent
 					IDC_STATIC,   //ID
 					hInstanceDLL, //hInstance
@@ -1570,7 +1612,7 @@ function converterDialog(modal) {
 					hInstanceDLL, //hInstance
 					0             //lpParam
 				);
-				setWindowFontAndText(hWndEncChr, hGuiFont, _localize("sy&mbol => &&#code;"));
+				setWindowFontAndText(hWndEncChr, hGuiFont, _localize("sym&bol => &&#code;"));
 				checked(hWndEncChr, encodeChars);
 
 				// Checkbox: HTML symbol => &#code; as hex
@@ -1721,6 +1763,24 @@ function converterDialog(modal) {
 				checked(hWndToBase64, toBase64);
 
 
+				// Radiobutton escape/unescape converter
+				hWndTypeUnescape = createWindowEx(
+					0,                 //dwExStyle
+					"BUTTON",          //lpClassName
+					0,                 //lpWindowName
+					0x50000004,        //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
+					24,                //x
+					202,               //y
+					350,               //nWidth
+					16,                //nHeight
+					hWnd,              //hWndParent
+					IDC_TYPE_UNESCAPE, //ID
+					hInstanceDLL,      //hInstance
+					0                  //lpParam
+				);
+				setWindowFontAndText(hWndTypeUnescape, hGuiFont, _localize("Hexadeci&mal escape"));
+				checked(hWndTypeUnescape, type == "unescape");
+
 				// Radiobutton Base64 converter
 				hWndTypeBase64 = createWindowEx(
 					0,               //dwExStyle
@@ -1728,7 +1788,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,              //x
-					202,             //y
+					221,             //y
 					350,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1736,7 +1796,7 @@ function converterDialog(modal) {
 					hInstanceDLL,    //hInstance
 					0                //lpParam
 				);
-				setWindowFontAndText(hWndTypeBase64, hGuiFont, _localize("&Base64"));
+				setWindowFontAndText(hWndTypeBase64, hGuiFont, _localize("Base&64"));
 				checked(hWndTypeBase64, type == "base64");
 
 
@@ -1747,7 +1807,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					234,          //y
+					253,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1764,7 +1824,7 @@ function converterDialog(modal) {
 					0,             //lpWindowName
 					0x50000004,    //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					24,            //x
-					252,           //y
+					271,           //y
 					116,           //nWidth
 					16,            //nHeight
 					hWnd,          //hWndParent
@@ -1782,7 +1842,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					148,             //x
-					252,             //y
+					271,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1800,7 +1860,7 @@ function converterDialog(modal) {
 					0,               //lpWindowName
 					0x50000004,      //WS_VISIBLE|WS_CHILD|BS_RADIOBUTTON
 					272,             //x
-					252,             //y
+					271,             //y
 					116,             //nWidth
 					16,              //nHeight
 					hWnd,            //hWndParent
@@ -1819,7 +1879,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50000007,   //WS_VISIBLE|WS_CHILD|BS_GROUPBOX
 					12,           //x
-					286,          //y
+					305,          //y
 					386,          //nWidth
 					42,           //nHeight
 					hWnd,         //hWndParent
@@ -1836,7 +1896,7 @@ function converterDialog(modal) {
 					0,              //lpWindowName
 					0x50010003,     //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					24,             //x
-					304,            //y
+					323,            //y
 					116,            //nWidth
 					16,             //nHeight
 					hWnd,           //hWndParent
@@ -1854,7 +1914,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					148,          //x
-					304,          //y
+					323,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1872,7 +1932,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010003,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_AUTOCHECKBOX
 					272,          //x
-					304,          //y
+					323,          //y
 					116,          //nWidth
 					16,           //nHeight
 					hWnd,         //hWndParent
@@ -1890,7 +1950,7 @@ function converterDialog(modal) {
 					0,                     //lpWindowName
 					0x50315904,            //WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_HSCROLL|ES_LEFT|ES_MULTILINE|ES_DISABLENOSCROLL|WS_TABSTOP|ES_SUNKEN|ES_NOHIDESEL|ES_READONLY
 					12,                    //x
-					340,                   //y
+					359,                   //y
 					386,                   //nWidth
 					outputH,               //nHeight
 					hWnd,                  //hWndParent
@@ -1912,7 +1972,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010001,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP|BS_DEFPUSHBUTTON
 					75,           //x
-					339 + dh,     //y
+					358 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -1929,7 +1989,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					187,          //x
-					339 + dh,     //y
+					358 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -1946,7 +2006,7 @@ function converterDialog(modal) {
 					0,            //lpWindowName
 					0x50010000,   //WS_VISIBLE|WS_CHILD|WS_TABSTOP
 					299,          //x
-					339 + dh,     //y
+					358 + dh,     //y
 					100,          //nWidth
 					23,           //nHeight
 					hWnd,         //hWndParent
@@ -2017,6 +2077,8 @@ function converterDialog(modal) {
 				}
 				else if(ctrl && wParam == 83 /*S*/) // Ctrl+S
 					AkelPad.Command(4105); // IDM_FILE_SAVE
+				else if(wParam == 112 /*VK_F1*/) // F1
+					showHelp();
 
 				//else if(wParam != 16 /*VK_SHIFT*/ && wParam != 17 /*VK_CONTROL*/ && wParam != 18 /*VK_MENU*/)
 				//	AkelPad.MessageBox(hWnd, wParam, dialogTitle, 0 /*MB_OK*/);
@@ -2064,14 +2126,16 @@ function converterDialog(modal) {
 					case IDC_TYPE_STRING:
 					case IDC_TYPE_URI:
 					case IDC_TYPE_URIC:
+					case IDC_TYPE_UNESCAPE:
 					case IDC_TYPE_BASE64:
-						checked(hWndTypeHTML,    idc == IDC_TYPE_HTML);
-						checked(hWndTypeEscapes, idc == IDC_TYPE_ESCAPES);
-						checked(hWndTypeRegExp,  idc == IDC_TYPE_REGEXP);
-						checked(hWndTypeString,  idc == IDC_TYPE_STRING);
-						checked(hWndTypeURI,     idc == IDC_TYPE_URI);
-						checked(hWndTypeURIC,    idc == IDC_TYPE_URIC);
-						checked(hWndTypeBase64,  idc == IDC_TYPE_BASE64);
+						checked(hWndTypeHTML,     idc == IDC_TYPE_HTML);
+						checked(hWndTypeEscapes,  idc == IDC_TYPE_ESCAPES);
+						checked(hWndTypeRegExp,   idc == IDC_TYPE_REGEXP);
+						checked(hWndTypeString,   idc == IDC_TYPE_STRING);
+						checked(hWndTypeURI,      idc == IDC_TYPE_URI);
+						checked(hWndTypeURIC,     idc == IDC_TYPE_URIC);
+						checked(hWndTypeUnescape, idc == IDC_TYPE_UNESCAPE);
+						checked(hWndTypeBase64,   idc == IDC_TYPE_BASE64);
 						setHTMLOptions();
 						setBase64Options();
 
@@ -2173,7 +2237,7 @@ function converterDialog(modal) {
 				var hDC;
 				var lpGrip;
 				var rcGrip;
-				if(ps = AkelPad.MemAlloc(64 /*sizeof(PAINTSTRUCT)*/)) {
+				if(ps = AkelPad.MemAlloc(_X64 ? 72 : 64 /*sizeof(PAINTSTRUCT)*/)) {
 					if(hDC = oSys.Call("user32::BeginPaint", hWnd, ps)) {
 						if(lpGrip = AkelPad.MemAlloc(16 /*sizeof(RECT)*/)) {
 							if(oSys.Call("user32::GetClientRect", hWnd, lpGrip)) {
@@ -2362,6 +2426,8 @@ function converterDialog(modal) {
 			type = "uri";
 		else if(checked(hWndTypeURIC))
 			type = "uricomponent";
+		else if(checked(hWndTypeUnescape))
+			type = "unescape";
 		else if(checked(hWndTypeBase64))
 			type = "base64";
 		else
@@ -2507,6 +2573,15 @@ function savePrefs() {
 		toBase64:              toBase64
 	});
 	prefs.end();
+}
+function showHelp() {
+	var res = AkelPad.OpenFile(WScript.ScriptFullName);
+	if(
+		res == 0 /*EOD_SUCCESS*/
+		|| res == -13 /*EOD_WINDOW_EXIST*/
+	) {
+		AkelPad.TextFind(AkelPad.GetEditWnd(), "// Hotkeys:", 0x200001 /*FRF_DOWN|FRF_BEGINNING*/);
+	}
 }
 
 function getAllText() {
