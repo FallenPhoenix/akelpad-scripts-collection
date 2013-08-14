@@ -1,20 +1,23 @@
-// ScreenView.js - ver. 2013-01-25
+// ScreenView.js - ver. 2013-08-14 (x86/x64)
 //
 // Switch between different views of AkelPad screen.
 //
+// Usage:
 // Call("Scripts::Main", 1, "ScreenView.js") - dialog box with settings
 // Call("Scripts::Main", 1, "ScreenView.js", '-View="ViewName"')
 // Call("Scripts::Main", 1, "ScreenView.js", '-FullScreen=1')
 // Call("Scripts::Main", 1, "ScreenView.js", '-View="ViewName" -FullScreen=-1')
-// View:
-//   name of view to set (default is "Default")
-// FullScreen:
-//  -1 - switch on/off
-//   0 - full screen off
-//   1 - full screen on
-//   2 - not change (default)
 //
-// Required to include: ChooseFont_function.js, FileAndStream_functions.js and InputBox_function.js
+// Arguments:
+//   View:
+//     name of view to set (default is "Default")
+//   FullScreen:
+//    -1 - switch on/off
+//     0 - full screen off
+//     1 - full screen on
+//     2 - not change (default)
+//
+// Required to include: ChooseFont_function.js and InputBox_function.js
 //
 // Some keyboard shortcuts in dialog box:
 // TAB      - switch between "View name" and "View settings" windows
@@ -25,172 +28,187 @@
 // Ctrl+INS - copy view name to the clipboard
 // Pressing the font button with Ctrl or Shift key, displays only monospace fonts.
 
-if (!(AkelPad.Include("ChooseFont_function.js") &&
-      AkelPad.Include("FileAndStream_functions.js") &&
-      AkelPad.Include("InputBox_function.js")))
-  WScript.Quit();
+var oSys       = AkelPad.SystemFunction();
+var hInstance  = AkelPad.GetInstanceDll();
+var sClassName = "AkelPad::Scripts::" + WScript.ScriptName + "::" + hInstance;
+var hWndDlg    = oSys.Call("User32::FindWindowExW", 0, 0, sClassName, 0);
 
-var DT_UNICODE   = 1;
-var DT_DWORD     = 3;
-var DT_BYTE      = 5;
-var oSys         = AkelPad.SystemFunction();
-var sScriptName  = "ScreenView";
-var sClassName   = "AkelPad::Scripts::" + WScript.ScriptName + "::" + oSys.Call("Kernel32::GetCurrentProcessId");
-var hMainWnd     = AkelPad.GetMainWnd();
-var hEditWnd     = AkelPad.GetEditWnd();
-var nBufSize     = 1024;
-var oView        = {};
-var aTB          = GetToolBarsArray();
-var oPlug        = GetPluginsObject();
-var sFullScr     = "FullScreen";
-var sFullScrFunc = sFullScr + "::Main";
-var nWndMinW     = 330;
-var nWndPosX     = 240;
-var nWndPosY     = 110;
-var nWndPosW     = nWndMinW;
-var nWndPosH     = 550 + aTB.length * 20;
-var nView        = 0;
-var hWndDlg;
-var hFocus;
-var hFocus1;
-var i;
-
-if (! hEditWnd)
-  WScript.Quit();
-
-ReadWriteIni(false);
-CheckViewObject();
-
-if (WScript.Arguments.length)
+if (hWndDlg)
 {
-  if (ApplyView(AkelPad.GetArgValue("View", "Default"), AkelPad.GetArgValue(sFullScr, 2)))
+  if (! oSys.Call("User32::IsWindowVisible", hWndDlg))
+    oSys.Call("User32::ShowWindow", hWndDlg, 8 /*SW_SHOWNA*/);
+  if (oSys.Call("User32::IsIconic", hWndDlg))
+    oSys.Call("User32::ShowWindow", hWndDlg, 9 /*SW_RESTORE*/);
+
+  oSys.Call("User32::SetForegroundWindow", hWndDlg);
+}
+else
+{
+  if (!(AkelPad.Include("ChooseFont_function.js") && AkelPad.Include("InputBox_function.js")))
     WScript.Quit();
-}
 
-if (nWndPosW < nWndMinW)
-  nWndPosW = nWndMinW;
+  var DT_UNICODE   = 1;
+  var DT_QWORD     = 2;
+  var DT_DWORD     = 3;
+  var DT_BYTE      = 5;
 
-var CLASS = 0;
-var HWND  = 1;
-var STYLE = 2;
-var TXT   = 3;
-var LINK  = 4;
-var NAME  = 5;
+  var sScriptName  = "ScreenView";
+  var hMainWnd     = AkelPad.GetMainWnd();
+  var hEditWnd     = AkelPad.GetEditWnd();
+  var oFSO         = new ActiveXObject("Scripting.FileSystemObject");
+  var nBufSize     = 1024;
+  var oView        = {};
+  var aTB          = GetToolBarsArray();
+  var oPlug        = GetPluginsObject();
+  var sFullScr     = "FullScreen";
+  var sFullScrFunc = sFullScr + "::Main";
+  var nWndMinW     = 330;
+  var nWndPosX     = 240;
+  var nWndPosY     = 110;
+  var nWndPosW     = nWndMinW;
+  var nWndPosH     = 550 + aTB.length * 20;
+  var nView        = 0;
+  var hFocus;
+  var hFocus1;
+  var i;
 
-var aWnd             = [];
-var IDNAMES          = 2000;
-var IDNAMELB         = 2001;
-var IDFULLSCREEN     = 2002;
-var IDNEW            = 2003;
-var IDRENAME         = 2004;
-var IDDELETE         = 2005;
-var IDAPPLY          = 2006;
-var IDOK             = 2007;
-var IDTHEMESET       = 2008;
-var IDCODERTHEMESET  = 2009;
-var IDCLIPBOARDSET   = 2010;
-var IDCODEFOLDSET    = 2011;
-var IDLINEBOARDSET   = 2012;
-var IDLOGSET         = 2013;
-var IDMENUSET        = 2014;
-var IDSPECCHARSET    = 2015;
-var IDVIEWSET        = 2016;
-var IDFONT           = 2017;
-var IDFONTSET        = 2018;
-var IDTHEME          = 2019;
-var IDTHEMENAME      = 2020;
-var IDCODERTHEME     = 2021;
-var IDCODERTHEMENAME = 2022;
-var IDCLIPBOARD      = 2023;
-var IDCODEFOLD       = 2024;
-var IDCODELIST       = 2025;
-var IDEXPLORER       = 2026;
-var IDHEXSEL         = 2027;
-var IDLINEBOARD      = 2028;
-var IDLOG            = 2029;
-var IDMENU           = 2030;
-var IDQSEARCH        = 2031;
-var IDSCROLLBARH     = 2032;
-var IDSCROLLBARV     = 2033;
-var IDSPECCHAR       = 2034;
-var IDSPEECH         = 2035;
-var IDSTATUSBAR      = 2036;
-var IDTABBAR         = 2037;
-var IDTABBARTOP      = 2038;
-var IDTOOLBAR        = 2039;
+  if (! hEditWnd)
+    WScript.Quit();
 
-//0x50000000 - WS_VISIBLE|WS_CHILD
-//0x50000001 - WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON
-//0x50000003 - WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX
-//0x50004000 - WS_VISIBLE|WS_CHILD|BS_NOTIFY
-//0x50004003 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTOCHECKBOX
-//0x50004006 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTO3STATE
-//0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
-//0x50800080 - WS_VISIBLE|WS_CHILD|WS_BORDER|ES_AUTOHSCROLL
-//0x50A10103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_NOINTEGRALHEIGHT|LBS_SORT|LBS_NOTIFY
-//Windows               CLASS,    HWND,      STYLE, TXT,               LINK,            NAME (in oView, oPlug)
-aWnd[IDNAMES         ]=["STATIC",    0, 0x50000000, "View name",       0];
-aWnd[IDNAMELB        ]=["LISTBOX",   0, 0x50A00103, "",                0];
-aWnd[IDFULLSCREEN    ]=["BUTTON",    0, 0x50000003, "&" + sFullScr,    0];
-aWnd[IDNEW           ]=["BUTTON",    0, 0x50000000, "&New",            0];
-aWnd[IDRENAME        ]=["BUTTON",    0, 0x50000000, "&Rename",         0];
-aWnd[IDDELETE        ]=["BUTTON",    0, 0x50000000, "&Delete",         0];
-aWnd[IDAPPLY         ]=["BUTTON",    0, 0x50000000, "&Apply",          0];
-aWnd[IDOK            ]=["BUTTON",    0, 0x50000001, "OK",              0];
-aWnd[IDTHEMESET      ]=["BUTTON",    0, 0x50000000, ">",               IDTHEME];
-aWnd[IDCODERTHEMESET ]=["BUTTON",    0, 0x50000000, ">",               IDCODERTHEME];
-aWnd[IDCLIPBOARDSET  ]=["BUTTON",    0, 0x50000000, ">",               IDCLIPBOARD];
-aWnd[IDCODEFOLDSET   ]=["BUTTON",    0, 0x50000000, ">",               IDCODEFOLD];
-aWnd[IDLINEBOARDSET  ]=["BUTTON",    0, 0x50000000, ">",               IDLINEBOARD];
-aWnd[IDLOGSET        ]=["BUTTON",    0, 0x50000000, ">",               IDLOG];
-aWnd[IDMENUSET       ]=["BUTTON",    0, 0x50000000, ">",               IDMENU];
-aWnd[IDSPECCHARSET   ]=["BUTTON",    0, 0x50000000, ">",               IDSPECCHAR];
-aWnd[IDVIEWSET       ]=["BUTTON",    0, 0x50000007, "View settings",   0];
-aWnd[IDFONT          ]=["BUTTON",    0, 0x50004003, "Font",            0,               "Font"];
-aWnd[IDFONTSET       ]=["BUTTON",    0, 0x50004000, "",                0,               "FontSet"];
-aWnd[IDTHEME         ]=["BUTTON",    0, 0x50004003, "ColorTheme",      IDTHEMESET,      "Theme"];
-aWnd[IDTHEMENAME     ]=["BUTTON",    0, 0x50004000, "",                IDTHEMESET,      "ThemeName"];
-aWnd[IDCODERTHEME    ]=["BUTTON",    0, 0x50004006, "ColorCoderTheme", IDCODERTHEMESET, "CoderTheme"];
-aWnd[IDCODERTHEMENAME]=["BUTTON",    0, 0x50004000, "",                IDCODERTHEMESET, "CoderThemeName"];
-aWnd[IDCLIPBOARD     ]=["BUTTON",    0, 0x50004006, "Clipboard",       IDCLIPBOARDSET,  "Clipboard"];
-aWnd[IDCODEFOLD      ]=["BUTTON",    0, 0x50004006, "CodeFold",        IDCODEFOLDSET,   "CodeFold"];
-aWnd[IDCODELIST      ]=["BUTTON",    0, 0x50004006, "CodeFoldList",    0,               "CodeList"];
-aWnd[IDEXPLORER      ]=["BUTTON",    0, 0x50004006, "Explorer",        0,               "Explorer"];
-aWnd[IDHEXSEL        ]=["BUTTON",    0, 0x50004006, "HexSel",          0,               "HexSel"];
-aWnd[IDLINEBOARD     ]=["BUTTON",    0, 0x50004006, "LineBoard",       IDLINEBOARDSET,  "LineBoard"];
-aWnd[IDLOG           ]=["BUTTON",    0, 0x50004006, "Log",             IDLOGSET,        "Log"];
-aWnd[IDMENU          ]=["BUTTON",    0, 0x50004006, "MenuMain",        IDMENUSET,       "Menu"];
-aWnd[IDQSEARCH       ]=["BUTTON",    0, 0x50004006, "QSearch",         0,               "QSearch"];
-aWnd[IDSCROLLBARH    ]=["BUTTON",    0, 0x50004006, "ScrollBarH",      0,               "ScrollBarH"];
-aWnd[IDSCROLLBARV    ]=["BUTTON",    0, 0x50004006, "ScrollBarV",      0,               "ScrollBarV"];
-aWnd[IDSPECCHAR      ]=["BUTTON",    0, 0x50004006, "SpecialChar",     IDSPECCHARSET,   "SpecChar"];
-aWnd[IDSPEECH        ]=["BUTTON",    0, 0x50004006, "Speech",          0,               "Speech"];
-aWnd[IDSTATUSBAR     ]=["BUTTON",    0, 0x50004006, "StatusBar",       0,               "StatusBar"];
-aWnd[IDTABBAR        ]=["BUTTON",    0, 0x50004006, "TabBar",          0,               "TabBar"];
-aWnd[IDTABBARTOP     ]=["BUTTON",    0, 0x50004003, "Top",             0,               "TabBarTop"];
+  ReadWriteIni(false);
+  CheckViewObject();
 
-for (i = 0; i < aTB.length; ++i)
-{
-  aWnd[IDTOOLBAR + i                 ]=["BUTTON", 0, 0x50004006, aTB[i], 0, aTB[i]];
-  aWnd[IDTOOLBAR + aTB.length + i    ]=["EDIT",   0, 0x50800080, "",     0, aTB[i] + "Rows"];
-  aWnd[IDTOOLBAR + aTB.length * 2 + i]=["STATIC", 0, 0x50000000, "Rows", 0];
-}
+  if (WScript.Arguments.length)
+  {
+    if (ApplyView(AkelPad.GetArgValue("View", "Default"), AkelPad.GetArgValue(sFullScr, 2)))
+      WScript.Quit();
+  }
 
-if (AkelPad.WindowRegisterClass(sClassName))
-{
-  hWndDlg = oSys.Call("User32::CreateWindowExW",
-                      0,           //dwExStyle
-                      sClassName,  //lpClassName
-                      sScriptName, //lpWindowName
-                      0x90CE0000,  //WS_POPUP|WS_VISIBLE|WS_CAPTION|WS_SYSMENU|WS_SIZEBOX|WS_MINIMIZEBOX
-                      nWndPosX,    //x
-                      nWndPosY,    //y
-                      nWndPosW,    //nWidth
-                      nWndPosH,    //nHeight
-                      hMainWnd,    //hWndParent
-                      0,           //ID
-                      AkelPad.GetInstanceDll(), //hInstance
-                      DialogCallback); //Script function callback. To use it class must be registered by WindowRegisterClass.
+  if (nWndPosW < nWndMinW)
+    nWndPosW = nWndMinW;
+
+  var CLASS = 0;
+  var HWND  = 1;
+  var STYLE = 2;
+  var TXT   = 3;
+  var LINK  = 4;
+  var NAME  = 5;
+
+  var aWnd             = [];
+  var IDNAMES          = 2000;
+  var IDNAMELB         = 2001;
+  var IDFULLSCREEN     = 2002;
+  var IDNEW            = 2003;
+  var IDRENAME         = 2004;
+  var IDDELETE         = 2005;
+  var IDAPPLY          = 2006;
+  var IDOK             = 2007;
+  var IDTHEMESET       = 2008;
+  var IDCODERTHEMESET  = 2009;
+  var IDCLIPBOARDSET   = 2010;
+  var IDCODEFOLDSET    = 2011;
+  var IDLINEBOARDSET   = 2012;
+  var IDLOGSET         = 2013;
+  var IDMENUSET        = 2014;
+  var IDSPECCHARSET    = 2015;
+  var IDVIEWSET        = 2016;
+  var IDFONT           = 2017;
+  var IDFONTSET        = 2018;
+  var IDTHEME          = 2019;
+  var IDTHEMENAME      = 2020;
+  var IDCODERTHEME     = 2021;
+  var IDCODERTHEMENAME = 2022;
+  var IDCLIPBOARD      = 2023;
+  var IDCODEFOLD       = 2024;
+  var IDCODELIST       = 2025;
+  var IDEXPLORER       = 2026;
+  var IDHEXSEL         = 2027;
+  var IDLINEBOARD      = 2028;
+  var IDLOG            = 2029;
+  var IDMENU           = 2030;
+  var IDQSEARCH        = 2031;
+  var IDSCROLLBARH     = 2032;
+  var IDSCROLLBARV     = 2033;
+  var IDSPECCHAR       = 2034;
+  var IDSPEECH         = 2035;
+  var IDSTATUSBAR      = 2036;
+  var IDTABBAR         = 2037;
+  var IDTABBARTOP      = 2038;
+  var IDTOOLBAR        = 2039;
+
+  //0x50000000 - WS_VISIBLE|WS_CHILD
+  //0x50000001 - WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON
+  //0x50000003 - WS_VISIBLE|WS_CHILD|BS_AUTOCHECKBOX
+  //0x50004000 - WS_VISIBLE|WS_CHILD|BS_NOTIFY
+  //0x50004003 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTOCHECKBOX
+  //0x50004006 - WS_VISIBLE|WS_CHILD|BS_NOTIFY|BS_AUTO3STATE
+  //0x50000007 - WS_VISIBLE|WS_CHILD|BS_GROUPBOX
+  //0x50800080 - WS_VISIBLE|WS_CHILD|WS_BORDER|ES_AUTOHSCROLL
+  //0x50A10103 - WS_VISIBLE|WS_CHILD|WS_VSCROLL|WS_BORDER|WS_TABSTOP|LBS_NOINTEGRALHEIGHT|LBS_SORT|LBS_NOTIFY
+  //Windows               CLASS,    HWND,      STYLE, TXT,               LINK,            NAME (in oView, oPlug)
+  aWnd[IDNAMES         ]=["STATIC",    0, 0x50000000, "View name",       0];
+  aWnd[IDNAMELB        ]=["LISTBOX",   0, 0x50A00103, "",                0];
+  aWnd[IDFULLSCREEN    ]=["BUTTON",    0, 0x50000003, "&" + sFullScr,    0];
+  aWnd[IDNEW           ]=["BUTTON",    0, 0x50000000, "&New",            0];
+  aWnd[IDRENAME        ]=["BUTTON",    0, 0x50000000, "&Rename",         0];
+  aWnd[IDDELETE        ]=["BUTTON",    0, 0x50000000, "&Delete",         0];
+  aWnd[IDAPPLY         ]=["BUTTON",    0, 0x50000000, "&Apply",          0];
+  aWnd[IDOK            ]=["BUTTON",    0, 0x50000001, "OK",              0];
+  aWnd[IDTHEMESET      ]=["BUTTON",    0, 0x50000000, ">",               IDTHEME];
+  aWnd[IDCODERTHEMESET ]=["BUTTON",    0, 0x50000000, ">",               IDCODERTHEME];
+  aWnd[IDCLIPBOARDSET  ]=["BUTTON",    0, 0x50000000, ">",               IDCLIPBOARD];
+  aWnd[IDCODEFOLDSET   ]=["BUTTON",    0, 0x50000000, ">",               IDCODEFOLD];
+  aWnd[IDLINEBOARDSET  ]=["BUTTON",    0, 0x50000000, ">",               IDLINEBOARD];
+  aWnd[IDLOGSET        ]=["BUTTON",    0, 0x50000000, ">",               IDLOG];
+  aWnd[IDMENUSET       ]=["BUTTON",    0, 0x50000000, ">",               IDMENU];
+  aWnd[IDSPECCHARSET   ]=["BUTTON",    0, 0x50000000, ">",               IDSPECCHAR];
+  aWnd[IDVIEWSET       ]=["BUTTON",    0, 0x50000007, "View settings",   0];
+  aWnd[IDFONT          ]=["BUTTON",    0, 0x50004003, "Font",            0,               "Font"];
+  aWnd[IDFONTSET       ]=["BUTTON",    0, 0x50004000, "",                0,               "FontSet"];
+  aWnd[IDTHEME         ]=["BUTTON",    0, 0x50004003, "ColorTheme",      IDTHEMESET,      "Theme"];
+  aWnd[IDTHEMENAME     ]=["BUTTON",    0, 0x50004000, "",                IDTHEMESET,      "ThemeName"];
+  aWnd[IDCODERTHEME    ]=["BUTTON",    0, 0x50004006, "ColorCoderTheme", IDCODERTHEMESET, "CoderTheme"];
+  aWnd[IDCODERTHEMENAME]=["BUTTON",    0, 0x50004000, "",                IDCODERTHEMESET, "CoderThemeName"];
+  aWnd[IDCLIPBOARD     ]=["BUTTON",    0, 0x50004006, "Clipboard",       IDCLIPBOARDSET,  "Clipboard"];
+  aWnd[IDCODEFOLD      ]=["BUTTON",    0, 0x50004006, "CodeFold",        IDCODEFOLDSET,   "CodeFold"];
+  aWnd[IDCODELIST      ]=["BUTTON",    0, 0x50004006, "CodeFoldList",    0,               "CodeList"];
+  aWnd[IDEXPLORER      ]=["BUTTON",    0, 0x50004006, "Explorer",        0,               "Explorer"];
+  aWnd[IDHEXSEL        ]=["BUTTON",    0, 0x50004006, "HexSel",          0,               "HexSel"];
+  aWnd[IDLINEBOARD     ]=["BUTTON",    0, 0x50004006, "LineBoard",       IDLINEBOARDSET,  "LineBoard"];
+  aWnd[IDLOG           ]=["BUTTON",    0, 0x50004006, "Log",             IDLOGSET,        "Log"];
+  aWnd[IDMENU          ]=["BUTTON",    0, 0x50004006, "MenuMain",        IDMENUSET,       "Menu"];
+  aWnd[IDQSEARCH       ]=["BUTTON",    0, 0x50004006, "QSearch",         0,               "QSearch"];
+  aWnd[IDSCROLLBARH    ]=["BUTTON",    0, 0x50004006, "ScrollBarH",      0,               "ScrollBarH"];
+  aWnd[IDSCROLLBARV    ]=["BUTTON",    0, 0x50004006, "ScrollBarV",      0,               "ScrollBarV"];
+  aWnd[IDSPECCHAR      ]=["BUTTON",    0, 0x50004006, "SpecialChar",     IDSPECCHARSET,   "SpecChar"];
+  aWnd[IDSPEECH        ]=["BUTTON",    0, 0x50004006, "Speech",          0,               "Speech"];
+  aWnd[IDSTATUSBAR     ]=["BUTTON",    0, 0x50004006, "StatusBar",       0,               "StatusBar"];
+  aWnd[IDTABBAR        ]=["BUTTON",    0, 0x50004006, "TabBar",          0,               "TabBar"];
+  aWnd[IDTABBARTOP     ]=["BUTTON",    0, 0x50004003, "Top",             0,               "TabBarTop"];
+
+  for (i = 0; i < aTB.length; ++i)
+  {
+    aWnd[IDTOOLBAR + i                 ]=["BUTTON", 0, 0x50004006, aTB[i], 0, aTB[i]];
+    aWnd[IDTOOLBAR + aTB.length + i    ]=["EDIT",   0, 0x50800080, "",     0, aTB[i] + "Rows"];
+    aWnd[IDTOOLBAR + aTB.length * 2 + i]=["STATIC", 0, 0x50000000, "Rows", 0];
+  }
+
+  AkelPad.WindowRegisterClass(sClassName);
+
+  hWndDlg =
+    oSys.Call("User32::CreateWindowExW",
+      0,               //dwExStyle
+      sClassName,      //lpClassName
+      sScriptName,     //lpWindowName
+      0x90CE0000,      //WS_POPUP|WS_VISIBLE|WS_CAPTION|WS_SYSMENU|WS_SIZEBOX|WS_MINIMIZEBOX
+      nWndPosX,        //x
+      nWndPosY,        //y
+      nWndPosW,        //nWidth
+      nWndPosH,        //nHeight
+      hMainWnd,        //hWndParent
+      0,               //ID
+      hInstance,       //hInstance
+      DialogCallback); //Script function callback. To use it class must be registered by WindowRegisterClass.
 
   //Allow other scripts running
   AkelPad.ScriptNoMutex();
@@ -199,15 +217,6 @@ if (AkelPad.WindowRegisterClass(sClassName))
   AkelPad.WindowGetMessage();
 
   AkelPad.WindowUnregisterClass(sClassName);
-}
-else if (hWndDlg = oSys.Call("User32::FindWindowExW", 0, 0, sClassName, 0))
-{
-  if (! oSys.Call("User32::IsWindowVisible", hWndDlg))
-    oSys.Call("User32::ShowWindow", hWndDlg, 8 /*SW_SHOWNA*/);
-  if (oSys.Call("User32::IsIconic", hWndDlg))
-    oSys.Call("User32::ShowWindow", hWndDlg, 9 /*SW_RESTORE*/);
-
-  oSys.Call("User32::SetForegroundWindow", hWndDlg);
 }
 
 function DialogCallback(hWnd, uMsg, wParam, lParam)
@@ -221,36 +230,36 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     {
       aWnd[i][HWND] =
         oSys.Call("User32::CreateWindowExW",
-                  0,              //dwExStyle
-                  aWnd[i][CLASS], //lpClassName
-                  0,              //lpWindowName
-                  aWnd[i][STYLE], //dwStyle
-                  0,              //x
-                  0,              //y
-                  0,              //nWidth
-                  0,              //nHeight
-                  hWnd,           //hWndParent
-                  i,              //ID
-                  AkelPad.GetInstanceDll(), //hInstance
-                  0);             //lpParam
+          0,              //dwExStyle
+          aWnd[i][CLASS], //lpClassName
+          0,              //lpWindowName
+          aWnd[i][STYLE], //dwStyle
+          0,              //x
+          0,              //y
+          0,              //nWidth
+          0,              //nHeight
+          hWnd,           //hWndParent
+          i,              //ID
+          hInstance,      //hInstance
+          0);             //lpParam
 
       //Set font and text
-      AkelPad.SendMessage(aWnd[i][HWND], 48 /*WM_SETFONT*/, hGuiFont, true);
+      SendMessage(aWnd[i][HWND], 48 /*WM_SETFONT*/, hGuiFont, true);
       oSys.Call("User32::SetWindowTextW", aWnd[i][HWND], aWnd[i][TXT]);
     }
 
     for (i = 0; i < aTB.length; ++i)
-      AkelPad.SendMessage(aWnd[IDTOOLBAR + aTB.length + i][HWND], 0x00C5 /*EM_SETLIMITTEXT*/, 23, 0);
+      SendMessage(aWnd[IDTOOLBAR + aTB.length + i][HWND], 0x00C5 /*EM_SETLIMITTEXT*/, 23, 0);
 
     //fill list box
     for (i in oView)
-      oSys.Call("User32::SendMessageW", aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, i);
+      SendMessage(aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, i);
 
     if (nView >= GetCountLB())
       nView = GetCountLB() - 1;
 
     SetCurSelLB(nView);
-    AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0197 /*LB_SETTOPINDEX*/, nView, 0);
+    SendMessage(aWnd[IDNAMELB][HWND], 0x0197 /*LB_SETTOPINDEX*/, nView, 0);
 
     hFocus  = aWnd[IDNAMELB][HWND];
     hFocus1 = aWnd[IDFONT][HWND];
@@ -260,7 +269,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
   {
     EnablePluginButtons();
     CheckButtons();
-    AkelPad.SendMessage(aWnd[IDFULLSCREEN][HWND], 0x00F1 /*BM_SETCHECK*/, IsFullScreen(), 0);
+    SendMessage(aWnd[IDFULLSCREEN][HWND], 0x00F1 /*BM_SETCHECK*/, IsFullScreen(), 0);
     oSys.Call("User32::SetFocus", hFocus);
   }
 
@@ -324,16 +333,16 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       if ((! Ctrl()) && (! Shift()))
       {
         if ((hFocus != aWnd[IDFONTSET][HWND]) && (hFocus != aWnd[IDTHEMENAME][HWND]) && (hFocus != aWnd[IDCODERTHEMENAME][HWND]))
-          oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDOK, 0);
+          PostMessage(hWnd, 273 /*WM_COMMAND*/, IDOK, 0);
       }
     }
     else if (wParam == 0x7A /*VK_F11*/)
     {
       if ((! Ctrl()) && (! Shift()))
-        oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, IDFULLSCREEN, 0);
+        PostMessage(hWnd, 273 /*WM_COMMAND*/, IDFULLSCREEN, 0);
     }
     else if (wParam == 0x1B /*VK_ESCAPE*/)
-      oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
+      PostMessage(hWnd, 16 /*WM_CLOSE*/, 0, 0);
   }
 
   else if (uMsg == 260) //WM_SYSKEYDOWN
@@ -343,7 +352,7 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       var nID = oSys.Call("User32::GetDlgCtrlID", hFocus);
 
       if (aWnd[nID][LINK] && oSys.Call("User32::IsWindowEnabled", aWnd[aWnd[nID][LINK]][HWND]))
-        oSys.Call("User32::PostMessageW", hWnd, 273 /*WM_COMMAND*/, aWnd[nID][LINK], 0);
+        PostMessage(hWnd, 273 /*WM_COMMAND*/, aWnd[nID][LINK], 0);
     }
   }
 
@@ -366,8 +375,8 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
     }
     else if ((nLowParam >= IDNEW) && (nLowParam <= IDSPECCHARSET))
     {
-      oSys.Call("User32::PostMessageW", lParam, 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
-      oSys.Call("User32::PostMessageW", aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
+      PostMessage(lParam, 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
+      PostMessage(aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
 
       if (nLowParam == IDNEW)
         NewView();
@@ -380,10 +389,11 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
       else if (nLowParam == IDOK)
       {
         ApplyView(GetCurTextLB(), 2);
-        oSys.Call("User32::PostMessageW", hWnd, 16 /*WM_CLOSE*/, 0, 0);
+        PostMessage(hWnd, 16 /*WM_CLOSE*/, 0, 0);
       }
       else
       {
+        oSys.Call("User32::ShowWindow", hWnd, 6 /*SW_MINIMIZE*/); //for Win7
         oSys.Call("User32::ShowWindow", hWnd, 0 /*SW_HIDE*/);
 
         if (nLowParam == IDTHEMESET)
@@ -404,16 +414,16 @@ function DialogCallback(hWnd, uMsg, wParam, lParam)
         hFocus1 = lParam;
         if ((nLowParam == IDFONTSET) || (nLowParam == IDTHEMENAME) || (nLowParam == IDCODERTHEMENAME))
         {
-          oSys.Call("User32::PostMessageW", lParam, 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
-          oSys.Call("User32::PostMessageW", aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
+          PostMessage(lParam, 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
+          PostMessage(aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
         }
       }
       else if (nHiwParam == 7 /*BN_KILLFOCUS*/)
       {
         if ((nLowParam == IDFONTSET) || (nLowParam == IDTHEMENAME) || (nLowParam == IDCODERTHEMENAME))
         {
-          oSys.Call("User32::PostMessageW", lParam, 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
-          oSys.Call("User32::PostMessageW", aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
+          PostMessage(lParam, 0x00F4 /*BM_SETSTYLE*/, 0 /*BS_PUSHBUTTON*/, 1);
+          PostMessage(aWnd[IDOK][HWND], 0x00F4 /*BM_SETSTYLE*/, 1 /*BS_DEFPUSHBUTTON*/, 1);
         }
       }
       else if (nHiwParam == 0x0100 /*EN_SETFOCUS*/)
@@ -458,6 +468,16 @@ function Shift()
   return Boolean(oSys.Call("User32::GetKeyState", 0x10 /*VK_SHIFT*/) & 0x8000);
 }
 
+function SendMessage(hWnd, uMsg, wParam, lParam)
+{
+  return oSys.Call("User32::SendMessageW", hWnd, uMsg, wParam, lParam);
+}
+
+function PostMessage(hWnd, uMsg, wParam, lParam)
+{
+  return oSys.Call("User32::PostMessageW", hWnd, uMsg, wParam, lParam);
+}
+
 function GetWindowPos(hWnd, oRect)
 {
   var lpRect = AkelPad.MemAlloc(16); //sizeof(RECT)
@@ -474,12 +494,12 @@ function GetWindowPos(hWnd, oRect)
 
 function GetCurSelLB()
 {
-  return AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0188 /*LB_GETCURSEL*/, 0, 0);
+  return SendMessage(aWnd[IDNAMELB][HWND], 0x0188 /*LB_GETCURSEL*/, 0, 0);
 }
 
 function SetCurSelLB(nPos)
 {
-  AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0186 /*LB_SETCURSEL*/, nPos, 0);
+  SendMessage(aWnd[IDNAMELB][HWND], 0x0186 /*LB_SETCURSEL*/, nPos, 0);
 }
 
 function GetCurTextLB()
@@ -487,7 +507,7 @@ function GetCurTextLB()
   var lpText = AkelPad.MemAlloc(1024);
   var sText;
 
-  AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0189 /*LB_GETTEXT*/, GetCurSelLB(), lpText);
+  SendMessage(aWnd[IDNAMELB][HWND], 0x0189 /*LB_GETTEXT*/, GetCurSelLB(), lpText);
   sText = AkelPad.MemRead(lpText, DT_UNICODE);
   AkelPad.MemFree(lpText);
 
@@ -496,12 +516,12 @@ function GetCurTextLB()
 
 function GetCountLB()
 {
-  return AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x018B /*LB_GETCOUNT*/, 0, 0);
+  return SendMessage(aWnd[IDNAMELB][HWND], 0x018B /*LB_GETCOUNT*/, 0, 0);
 }
 
 function PaintSizeGrip(hWnd)
 {
-  var lpPaint = AkelPad.MemAlloc(64); //sizeof(PAINTSTRUCT)
+  var lpPaint = AkelPad.MemAlloc(_X64 ? 72 : 64); //sizeof(PAINTSTRUCT)
   var lpRect  = AkelPad.MemAlloc(16); //sizeof(RECT)
   var hDC;
 
@@ -679,7 +699,7 @@ function GetPluginsObject()
 function CheckViewObject()
 {
   var sDefault = "Default";
-  var aFont    = ConvertFontFormat(AkelPad.SendMessage(hEditWnd, 0x0031 /*WM_GETFONT*/, 0, 0), 2, 3);
+  var aFont    = ConvertFontFormat(SendMessage(hEditWnd, 0x0031 /*WM_GETFONT*/, 0, 0), 2, 3);
   var oTemp = {
     Font:           0,
     FontName:       aFont[0],
@@ -758,20 +778,20 @@ function CheckButtons()
   var sName = GetCurTextLB();
   var i;
 
-  AkelPad.SendMessage(aWnd[IDFONT][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Font, 0);
+  SendMessage(aWnd[IDFONT][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Font, 0);
   oSys.Call("User32::EnableWindow", aWnd[IDFONTSET][HWND], oView[sName].Font);
   oSys.Call("User32::SetWindowTextW", aWnd[IDFONTSET][HWND], oView[sName].FontName + "," + oView[sName].FontStyle + "," + oView[sName].FontSize);
 
-  AkelPad.SendMessage(aWnd[IDTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Theme, 0);
+  SendMessage(aWnd[IDTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Theme, 0);
   oSys.Call("User32::EnableWindow", aWnd[IDTHEMENAME][HWND], oView[sName].Theme);
   oSys.Call("User32::SetWindowTextW", aWnd[IDTHEMENAME][HWND], oView[sName].ThemeName);
 
-  AkelPad.SendMessage(aWnd[IDCODERTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].CoderTheme, 0);
+  SendMessage(aWnd[IDCODERTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].CoderTheme, 0);
   oSys.Call("User32::EnableWindow", aWnd[IDCODERTHEMENAME][HWND], (oView[sName].CoderTheme == 1) && oSys.Call("User32::IsWindowEnabled", aWnd[IDCODERTHEME][HWND]));
   oSys.Call("User32::SetWindowTextW", aWnd[IDCODERTHEMENAME][HWND], oView[sName].CoderThemeName);
 
   for (i = IDCLIPBOARD; i < IDTOOLBAR + aTB.length; ++i)
-    AkelPad.SendMessage(aWnd[i][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName][aWnd[i][NAME]], 0);
+    SendMessage(aWnd[i][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName][aWnd[i][NAME]], 0);
 
   for (i = 0; i < aTB.length; ++i)
     oSys.Call("User32::SetWindowTextW", aWnd[IDTOOLBAR + aTB.length + i][HWND], oView[sName][aWnd[IDTOOLBAR + aTB.length + i][NAME]]);
@@ -815,14 +835,14 @@ function GetButtonState(nID)
   }
   else
   {
-    oView[sName][aWnd[nID][NAME]] = AkelPad.SendMessage(aWnd[nID][HWND], 0x00F0 /*BM_GETCHECK*/, 0, 0);
+    oView[sName][aWnd[nID][NAME]] = SendMessage(aWnd[nID][HWND], 0x00F0 /*BM_GETCHECK*/, 0, 0);
 
     if (nID == IDTHEME)
     {
       if (oView[sName].Theme)
       {
         oView[sName].CoderTheme = 0;
-        AkelPad.SendMessage(aWnd[IDCODERTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].CoderTheme, 0);
+        SendMessage(aWnd[IDCODERTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].CoderTheme, 0);
       }
     }
     else if (nID == IDCODERTHEME)
@@ -830,7 +850,7 @@ function GetButtonState(nID)
       if (oView[sName].CoderTheme)
       {
         oView[sName].Theme = 0;
-        AkelPad.SendMessage(aWnd[IDTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Theme, 0);
+        SendMessage(aWnd[IDTHEME][HWND], 0x00F1 /*BM_SETCHECK*/, oView[sName].Theme, 0);
       }
     }
 
@@ -844,7 +864,7 @@ function GetButtonState(nID)
 
 function IsPluginExists(sPlugName)
 {
-  return IsFileExists(AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\" + sPlugName + ".dll");
+  return oFSO.FileExists(AkelPad.GetAkelDir(4 /*ADTYPE_PLUGS*/) + "\\" + sPlugName + ".dll");
 }
 
 function IsFullScreen()
@@ -854,7 +874,7 @@ function IsFullScreen()
 
 function IsSettingsInRegistry()
 {
-  return (AkelPad.SendMessage(AkelPad.GetMainWnd(), 1222 /*AKD_GETMAININFO*/, 5 /*MI_SAVESETTINGS*/, 0) == 1 /*SS_REGISTRY*/);
+  return (SendMessage(AkelPad.GetMainWnd(), 1222 /*AKD_GETMAININFO*/, 5 /*MI_SAVESETTINGS*/, 0) == 1 /*SS_REGISTRY*/);
 }
 
 function NewView()
@@ -871,7 +891,7 @@ function NewView()
     for (n in oView[sCurName])
       oView[sNewName][n] = oView[sCurName][n];
 
-    nPos = oSys.Call("User32::SendMessageW", aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, sNewName);
+    nPos = SendMessage(aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, sNewName);
     SetCurSelLB(nPos);
   }
 }
@@ -908,9 +928,9 @@ function RenameView()
         oView[sNewName][n] = oView[sCurName][n];
 
       delete oView[sCurName];
-      AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0182 /*LB_DELETESTRING*/, nPos, 0);
+      SendMessage(aWnd[IDNAMELB][HWND], 0x0182 /*LB_DELETESTRING*/, nPos, 0);
 
-      nPos = oSys.Call("User32::SendMessageW", aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, sNewName);
+      nPos = SendMessage(aWnd[IDNAMELB][HWND], 0x0180 /*LB_ADDSTRING*/, 0, sNewName);
       SetCurSelLB(nPos);
     }
   }
@@ -939,7 +959,7 @@ function DeleteView()
     if (AkelPad.MessageBox(hWndDlg, 'Do you want to delete "' + sName + '"?', sScriptName, 0x00000023 /*MB_ICONQUESTION|MB_YESNOCANCEL*/) == 6 /*IDYES*/)
     {
       delete oView[sName];
-      AkelPad.SendMessage(aWnd[IDNAMELB][HWND], 0x0182 /*LB_DELETESTRING*/, nPos, 0);
+      SendMessage(aWnd[IDNAMELB][HWND], 0x0182 /*LB_DELETESTRING*/, nPos, 0);
 
       if (nPos == GetCountLB())
         --nPos;
@@ -1086,7 +1106,7 @@ function ShowCodeList(nShow)
     lpState = AkelPad.MemAlloc(4);
     AkelPad.Call(oPlug.CodeFold.Name + "::CodeFold", 1, lpState);
 
-    bState = AkelPad.MemRead(lpState, 3 /*DT_DWORD*/);
+    bState = AkelPad.MemRead(lpState, DT_DWORD);
     AkelPad.MemFree(lpState);
 
     if ((nShow < 2) && (nShow != bState))
@@ -1098,7 +1118,7 @@ function ShowCodeList(nShow)
 
 function ShowMenu(nShow, hMenu)
 {
-  var hMainMenu = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 21 /*MI_MENUMAIN*/, 0);
+  var hMainMenu = SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 21 /*MI_MENUMAIN*/, 0);
   var hCurMenu  = oSys.Call("User32::GetMenu", hMainWnd);
 
   if (nShow == 2)
@@ -1132,22 +1152,22 @@ function ShowScrollBar(nShowH, nShowV)
   {
     var lpPOINT = AkelPad.MemAlloc(8);
 
-    AkelPad.SendMessage(hEditWnd, 1245 /*EM_GETSCROLLPOS*/, 0, lpPOINT);
+    SendMessage(hEditWnd, 1245 /*EM_GETSCROLLPOS*/, 0, lpPOINT);
 
     if (nShowH < 2)
-      AkelPad.SendMessage(hEditWnd, 3375 /*AEM_SHOWSCROLLBAR*/, 0 /*SB_HORZ*/, nShowH);
+      SendMessage(hEditWnd, 3375 /*AEM_SHOWSCROLLBAR*/, 0 /*SB_HORZ*/, nShowH);
 
     if (nShowV < 2)
-      AkelPad.SendMessage(hEditWnd, 3375 /*AEM_SHOWSCROLLBAR*/, 1 /*SB_VERT*/, nShowV);
+      SendMessage(hEditWnd, 3375 /*AEM_SHOWSCROLLBAR*/, 1 /*SB_VERT*/, nShowV);
 
-    AkelPad.SendMessage(hEditWnd, 1246 /*EM_SETSCROLLPOS*/, 0, lpPOINT);
+    SendMessage(hEditWnd, 1246 /*EM_SETSCROLLPOS*/, 0, lpPOINT);
     AkelPad.MemFree(lpPOINT);
   }
 }
 
 function ShowStatusBar(nShow)
 {
-  var bState = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 142 /*MI_STATUSBAR*/, 0);
+  var bState = SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 142 /*MI_STATUSBAR*/, 0);
 
   if ((nShow < 2) && (nShow != bState))
     AkelPad.Command(4211 /*IDM_VIEW_SHOW_STATUSBAR*/);
@@ -1163,7 +1183,7 @@ function ShowTabBar(nShow, bTop)
   var TAB_VIEW_NONE   = 1;
   var TAB_VIEW_TOP    = 2;
   var TAB_VIEW_BOTTOM = 4;
-  var nState = AkelPad.SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, 0);
+  var nState = SendMessage(hMainWnd, 1222 /*AKD_GETMAININFO*/, 157 /*MI_TABOPTIONSMDI*/, 0);
 
   AkelPad.Command(IDM_WINDOW_TABVIEW_NONE);
 
@@ -1436,7 +1456,7 @@ function FillCoderThemeArray(aTheme)
 function GetRegKeyHandle(hParentKey, sSubKey, nAccess)
 {
   var hKey   = 0;
-  var lpKey  = AkelPad.MemAlloc(4);
+  var lpKey  = AkelPad.MemAlloc(_X64 ? 8 : 4);
   var nError = oSys.Call("Advapi32::RegOpenKeyExW",
                          hParentKey, //hKey
                          sSubKey,    //lpSubKey
@@ -1445,7 +1465,7 @@ function GetRegKeyHandle(hParentKey, sSubKey, nAccess)
                          lpKey);     //phkResult
 
   if (! nError)
-    hKey = AkelPad.MemRead(lpKey, DT_DWORD);
+    hKey = AkelPad.MemRead(lpKey, DT_QWORD);
 
   AkelPad.MemFree(lpKey);
 
@@ -1460,9 +1480,9 @@ function WarningBox(hWnd, sText)
 function ReadWriteIni(bWrite)
 {
   var sIniFile = WScript.ScriptFullName.substring(0, WScript.ScriptFullName.lastIndexOf(".")) + ".ini";
+  var oFile;
   var oRect;
   var sIniTxt;
-  var oError;
   var i, n;
 
   if (bWrite)
@@ -1486,10 +1506,12 @@ function ReadWriteIni(bWrite)
       sIniTxt += '};\r\n';
     }
 
-    WriteFile(sIniFile, null, sIniTxt, 1);
+    oFile = oFSO.OpenTextFile(sIniFile, 2, true, -1);
+    oFile.Write(sIniTxt);
+    oFile.Close();
   }
 
-  else if (IsFileExists(sIniFile))
+  else if (oFSO.FileExists(sIniFile))
   {
     try
     {
