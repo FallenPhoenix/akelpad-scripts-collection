@@ -1,5 +1,8 @@
-// Brackets - go to or select between nearest brackets - 2010-11-13
+// BracketsGoTo.js - ver. 2013-08-22 (x86/x64)
 //
+// Go to or select between nearest brackets.
+//
+// Usage:
 // Call("Scripts::Main", 1, "BracketsGoTo.js", "l") - go to left to opening bracket
 // Call("Scripts::Main", 1, "BracketsGoTo.js", "r") - go to right to closing bracket
 // Call("Scripts::Main", 1, "BracketsGoTo.js", "L") - select between the brackets from left
@@ -34,19 +37,19 @@ else if (nABrackets == 3)
 }
 
 var hEditWnd = AkelPad.GetEditWnd();
-var pAction;
+var sAction;
 
 if (! hEditWnd)
   WScript.Quit();
 if (WScript.Arguments.length)
-  pAction = WScript.Arguments(0);
-if (! pAction)
+  sAction = WScript.Arguments(0);
+if (! sAction)
   WScript.Quit();
 
 var nCarPos   = GetOffset(hEditWnd, 5 /*AEGI_CARETCHAR*/);
 var nLastChar = GetOffset(hEditWnd, 2 /*AEGI_LASTCHAR*/);
-var pTxt      = AkelPad.GetTextRange(0, nLastChar, 1 /*\r*/);
-var pCarChar  = AkelPad.GetTextRange(nCarPos, nCarPos + 1);
+var sTxt      = AkelPad.GetTextRange(0, nLastChar, 1 /*\r*/);
+var sCarChar  = AkelPad.GetTextRange(nCarPos, nCarPos + 1);
 var bSelAll   = false;
 var nPos;
 var nBrack;
@@ -55,12 +58,12 @@ var nBegSel;
 var nEndSel;
 var i;
 
-if ((pAction == "l") && (nCarPos > 0))
+if ((sAction == "l") && (nCarPos > 0))
 {
   nBrackPos = -1;
   for (i = 0; i < aOpen.length; ++i)
   {
-    nPos = pTxt.lastIndexOf(aOpen[i], nCarPos - 1);
+    nPos = sTxt.lastIndexOf(aOpen[i], nCarPos - 1);
     if (nPos > nBrackPos)
       nBrackPos = nPos;
   }
@@ -68,12 +71,12 @@ if ((pAction == "l") && (nCarPos > 0))
     AkelPad.SetSel(nBrackPos, nBrackPos);
 }
 
-else if ((pAction == "r") && (nCarPos < nLastChar - 1))
+else if ((sAction == "r") && (nCarPos < nLastChar - 1))
 {
   nBrackPos = nLastChar;
   for (i = 0; i < aClose.length; ++i)
   {
-    nPos = pTxt.indexOf(aClose[i], nCarPos + 1);
+    nPos = sTxt.indexOf(aClose[i], nCarPos + 1);
     if ((nPos > -1) && (nPos < nBrackPos))
       nBrackPos = nPos;
   }
@@ -81,16 +84,16 @@ else if ((pAction == "r") && (nCarPos < nLastChar - 1))
     AkelPad.SetSel(nBrackPos, nBrackPos);
 }
 
-else if (pAction == "L")
+else if (sAction == "L")
 {
-  nBrack = ArraySearch(aOpen, pCarChar);
+  nBrack = ArraySearch(aOpen, sCarChar);
 
   if (nBrack < 0)
   {
     nBrackPos = -1;
     for (i = 0; i < aOpen.length; ++i)
     {
-      nPos = pTxt.lastIndexOf(aOpen[i], nCarPos - 1);
+      nPos = sTxt.lastIndexOf(aOpen[i], nCarPos - 1);
       if (nPos > nBrackPos)
       {
         nBrackPos = nPos;
@@ -108,7 +111,7 @@ else if (pAction == "L")
 
   if (nBrack > -1)
   {
-    nBrackPos = pTxt.indexOf(aClose[nBrack], nCarPos + bSelAll);
+    nBrackPos = sTxt.indexOf(aClose[nBrack], nCarPos + bSelAll);
     if (nBrackPos > -1)
     {
       if ((nBrackPos == nCarPos) && (! bSelAll))
@@ -122,16 +125,16 @@ else if (pAction == "L")
   }
 }
 
-else if ((pAction == "R") && (nCarPos > 0))
+else if ((sAction == "R") && (nCarPos > 0))
 {
-  nBrack = ArraySearch(aClose, pCarChar);
+  nBrack = ArraySearch(aClose, sCarChar);
 
   if (nBrack < 0)
   {
     nBrackPos = nLastChar;
     for (i = 0; i < aClose.length; ++i)
     {
-      nPos = pTxt.indexOf(aClose[i], nCarPos + 1);
+      nPos = sTxt.indexOf(aClose[i], nCarPos + 1);
       if ((nPos > -1) && (nPos < nBrackPos))
       {
         nBrackPos = nPos;
@@ -149,7 +152,7 @@ else if ((pAction == "R") && (nCarPos > 0))
 
   if (nBrack > -1)
   {
-    nBrackPos = pTxt.lastIndexOf(aOpen[nBrack], nCarPos - bSelAll);
+    nBrackPos = sTxt.lastIndexOf(aOpen[nBrack], nCarPos - bSelAll);
     if (nBrackPos > -1)
     {
       if ((nBrackPos == nCarPos) && (! bSelAll))
@@ -163,15 +166,14 @@ else if ((pAction == "R") && (nCarPos > 0))
   }
 }
 
-/////////////////
-function ArraySearch(aArray, Value)
+function ArraySearch(aArray, sChar)
 {
   var nPos = -1;
   var i;
 
   for (i = 0; i < aArray.length; ++i)
   {
-    if (aArray[i] == Value)
+    if (aArray[i] == sChar)
     {
       nPos = i;
       break;
@@ -185,10 +187,10 @@ function GetOffset(hWnd, nFlag)
   var nOffset = -1;
   var lpIndex;
 
-  if (lpIndex = AkelPad.MemAlloc(12 /*sizeof(AECHARINDEX)*/))
+  if (lpIndex = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/))
   {
-    AkelPad.SendMessage(hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
-    nOffset = AkelPad.SendMessage(hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
+    AkelPad.SystemFunction().Call("User32::SendMessage" + _TCHAR, hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
+    nOffset = AkelPad.SystemFunction().Call("User32::SendMessage" + _TCHAR, hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
     AkelPad.MemFree(lpIndex);
   }
   return nOffset;
