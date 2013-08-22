@@ -1,4 +1,4 @@
-// TabMinMax.js - ver. 2013-01-25
+// TabMinMax.js - ver. 2013-08-22 (x86/x64)
 //
 // Minimize, maximize or restore tab in MDI mode
 //
@@ -11,8 +11,8 @@ if (AkelPad.GetEditWnd() && (AkelPad.IsMDI() == 1 /*WMD_MDI*/))
 {
   var oSys     = AkelPad.SystemFunction();
   var hMainWnd = AkelPad.GetMainWnd();
-  var lpFrame  = AkelPad.SendMessage(hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
-  var hWndMdi  = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
+  var lpFrame  = oSys.Call("User32::SendMessageW", hMainWnd, 1288 /*AKD_FRAMEFIND*/, 1 /*FWF_CURRENT*/, 0);
+  var hWndMdi  = oSys.Call("User32::SendMessageW", hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 1 /*FI_WNDEDITPARENT*/, lpFrame);
   var nAction  = 9 /*SW_RESTORE*/;
 
   if (WScript.Arguments.length)
