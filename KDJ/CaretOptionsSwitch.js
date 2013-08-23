@@ -1,4 +1,4 @@
-// CaretOptionsSwitch.js - ver. 2012-09-02
+// CaretOptionsSwitch.js - ver. 2013-08-23 (x86/x64)
 //
 // Switching four caret options.
 //
@@ -66,12 +66,12 @@ if (hMainWnd && hEditWnd)
     nCO_flag   = 0x00000008; //CO_CARETACTIVELINEBORDER
   }
 
-  nSetOptions   = AkelPad.SendMessage(hEditWnd, 3227 /*AEM_GETOPTIONS*/, 0, 0);
-  nCaretOptions = AkelPad.SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 69 /*FI_CARETOPTIONS*/, 0);
+  nSetOptions   = SendMessage(hEditWnd, 3227 /*AEM_GETOPTIONS*/, 0, 0);
+  nCaretOptions = SendMessage(hMainWnd, 1223 /*AKD_GETFRAMEINFO*/, 69 /*FI_CARETOPTIONS*/, 0);
 
   if (nSetOptions & nAECO_flag)
   {
-    AkelPad.SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 4 /*AECOOP_XOR*/, nAECO_flag);
+    SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 4 /*AECOOP_XOR*/, nAECO_flag);
 
     if (nCaretOptions & nCO_flag)
       nCaretOptions = nCaretOptions ^ nCO_flag;
@@ -79,11 +79,11 @@ if (hMainWnd && hEditWnd)
     if (oSys.Call("User32::IsMenu", nHandle))
       oSys.Call("User32::CheckMenuItem", nHandle, nItemID, 0x0 /*MF_BYCOMMAND|MF_UNCHECKED*/);
     else
-      AkelPad.SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, false);
+      SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, false);
   }
   else
   {
-    AkelPad.SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 2 /*AECOOP_OR*/, nAECO_flag);
+    SendMessage(hEditWnd, 3228 /*AEM_SETOPTIONS*/, 2 /*AECOOP_OR*/, nAECO_flag);
 
     if (! (nCaretOptions & nCO_flag))
       nCaretOptions = nCaretOptions | nCO_flag;
@@ -91,8 +91,13 @@ if (hMainWnd && hEditWnd)
     if (oSys.Call("User32::IsMenu", nHandle))
       oSys.Call("User32::CheckMenuItem", nHandle, nItemID, 0x8 /*MF_BYCOMMAND|MF_CHECKED*/);
     else
-      AkelPad.SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, true);
+      SendMessage(nHandle, 1026 /*TB_CHECKBUTTON*/, nItemID, true);
   }
 
   AkelPad.SetFrameInfo(0, 17 /*FIS_CARETOPTIONS*/, nCaretOptions);
+}
+
+function SendMessage(hWnd, uMsg, wParam, lParam)
+{
+  return oSys.Call("User32::SendMessage" + _TCHAR, hWnd, uMsg, wParam, lParam);
 }
