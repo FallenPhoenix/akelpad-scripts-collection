@@ -1,9 +1,10 @@
-// LinesSelectCopyMoveDuplicate.js - 2011-12-04
+// LinesSelectCopyMoveDuplicate.js - 2013-08-23 (x86/x64)
 //
 // Selects entire lines, copies, moves up/down or duplicates selected lines.
-// If there is no selection, it selects/copies/moves/duplicates current line.
+// If there is no selection, selects/copies/moves/duplicates current line.
 // Remembers the selection and caret position relative moving text.
 //
+// Usage:
 // Call("Scripts::Main", 1, "LinesSelectMoveDuplicate.js"[, "Action Shift"])
 // Action:
 // S - select entire lines
@@ -32,6 +33,7 @@ var sTxtMove      = "Move lines";
 var sTxtDuplicate = "Duplicate lines";
 var sTxtShift     = "Shift (T=top, B=bottom)";
 
+var oSys     = AkelPad.SystemFunction();
 var hEditWnd = AkelPad.GetEditWnd();
 var nWordWrap;
 var nBegSel;
@@ -64,17 +66,17 @@ if (hEditWnd)
   SetRedraw(hEditWnd, false);
 
   //Disable Word Wrap
-  nWordWrap = AkelPad.SendMessage(hEditWnd, 3241 /*AEM_GETWORDWRAP*/, 0, 0);
+  nWordWrap = SendMessage(hEditWnd, 3241 /*AEM_GETWORDWRAP*/, 0, 0);
   if (nWordWrap > 0)
     AkelPad.Command(4209 /*IDM_VIEW_WORDWRAP*/);
 
   nBegSel   = AkelPad.GetSelStart();
   nEndSel   = AkelPad.GetSelEnd();
-  bCarAtEnd = (nEndSel == GetOffset(hEditWnd, 5 /*AEGI_CARETCHAR*/)) ? true : false;
-  bColSel   = AkelPad.SendMessage(hEditWnd, 3127 /*AEM_GETCOLUMNSEL*/, 0, 0);
-  nLine1    = AkelPad.SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, nBegSel);
-  nLine2    = AkelPad.SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, nEndSel);
-  nLastLine = AkelPad.SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, -2);
+  bCarAtEnd = (GetOffset(hEditWnd, 5 /*AEGI_CARETCHAR*/) == nEndSel);
+  bColSel   = SendMessage(hEditWnd, 3127 /*AEM_GETCOLUMNSEL*/, 0, 0);
+  nLine1    = SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, nBegSel);
+  nLine2    = SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, nEndSel);
+  nLastLine = SendMessage(hEditWnd, 1078 /*EM_EXLINEFROMCHAR*/, 0, -2);
 
   if (WScript.Arguments.length > 1)
     sArg1 = WScript.Arguments(1).toUpperCase();
@@ -191,7 +193,7 @@ if (hEditWnd)
         AkelPad.SetSel(nEndSel, nBegSel);
 
       if (sAction != "S")
-        AkelPad.SendMessage(hEditWnd, 3128 /*AEM_UPDATESEL*/, bColSel, 0);
+        SendMessage(hEditWnd, 3128 /*AEM_UPDATESEL*/, bColSel, 0);
     }
   }
 
@@ -203,36 +205,31 @@ if (hEditWnd)
 
 function GetAction()
 {
-  var oSys    = AkelPad.SystemFunction();
   var lpPoint = AkelPad.MemAlloc(8); //sizeof(POINT)
-  var hMenu   = oSys.Call("user32::CreatePopupMenu");
-  var hWndHid = oSys.Call("user32::CreateWindowEx" + _TCHAR, 0, "STATIC", 0,
-                          0x50000000 /*WS_VISIBLE|WS_CHILD*/,
-                          0, 0, 0, 0, hEditWnd, 0, AkelPad.GetInstanceDll(), 0);
+  var hMenu   = oSys.Call("User32::CreatePopupMenu");
+  var hWndHid = oSys.Call("User32::CreateWindowEx" + _TCHAR, 0, "STATIC", 0, 0x50000000 /*WS_VISIBLE|WS_CHILD*/, 0, 0, 0, 0, hEditWnd, 0, AkelPad.GetInstanceDll(), 0);
   var aAction = ["", "S", "C", "M", "D"];
   var nX;
   var nY;
   var nCmd;
 
-  AkelPad.SendMessage(hEditWnd, 3190 /*AEM_GETCARETPOS*/, lpPoint, 0);
-  oSys.Call("user32::ClientToScreen", hEditWnd, lpPoint);
+  SendMessage(hEditWnd, 3190 /*AEM_GETCARETPOS*/, lpPoint, 0);
+  oSys.Call("User32::ClientToScreen", hEditWnd, lpPoint);
 
   nX = AkelPad.MemRead(lpPoint,     3 /*DT_DWORD*/);
-  nY = AkelPad.MemRead(lpPoint + 4, 3 /*DT_DWORD*/) +
-       AkelPad.SendMessage(hEditWnd, 3188 /*AEM_GETCHARSIZE*/, 0 /*AECS_HEIGHT*/, 0);
+  nY = AkelPad.MemRead(lpPoint + 4, 3 /*DT_DWORD*/) + SendMessage(hEditWnd, 3188 /*AEM_GETCHARSIZE*/, 0 /*AECS_HEIGHT*/, 0);
 
-  oSys.Call("user32::SetFocus", hWndHid);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 1, sTxtSelect);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 2, sTxtCopy);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 3, sTxtMove);
-  oSys.Call("user32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 4, sTxtDuplicate);
+  oSys.Call("User32::SetFocus", hWndHid);
+  oSys.Call("User32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 1, sTxtSelect);
+  oSys.Call("User32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 2, sTxtCopy);
+  oSys.Call("User32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 3, sTxtMove);
+  oSys.Call("User32::AppendMenu" + _TCHAR, hMenu, 0 /*MF_STRING*/, 4, sTxtDuplicate);
 
-  nCmd = oSys.Call("user32::TrackPopupMenu", hMenu, 0x0180 /*TPM_RETURNCMD|TPM_NONOTIFY*/,
-                    nX, nY, 0, hWndHid, 0);
+  nCmd = oSys.Call("User32::TrackPopupMenu", hMenu, 0x0180 /*TPM_RETURNCMD|TPM_NONOTIFY*/, nX, nY, 0, hWndHid, 0);
 
   AkelPad.MemFree(lpPoint);
-  oSys.Call("user32::DestroyMenu", hMenu);
-  oSys.Call("user32::DestroyWindow", hWndHid);
+  oSys.Call("User32::DestroyMenu", hMenu);
+  oSys.Call("User32::DestroyWindow", hWndHid);
 
   return aAction[nCmd];
 }
@@ -269,8 +266,8 @@ function GetShift()
 
 function SetRedraw(hWnd, bRedraw)
 {
-  AkelPad.SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
-  bRedraw && AkelPad.SystemFunction().Call("user32::InvalidateRect", hWnd, 0, true);
+  SendMessage(hWnd, 11 /*WM_SETREDRAW*/, bRedraw, 0);
+  bRedraw && oSys.Call("User32::InvalidateRect", hWnd, 0, true);
 }
 
 function GetOffset(hWnd, nFlag)
@@ -278,10 +275,10 @@ function GetOffset(hWnd, nFlag)
   var lpIndex;
   var nOffset = -1;
 
-  if (lpIndex = AkelPad.MemAlloc(12 /*sizeof(AECHARINDEX)*/))
+  if (lpIndex = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/))
   {
-    AkelPad.SendMessage(hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
-    nOffset = AkelPad.SendMessage(hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
+    SendMessage(hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
+    nOffset = SendMessage(hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
     AkelPad.MemFree(lpIndex);
   }
   return nOffset;
@@ -289,12 +286,15 @@ function GetOffset(hWnd, nFlag)
 
 function GetBeginLine(nLine)
 {
-  return AkelPad.SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0);
+  return SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0);
 }
 
 function GetEndLine(nLine)
 {
-  return AkelPad.SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0) +
-         AkelPad.SendMessage(hEditWnd, 193 /*EM_LINELENGTH*/,
-           AkelPad.SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0), 0);
+  return SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0) + SendMessage(hEditWnd, 193 /*EM_LINELENGTH*/, SendMessage(hEditWnd, 187 /*EM_LINEINDEX*/, nLine, 0), 0);
+}
+
+function SendMessage(hWnd, uMsg, wParam, lParam)
+{
+  return oSys.Call("User32::SendMessage" + _TCHAR, hWnd, uMsg, wParam, lParam);
 }
