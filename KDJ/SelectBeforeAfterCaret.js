@@ -1,9 +1,11 @@
-// Select all text before or after the caret - 2010-09-05
+// SelectBeforeAfterCaret.js - ver. 2013-08-30 (x86/x64)
 //
+// Select all text before or after the caret.
+//
+// Usage:
 // Call("Scripts::Main", 1, "SelectBeforeAfterCaret.js")
 //
 // Can assign shortcut key eg: Ctrl+Shift+A
-
 
 var hEditWnd = AkelPad.GetEditWnd();
 if (! hEditWnd)
@@ -32,18 +34,21 @@ else
 
 AkelPad.SetSel(nBegSel, nEndSel);
 
-
-///////////////////////////////
 function GetOffset(hWnd, nFlag)
 {
   var nOffset = -1;
   var lpIndex;
 
-  if (lpIndex = AkelPad.MemAlloc(12 /*sizeof(AECHARINDEX)*/))
+  if (lpIndex = AkelPad.MemAlloc(_X64 ? 24 : 12 /*sizeof(AECHARINDEX)*/))
   {
-    AkelPad.SendMessage(hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
-    nOffset = AkelPad.SendMessage(hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
+    SendMessage(hWnd, 3130 /*AEM_GETINDEX*/, nFlag, lpIndex);
+    nOffset = SendMessage(hWnd, 3136 /*AEM_INDEXTORICHOFFSET*/, 0, lpIndex);
     AkelPad.MemFree(lpIndex);
   }
   return nOffset;
+}
+
+function SendMessage(hWnd, uMsg, wParam, lParam)
+{
+  return AkelPad.SystemFunction().Call("User32::SendMessage" + _TCHAR, hWnd, uMsg, wParam, lParam);
 }
