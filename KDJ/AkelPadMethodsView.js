@@ -1,4 +1,4 @@
-// AkelPadMethodsView.js - ver. 2013-08-13 (x86/x64)
+// AkelPadMethodsView.js - ver. 2013-09-03 (x86/x64)
 //
 // List of AkelPad methods from Scripts-*.txt files
 //
@@ -468,7 +468,7 @@ function SetCurSelLV(nItem)
 
 function InsertColumnLV()
 {
-  var lpLVCOLUMN = AkelPad.MemAlloc(_X64 ? 48 : 44); //sizeof(LVCOLUMN)
+  var lpLVCOLUMN = AkelPad.MemAlloc(_X64 ? 56 : 44); //sizeof(LVCOLUMN)
 
   AkelPad.MemCopy(lpLVCOLUMN, 4 /*mask=LVCF_TEXT*/, 3 /*DT_DWORD*/);
   AkelPad.MemCopy(lpLVCOLUMN + (_X64 ? 16 : 12), lpTextLV, 2 /*DT_QWORD*/);
