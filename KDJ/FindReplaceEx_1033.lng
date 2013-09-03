@@ -1,9 +1,14 @@
 /**************************************
-FindReplaceEx.js - ver. 2013-03-24
+FindReplaceEx.js - ver. 2013-09-01
 Interface language
 Language:      English (1033)
 Translated by: KDJ
 **************************************/
+sTxtMore        = '&More';
+sTxtReplAllCD   = '"Replace all" closes dialog';
+sTxtCheckInSel  = 'Check "in selection" if selection not empty';
+sTxtCycleSearch = 'Cycle search';
+sTxtPrompt      = 'Prompt';
 sTxtFRTempl     = 'Find/Replace templates';
 sTxtTemplates   = 'Templates';
 sTxtName        = 'Name';
